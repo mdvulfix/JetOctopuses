@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-public class ScreenMenu : AScreen<ScreenMenu>
+public class ScreenMenu : ScreenModel<ScreenMenu>, IScreen
 {
 
     [SerializeField] private Button m_Play;
@@ -11,7 +11,7 @@ public class ScreenMenu : AScreen<ScreenMenu>
     [SerializeField] private Button m_Exit;
     
     
-    protected override void Init()
+    public override void Init()
     {
 
     }

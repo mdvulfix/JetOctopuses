@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 public class Session : Cachable<Session>, IConfigurable
@@ -72,12 +72,15 @@ public class Session : Cachable<Session>, IConfigurable
 
                 Send("System loading...");
                 SetState(State.LoginIn);
+                
+                
                 break;  
 
             case State.LoginIn:
 
                 Send("Login loading...");
                 Load(SceneIndex.Login);
+                
                 break;
 
             case State.MenuIn:
@@ -133,13 +136,13 @@ public class Session : Cachable<Session>, IConfigurable
         
     }
 
-    private void Load (SceneIndex scene)
+    private void Load(SceneIndex scene)
     {
         m_SceneController.Load(scene);
 
     }
 
-    private void Unload (SceneIndex scene)
+    private void Unload(SceneIndex scene)
     {
         m_SceneController.Unload(scene);
 
@@ -221,14 +224,12 @@ public enum State
 
     //Load
     LoadIn,
-    LoadSuccess,
     LoadFail,
     LoadRun,
     LoadOut,
 
     //Login
     LoginIn,
-    LoginSuccess,
     LoginFail,
     LoginRun,
     LoginExit,
@@ -236,7 +237,6 @@ public enum State
 
     //Menu
     MenuIn,
-    MenuSuccess,
     MenuFail,
     MenuRun,
     MenuExit,
@@ -244,7 +244,6 @@ public enum State
 
     //Level
     LevelIn,
-    LevelSuccess,
     LevelFail,
     LevelRun,
     LevelWin,
@@ -255,7 +254,6 @@ public enum State
 
     //Result
     ResultIn,
-    ResultSuccess,
     ResultFail,
     ResultRun,
     ResultExit,
@@ -263,7 +261,6 @@ public enum State
 
     //Unload
     UnloadIn,
-    UnloadSuccess,
     UnloadFail,
     UnloadRun,
     UnloadOut,

@@ -1,13 +1,13 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-public class ScreenLoading : AScreen<ScreenLoading>
+public class ScreenLoading : ScreenModel<ScreenLoading>, IScreen
 {
     
     [SerializeField] private Slider m_Progress;
     
     
-    protected override void Init()
+    public override void Init()
     {
 
     }

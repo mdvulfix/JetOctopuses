@@ -1,42 +1,54 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class AScreen<TScreen>: Cachable<TScreen>
+[Serializable]
+public abstract class ScreenModel<TScreen> : SceneObject, IConfigurable
+where TScreen : SceneObject, IScreen
 {
     public event Action ScreenActivated;
     public event Action ScreenAnimated;
 
-    private void Awake() 
+
+    private ScreenConfig m_Config;
+    private Register<TScreen> m_Register;
+    private ScreenController m_ScreenController;
+
+    private void Awake ()
     {
-        Init();
+
     }
 
-    protected virtual void OnEnable()
+    private void OnEnable ()
     {
-        Set();
+        m_Register.Add((TScreen)m_Config.Screen);
+        Init ();
     }
 
-    protected virtual void OnDisable()
+    private void OnDisable ()
     {
-        Del();
+        Dispose ();
+        m_Register.Remove((TScreen)m_Config.Screen);
     }
 
-
-
-    protected abstract void Init();
-
-    protected void Activate(bool activate)
+    public virtual void Configure (IConfig config)
     {
-        if(activate)
-            ScreenActivated?.Invoke();
+        m_Config = (ScreenConfig) config;
+
+        var screenControllerConfig = new ScreenControllerConfig ();
+        m_ScreenController = new ScreenController (screenControllerConfig);
     }
 
-    protected void Animate(bool animate)
+    public virtual void Init ()
     {
-        if(animate)
-            ScreenAnimated?.Invoke();   
+        m_ScreenController.Init ();
     }
 
+    public virtual void Dispose ()
+    {
+        m_ScreenController.Dispose ();
+    }
 
 
     /*
@@ -86,16 +98,19 @@ public abstract class AScreen<TScreen>: Cachable<TScreen>
 
     */
 
-
-
-
-
-
-
 }
 
-public interface IScreen
+public struct ScreenConfig : IConfig
 {
-    
+    public IScreen Screen {get; private set; }
+
+    public ScreenConfig (IScreen screen)
+    {
+        Screen = screen;
+    }
+}
+
+public interface IScreen : IConfigurable
+{
 
 }

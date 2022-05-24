@@ -2,75 +2,69 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Cachable<T>: Cachable
+public class Register<T> : Register
+    where T: SceneObject
 {
-    
-    protected void Set()
+
+    public void Add (T instance)
     {
-        m_Storage.Add(typeof(T), this);
-        Send($"{typeof(T)} added to cache.");
+        Add (instance);
+        Send ($"{typeof(T)} added to cache.");
     }
 
-    protected void Del()
+    public void Remove (T instance)
     {
-        m_Storage.Remove(typeof(T));
-        Send($"{typeof(T)} removed from cache.");
+        Remove (instance);
+        Send ($"{typeof(T)} removed from cache.");
     }
 
-    private string Send(string text, bool worning = false)
-    { 
-        return Messager.Send(this, true, text, worning);
+    private string Send (string text, bool worning = false)
+    {
+        return Messager.Send (this, true, text, worning);
     }
 
 }
 
-
-public class Cachable: MonoBehaviour
+public class Register
 {
+    private readonly static Dictionary<Type, object> m_Cache = new Dictionary<Type, object> (50);
 
-    protected static Dictionary<Type, Cachable> m_Storage = new Dictionary<Type, Cachable>(50);
-
-    public static bool Get(Type type, out Cachable instance)
+    public static bool Get (Type type, out object instance)
     {
-
-        if (m_Storage.TryGetValue(type, out instance))
+        if (m_Cache.TryGetValue (type, out instance))
         {
             return true;
         }
-        
+
         return false;
     }
-}
 
-
-
-public class CachHandler<T>
-    where T: Cachable
-{
-
-    public bool Get(out T instance)
+    protected static void Add (object instance)
     {
-        var type = typeof(T);
-        instance = null;
-
-        if (Cachable.Get(type, out var cachable))
-        {
-            instance = (T)cachable;
-            return true;
-        }
-
-        Send($"{type} was not found!", true);
-        return false;
+        m_Cache.Add (instance.GetType (), instance);
     }
 
-    private string Send(string text, bool worning = false)
-    { 
-        return Messager.Send(this, true, text, worning);
+    protected static void Remove (object instance)
+    {
+        m_Cache.Remove (instance.GetType ());
     }
 
 }
 
-public interface ICachable
+public class SceneObject : MonoBehaviour
 {
+    private Register m_Register;
+
+    private Animator m_Animator;
+
+    public void Activate (bool Activate = true)
+    {
+        gameObject.SetActive (Activate);
+    }
+
+    public void Animate (bool Activate = true)
+    {
+
+    }
 
 }

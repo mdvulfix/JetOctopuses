@@ -23,7 +23,6 @@ public class SceneController: IConfigurable
 
     }
 
-
     public void Init()
     {
         SetActive(SceneIndex.Core);
@@ -35,7 +34,6 @@ public class SceneController: IConfigurable
     }
     
     
-
     public void Load(SceneIndex scene)
     {
         SceneManager.LoadSceneAsync((int)scene, LoadSceneMode.Additive);
@@ -57,8 +55,7 @@ public class SceneController: IConfigurable
         Send ($"{scene} reloaded...");
     }
 
-    
-    private void SetActive(SceneIndex scene) 
+    public void SetActive(SceneIndex scene) 
     {
         m_SceneActive = scene;
         
@@ -67,6 +64,8 @@ public class SceneController: IConfigurable
 
 
     }
+
+
 
     private string Send(string text, bool worning = false)
     { 

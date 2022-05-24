@@ -1,13 +1,13 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-public class ScreenCredits : AScreen<ScreenCredits>
+public class ScreenCredits: ScreenModel<ScreenCredits>, IScreen
 {
     
     [SerializeField] private Button m_Menu;
 
 
-    protected override void Init()
+    public override void Init()
     {
 
     }

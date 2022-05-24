@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-public class ScreenLogin : AScreen<ScreenLogin>
+public class ScreenLogin : ScreenModel<ScreenLogin>, IScreen
 {
 
-    protected override void Init()
+    public override void Init()
     {
 
     }
