@@ -1,17 +1,18 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
+﻿using System;
 
-public class ScreenLoading : ScreenModel<ScreenLoading>, IScreen
-{
-    
-    [SerializeField] private Slider m_Progress;
-    
-    
-    public override void Init()
+[Serializable]
+public class ScreenLoading: ScreenModel<ScreenLoading>, IScreen
+{ 
+    protected override void Init() 
     {
+        var buttons = new IButton[]
+        {
 
+        };
+
+        Configure(new ScreenConfig(this, buttons));
+        base.Init();
     }
-
 
 
 }

@@ -1,12 +1,22 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
+using System;
+using UnityEngine;
 
-public class ScreenLogin : ScreenModel<ScreenLogin>, IScreen
+[Serializable]
+public class ScreenLogin: ScreenModel<ScreenLogin>, IScreen
 {
 
-    public override void Init()
+    [SerializeField] private ButtonSignIn m_ButtonSignIn;
+    [SerializeField] private ButtonSignUp m_ButtonSignUp;
+
+    protected override void Init()
     {
+        var buttons = new IButton[]
+        {
+            m_ButtonSignIn,
+            m_ButtonSignUp
+        };
 
+        Configure(new ScreenConfig(this, buttons));
+        base.Init();
     }
-
 }

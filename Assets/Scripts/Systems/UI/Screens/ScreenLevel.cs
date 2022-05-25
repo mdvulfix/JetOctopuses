@@ -1,18 +1,20 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
+﻿using System;
+using UnityEngine;
 
+[Serializable]
 public class ScreenLevel : ScreenModel<ScreenLevel>, IScreen
 {
-    
-    [SerializeField] private Slider m_Power;
-    [SerializeField] private Slider m_Heath;
-    [SerializeField] private Text m_Money; 
-    
-    public override void Init()
-    {
+    [SerializeField] private ButtonLevelPause m_LevelPause;
 
+    protected override void Init()
+    {
+        var buttons = new IButton[]
+        {
+            m_LevelPause
+        };
+
+        Configure(new ScreenConfig(this, buttons));
+        base.Init();
     }
 
-
 }
-

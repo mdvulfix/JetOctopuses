@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class Session : Cachable<Session>, IConfigurable
+public class Session : SceneObject, IConfigurable
 {
 
     [SerializeField] 
@@ -315,9 +315,6 @@ public class SessionConfig: IConfig
 public interface IConfigurable
 {
     void Configure(IConfig config);
-    void Init();
-    void Dispose();
-
 }
 
 public interface IConfig

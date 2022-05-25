@@ -53,19 +53,14 @@
         "temp/":true,
         "Temp/":true
     },
-
+    
     "editor.tokenColorCustomizations": 
     {
-        
         "[Monolivia]": 
         {
-            
-         
-            
-            
             "textMateRules": 
             [
-               
+                
                 {
                     "scope": "source.cs entity.name.type.class.cs",
                     "settings": 
@@ -73,9 +68,9 @@
                         "foreground": "#ffa500",
                         "fontStyle": "bold"
                     }
-
+                    
                 },
-               
+                
                 {
                     "scope": "source.cs entity.name.type.cs",
                     "settings": 
@@ -83,9 +78,9 @@
                         "foreground": "#ffff00",
                         "fontStyle": ""
                     }
-
+                    
                 },
-               
+                
                 {
                     "scope": "source.cs storage.modifier.cs",
                     "settings": 
@@ -93,9 +88,9 @@
                         "foreground": "#ffbcff",
                         "fontStyle": ""
                     }
-
+                    
                 },
-
+                
                 {
                     "scope": "source.cs entity.name.variable.local.cs",
                     "settings": 
@@ -103,9 +98,9 @@
                         "foreground": "#ffffff",
                         "fontStyle": "italic"
                     }
-
+                    
                 },
-
+                
                 {
                     "scope": "source.cs entity.name.variable.field.cs",
                     "settings": 
@@ -113,9 +108,9 @@
                         "foreground": "#ffffff",
                         "fontStyle": "italic"
                     }
-
+                    
                 },
-
+                
                 {
                     "scope": "source.cs variable.other.readwrite.cs",
                     "settings": 
@@ -123,15 +118,15 @@
                         "foreground": "#ffffff",
                         "fontStyle": ""
                     }
-
+                    
                 }
-
- 
                 
-
-
+                
+                
+                
+                
             ]
         }
     }
-
+    
 }

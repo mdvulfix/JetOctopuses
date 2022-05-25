@@ -1,20 +1,26 @@
 ﻿using System;
 using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.UI;
 
-public class ScreenMenu : ScreenModel<ScreenMenu>, IScreen
-{
+[Serializable]
+public class ScreenMenu: ScreenModel<ScreenMenu>, IScreen
+{ 
 
-    [SerializeField] private Button m_Play;
-    [SerializeField] private Button m_Options;
-    [SerializeField] private Button m_Exit;
-    
-    
-    public override void Init()
+    [SerializeField] private ButtonMenuPlay m_ButtonPlay;
+    [SerializeField] private ButtonMenuOptions m_ButtonOptions;
+    [SerializeField] private ButtonMenuExit m_ButtonExit;
+
+
+    protected override void Init() 
     {
+        var buttons = new IButton[]
+        {
+            m_ButtonPlay,
+            m_ButtonOptions,
+            m_ButtonExit,
+        };
 
+        Configure(new ScreenConfig(this, buttons));
+        base.Init();
     }
-
 }
 
