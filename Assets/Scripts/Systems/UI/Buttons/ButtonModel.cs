@@ -15,56 +15,55 @@ where TButton : class, IButton
 
     public event Action<ISignal> ButtonClicked;
 
-    public void Configure(IConf ig config)
-
-   m_Config = (ButtonConfig) config;
-
-    IsConfigured = true;
-    }
-
-
-{
-    if (IsConfigured == false)
+    public void Configure (IConfig config)
     {
-        Send("Configuration has not been done. Initialization aborted!", true);
-        return;
+        m_Config = (ButtonConfig) config;
+        IsConfigured = true;
     }
 
-    //m_Signal = new SignalAction();
-    //m_Signal.Configure(new SignalConfig<TActionInfo>(m_Signal, m_ActionInfo));
-    //m_Signal.Init();
+    public virtual void Init ()
+    {
+        if (IsConfigured == false)
+        {
+            Send ("Configuration has not been done. Initialization aborted!", true);
+            return;
+        }
 
-    Subscribe();
+        //m_Signal = new SignalAction();
+        //m_Signal.Configure(new SignalConfig<TActionInfo>(m_Signal, m_ActionInfo));
+        //m_Signal.Init();
 
-    IsDebug = true;
-    IsInitialized = true;
+        Subscribe ();
 
-}
+        IsDebug = true;
+        IsInitialized = true;
 
-public virtual void Dispose()
-{
-    IsInitialized = false;
+    }
 
-    Unsubscribe();
+    public virtual void Dispose ()
+    {
+        IsInitialized = false;
 
-    //m_Signal.Dispose();
+        Unsubscribe ();
 
-}
+        //m_Signal.Dispose();
 
-public string Send(string text, bool worning = false) =>
-    Messager.Send(this, IsDebug, text, worning);
+    }
 
-protected void Subscribe()
+    public string Send (string text, bool worning = false) =>
+        Messager.Send (this, IsDebug, text, worning);
 
+    protected void Subscribe () =>
+        onClick.AddListener (() => ButtonClick ());
 
-    protected void Unsubscribe() =>
-        onClick.RemoveListener(() => ButtonClick());
+    protected void Unsubscribe () =>
+        onClick.RemoveListener (() => ButtonClick ());
 
-private void ButtonClick()
-{
-    //m_Signal.Call();
-    //ButtonClicked?.Invoke(m_Signal);
-}
+    private void ButtonClick ()
+    {
+        //m_Signal.Call();
+        //ButtonClicked?.Invoke(m_Signal);
+    }
 
 }
 
@@ -73,254 +72,224 @@ public class ButtonSignUp : ButtonModel<ButtonSignUp>, IButton
 {
     [SerializeField] private PlayerAction m_PlayerAction;
 
-    public override void Init()
+    public override void Init ()
     {
         if (m_PlayerAction == PlayerAction.None)
         {
-            Send("Player action not assigned!", true);
+            Send ("Player action not assigned!", true);
             return;
         }
 
-        var info = new ActionInfo(m_PlayerAction);
-        var config = new ButtonConfig<ActionInfo>(this, info);
+        var config = new ButtonConfig (this);
 
-        Configure(config);
-        base.Init();
+        Configure (config);
+        base.Init ();
     }
 }
- :
+
 [Serializable]
-public class ButtonSignIn : ButtonModel<ButtonSignIn, ActionInfo>, IButton
+public class ButtonSignIn : ButtonModel<ButtonSignIn>, IButton
 {
     [SerializeField] private PlayerAction m_PlayerAction;
 
-    public override void Init()
+    public override void Init ()
     {
         if (m_PlayerAction == PlayerAction.None)
         {
-            Send("Player action not assigned!", true);
+            Send ("Player action not assigned!", true);
             return;
         }
 
-        var info = new ActionInfo(m_PlayerAction);
-        ar config = new ButtonConfig<ActionInfo>(this, info);
+        var config = new ButtonConfig (this);
 
-        Configure(config);
-        base.Init();
+        Configure (config);
+        base.Init ();
     }
 }
 
-[Serializable] :
-public class ButtonMenuPlay :
-    ButtonModel<ButtonMenuPlay, ActionInfo>, IButton
+[Serializable]
+public class ButtonMenuPlay : ButtonModel<ButtonMenuPlay>, IButton
 {
     [SerializeField] private PlayerAction m_PlayerAction;
 
-    public override void Init()
+    public override void Init ()
     {
         if (m_PlayerAction == PlayerAction.None)
         {
-            Send("Player action not assigned!", true);
+            Send ("Player action not assigned!", true);
             return;
         }
 
-        var info = new ActionInfo(m_PlayerAction);
-        ar config = new ButtonConfig<ActionInfo>(this, info);
+        var config = new ButtonConfig (this);
 
-        Configure(config);
-        base.Init();
+        Configure (config);
+        base.Init ();
     }
 
 }
 
 [Serializable]
-public class ButtonMenuOptions : ButtonModel<ButtonMenuOptions, ActionInfo>, IButton
+public class ButtonMenuOptions : ButtonModel<ButtonMenuOptions>, IButton
 {
     [SerializeField] private PlayerAction m_PlayerAction;
 
-    public override void Init()
+    public override void Init ()
     {
         if (m_PlayerAction == PlayerAction.None)
         {
-            Send("Player action not assigned!", true);
+            Send ("Player action not assigned!", true);
             return;
         }
 
-        ar info = new ActionInfo(m_PlayerAction);
-        var config = new ButtonConfig<ActionInfo>(this, info);
+        var config = new ButtonConfig (this);
 
-        Configure(config);
-        base.Init();
+        Configure (config);
+        base.Init ();
     }
 }
 
-[Serializable] :
-public class ButtonOptionsExit :
-    ButtonModel<ButtonOptionsExit, ActionInfo>, IButton
+[Serializable]
+public class ButtonOptionsExit : ButtonModel<ButtonOptionsExit>, IButton
 {
     [SerializeField] private PlayerAction m_PlayerAction;
 
-    public override void Init()
+    public override void Init ()
     {
         if (m_PlayerAction == PlayerAction.None)
         {
-            Send("Player action not assigned!", true);
+            Send ("Player action not assigned!", true);
             return;
         }
 
-        var info = new ActionInfo(m_PlayerAction);
-        ar config = new ButtonConfig<ActionInfo>(this, info);
+        var config = new ButtonConfig (this);
 
-        Configure(config);
-        base.Init();
+        Configure (config);
+        base.Init ();
     }
 }
 
-[Serializable] :
-public class ButtonMenuExit :
-    ButtonModel<ButtonMenuExit, ActionInfo>, IButton
+[Serializable]
+public class ButtonMenuExit : ButtonModel<ButtonMenuExit>, IButton
 {
     [SerializeField] private PlayerAction m_PlayerAction;
 
-    public override void Init()
+    public override void Init ()
     {
         if (m_PlayerAction == PlayerAction.None)
         {
-            Send("Player action not assigned!", true);
+            Send ("Player action not assigned!", true);
             return;
         }
 
-        var info = new ActionInfo(m_PlayerAction);
-        ar config = new ButtonConfig<ActionInfo>(this, info);
+        var config = new ButtonConfig (this);
 
-        Configure(config);
-        base.Init();
+        Configure (config);
+        base.Init ();
     }
 }
 
-[Serializable] :
-public class ButtonMenuLevel :
-    ButtonModel<ButtonMenuLevel, ActionLevelLoadInfo>, IButton
+[Serializable]
+public class ButtonMenuLevel : ButtonModel<ButtonMenuLevel>, IButton
 {
     [SerializeField] private PlayerAction m_PlayerAction;
-    [SerializeField] private LevelIndex m_LevelIndex;
+    //[SerializeField] private LevelIndex m_LevelIndex;
 
-    public override void Init()
+    public override void Init ()
     {
         if (m_PlayerAction == PlayerAction.None)
         {
-            Send("Player action not assigned!", true);
+            Send ("Player action not assigned!", true);
             return;
         }
 
-        f(m_LevelIndex == LevelIndex.None)
-        {
-            Send("Level not assigned!", true);
-            return;
-        }
+        //if (m_LevelIndex == LevelIndex.None)
+        //{
+        //    Send ("Level not assigned!", true);
+        //    return;
+        //}
 
-        var info = new ActionLevelLoadInfo(m_PlayerAction, m_LevelIndex);
-        var config = new But :Config<ActionLevelLoadInfo>(this, info);
+        //var info = new ActionLevelLoadInfo (m_PlayerAction, m_LevelIndex);
+        //var config = new ButtonConfig<ActionInfo> (this, info);
 
-        Configure(config);
-        base.Init();
+        //Configure (config);
+        //base.Init ();
     }
 
 }
 
 [Serializable]
-public class ButtonLevelPlay :
-    ButtonModel<ButtonLevelPlay, ActionInfo>, IButton
+public class ButtonLevelPlay : ButtonModel<ButtonLevelPlay>, IButton
 {
     [SerializeField] private PlayerAction m_PlayerAction;
 
-    public override void Init()
+    public override void Init ()
     {
         if (m_PlayerAction == PlayerAction.None)
         {
-            Send("Player action not assigned!", true);
+            Send ("Player action not assigned!", true);
             return;
         }
 
-        ar info = new ActionInfo(m_PlayerAction);
-        var config = new ButtonConfig<ActionInfo>(this, info);
+        var config = new ButtonConfig (this);
 
-        Configure(config);
-        base.Init();
-    }
-}
-
-[Serializable] :
-public class ButtonLevelPause :
-    ButtonModel<ButtonLevelPause, ActionInfo>, IButton
-{
-    [SerializeField] private PlayerAction m_PlayerAction;
-
-    public override void Init()
-    {
-        if (m_PlayerAction == PlayerAction.None)
-        {
-            Send("Player action not assigned!", true);
-            return;
-        }
-
-        var info = new ActionInfo(m_PlayerAction);
-        ar config = new ButtonConfig<ActionInfo>(this, info);
-
-        Configure(config);
-        base.Init();
+        Configure (config);
+        base.Init ();
     }
 }
 
 [Serializable]
-public class ButtonLevelExit :
-    ButtonModel<ButtonLevelExit, ActionInfo>, IButton
+public class ButtonLevelPause : ButtonModel<ButtonLevelPause>, IButton
 {
     [SerializeField] private PlayerAction m_PlayerAction;
 
-    public override void Init()
+    public override void Init ()
     {
         if (m_PlayerAction == PlayerAction.None)
         {
-            Send("Player action not assigned!", true);
+            Send ("Player action not assigned!", true);
             return;
         }
 
-        var info = new ActionInfo(m_PlayerAction);
-        var config = new ButtonConfig<ActionInfo>(this, info);
+        var config = new ButtonConfig (this);
 
-        Configure(config);
-        base.Init();
+        Configure (config);
+        base.Init ();
     }
 }
 
-public interface IButton :
-    IInitializable, IConfigurable, IDebug
-{ :
+[Serializable]
+public class ButtonLevelExit : ButtonModel<ButtonLevelExit>, IButton
+{
+    [SerializeField] private PlayerAction m_PlayerAction;
+
+    public override void Init ()
+    {
+        if (m_PlayerAction == PlayerAction.None)
+        {
+            Send ("Player action not assigned!", true);
+            return;
+        }
+
+        var config = new ButtonConfig (this);
+
+        Configure (config);
+        base.Init ();
+    }
+}
+
+public interface IButton : IConfigurable
+{
     event Action<ISignal> ButtonClicked;
-
 }
 
-public struct ButtonConfig<TActionInfo> : IConfig
-where TActionInfo : struct, IActionInfo
+
+public struct ButtonConfig : IConfig
 {
     public IButton Button { get; }
-    public TActionInfo ActionInfo { get; }
 
-    public ButtonConfig(IButton button, TActionInfo actionInfo)
+    public ButtonConfig (IButton button)
     {
         Button = button;
-        ActionInfo = actionInfo;
-
     }
 
-    public struct ButtonConfig : IConfig
-    {
-        public IButton Button { get; }
-
-        public ButtonConfig(IButton button)
-        { :
-        Button = button;
-        }
-
-    }
+}

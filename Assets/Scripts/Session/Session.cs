@@ -13,42 +13,21 @@ public class Session : SceneObject, IConfigurable
     private event Action<State> StateChanged;
 
     
-    private void Awake ()
-    {
-        Configure(new SessionConfig());
-    }
-
-    private void OnEnable ()
-    {
-        Set();
-        Init();
-    }
-
-    private void OnDisable ()
-    {
-        Dispose();
-        Del();
-    }
-
-
     public void Configure (IConfig config)
     {
         m_SceneController = new SceneController ();
     }
     
     
-    public void Init ()
+    protected override void Init ()
     {
         StateChanged += HandleState;
         m_SceneController.Init();
 
-        
-
-
         SetState(State.LoadIn);
     }
 
-    public void Dispose()    
+    protected override void Dispose()    
     {
         m_SceneController.Dispose();
         SetState(State.UnloadIn);
@@ -57,7 +36,6 @@ public class Session : SceneObject, IConfigurable
 
         StateChanged -= HandleState;
     }
-    
     
     
     private void HandleState(State state)

@@ -67,7 +67,7 @@ public class SignalProvider<TSignal>: SignalProvider
 }
 
 
-public class SignalProvider: IProvider
+public class SignalProvider
 {   
     public bool IsDebug { get; protected set; }
 

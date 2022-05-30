@@ -1,39 +1,37 @@
+using UnityEngine.UI;
 
 public class ScreenController : Controller, IConfigurable
 {
 
     private IScreen m_ScreenActive;
 
-    public ScreenController(IConfig config) =>
-        Configure(config);
+    public ScreenController (IConfig config) =>
+        Configure (config);
 
-
-    public void Configure(IConfig config)
+    public void Configure (IConfig config)
     {
 
     }
 
-    protected override void Init()
+    protected override void Init ()
     {
-        Activate<ScreenLoading>();
-        base.Init();
+        Activate<ScreenLoading> (true);
+        base.Init ();
     }
 
-    protected override void Dispose()
+    protected override void Dispose ()
     {
-        base.Dispose();
+        base.Dispose ();
     }
 
-
-
-    public void Activate<TScreen>(bool animate)
-        where TScreen: IScreen
+    public void Activate<TScreen> (bool animate)
+    where TScreen : IScreen
     {
-        
-        if(m_ScreenActive != null && m_ScreenActive.GetType() == typeof(TScreen))
+
+        if (m_ScreenActive != null && m_ScreenActive.GetType () == typeof (TScreen))
             return;
-
-        if(m_CachHandler.Get<TScreen>(out var screen))
+        /*
+        if(m_RegHandler.Get<TScreen>(out var screen))
         {
 
             screen.gameObject.SetActive(true);
@@ -42,38 +40,30 @@ public class ScreenController : Controller, IConfigurable
             if(animate)
                 Animate();
         }
-
+        */
     }
 
-    protected void Animate(bool animate = true)
+    protected void Animate (bool animate = true)
     {
-        
-          
+
     }
-
-
-
-
-
-
 
 }
 
-public class ScreenControllerConfig: IConfig
+public class ScreenControllerConfig : IConfig
 {
-    public ScreenControllerConfig()
+    public ScreenControllerConfig ()
     {
 
     }
 }
 
-public struct ButtonClickedEventArgs: IEventArgs
+public struct ButtonClickedEventArgs : IEventArgs
 {
     public Button Button { get; }
     public IScreen Screen { get; }
-    
 
-    public ButtonClickedEventArgs(IScreen screen, Button button)
+    public ButtonClickedEventArgs (IScreen screen, Button button)
     {
         Screen = screen;
         Button = button;
@@ -81,6 +71,6 @@ public struct ButtonClickedEventArgs: IEventArgs
 }
 
 public interface IEventArgs
-{ 
+{
 
 }
