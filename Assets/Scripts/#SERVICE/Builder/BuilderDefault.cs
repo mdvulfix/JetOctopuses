@@ -30,9 +30,9 @@ namespace SERVICE.Builder
             
             
             
-            //var builderConfig = new BuilderConfig(sceneObjectHandler, sceneController);
+            var builderConfig = new BuilderConfig(sceneObjectHandler, sceneController);
             
-            //Configure(builderConfig);
+            Configure(builderConfig);
             base.Init();
         
             

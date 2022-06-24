@@ -33,6 +33,8 @@ namespace APP.Scene
         {
             m_SceneIndexes = new Dictionary<Type, SceneIndex?>(5);
 
+            m_TaskHandler = new TaskHandler();
+            
             var sceneControllerConfig = new SceneControllerConfig();
             m_ScreenController = new ScreenController(sceneControllerConfig);
 
