@@ -20,7 +20,10 @@ namespace APP.Screen
                 m_Exit
             };
 
-            Configure(new ScreenConfig(this, buttons));
+            var instanceInfo = new InstanceInfo(this);
+            var screenConfig = new ScreenConfig(instanceInfo, buttons);
+            
+            base.Configure(screenConfig);
             base.Init();
         }
 

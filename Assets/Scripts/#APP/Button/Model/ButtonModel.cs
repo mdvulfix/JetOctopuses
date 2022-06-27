@@ -69,13 +69,11 @@ namespace APP.Button
 
     }
 
-    public struct ButtonConfig : IConfig
+    public class ButtonConfig : Config
     {
-        public IButton Button { get; }
-
-        public ButtonConfig(IButton button)
+        public ButtonConfig(InstanceInfo info): base(info)
         {
-            Button = button;
+
         }
 
     }

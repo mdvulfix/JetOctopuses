@@ -17,9 +17,10 @@ namespace APP.Button
                 return;
             }
 
-            var config = new ButtonConfig(this);
+            var info = new InstanceInfo(this);
+            var config = new ButtonConfig(info);
 
-            Configure(config);
+            base.Configure(config);
             base.Init();
         }
 

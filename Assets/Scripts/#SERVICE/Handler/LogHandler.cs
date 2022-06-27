@@ -2,7 +2,7 @@
 
 namespace SERVICE.Handler
 {
-    public class LogHandler
+    public static class LogHandler
     {
         public static string Send(object sender, bool debug, string text, bool worning)
         {

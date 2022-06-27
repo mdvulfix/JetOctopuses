@@ -6,49 +6,47 @@ using UnityEngine;
 namespace APP
 {
 
-    public abstract class SessionModel<TSession> : SceneObject<TSession>, IConfigurable
+    public abstract class SessionModel<TSession> : UComponent
     where TSession : ISession
     {
-        [SerializeField] private bool m_Debug;
-        
+ 
         private SessionConfig m_SessionConfig;
 
         protected event Action<State> StateChanged;
-        
-        public override void Configure (IConfig config)
+
+        //CONFIGURE
+        public override void Configure(IConfig config)
         {
+            base.Configure(config);
             m_SessionConfig = (SessionConfig) config;
-            base.Configure(config)
-        }
-
-        protected override void Init ()
-        {
-            base.Init ();
-
+           
 
         }
 
-        protected override void Dispose ()
-        {
+        protected override void Init() =>
+            base.Init();
+
+        protected override void Dispose() =>
+            base.Dispose();
+
+        //
+
+        protected abstract void SetState(State state);
+        protected abstract void HandleState(State state);
 
 
-            base.Dispose ();
-        }
-
-
-
-        protected abstract void SetState();
-        protected abstract void HandleState();
-
-        protected string Send(string text, bool worning = false) =>
-            LogHandler.Send(this, m_Debug, text, worning);
-    
-        
 
     }
 
+    public class SessionConfig : Config
+    {
+        public ISceneController SceneController { get; private set; }
 
-
+        public SessionConfig(InstanceInfo info, ISceneController sceneController) : base(info)
+        {
+            SceneController = sceneController;
+        }
+    }
 
     public enum State
     {
@@ -104,18 +102,6 @@ namespace APP
         None,
         Win,
         Lose
-    }
-
-    public class SessionConfig : IConfig
-    {
-        public ISceneController SceneController { get; private set; }
-        
-        public SessionConfig(ISceneController sceneController)
-        {
-            SceneController = sceneController;
-        }
-
-        
     }
 
 }

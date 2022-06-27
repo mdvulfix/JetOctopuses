@@ -20,7 +20,9 @@ namespace APP.Scene
                 m_Level_1
             };
 
-            Configure(new SceneConfig(this, Index, screens));
+            var info = new InstanceInfo(this);
+            var config = new SceneConfig(info, Index, screens);
+            base.Configure(config);
             base.Init();
         }
 

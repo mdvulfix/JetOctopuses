@@ -6,34 +6,18 @@ namespace APP.Signal
     public class SignalProvider<TSignal> : SignalProvider
     where TSignal : class, ISignal
     {
-        private SignalProviderConfig m_Config;
         private ISignal m_Signal;
-
-        public bool IsConfigured { get; private set; }
+        
         public bool IsInitialized { get; private set; }
 
-        public IConfig Config => m_Config;
-
-        public SignalProvider(SignalProviderConfig config)
+        public SignalProvider(ISignal signal)
         {
-            Configure(config);
+            m_Signal = signal;
         }
 
-        public void Configure(IConfig config)
-        {
-            m_Config = (SignalProviderConfig) config;
-            m_Signal = m_Config.Signal;
-
-            IsConfigured = true;
-        }
 
         public void Init()
         {
-            if (IsConfigured == false)
-            {
-                Send("Configuration has not been done. Initialization aborted!", true);
-                return;
-            }
 
             m_Signal.Initialized += OnSignalInitialized;
             m_Signal.Disposed += OnSignalDisposed;
@@ -94,15 +78,4 @@ namespace APP.Signal
         }
 
     }
-
-    public class SignalProviderConfig : IConfig
-    {
-        public ISignal Signal { get; private set; }
-
-        public SignalProviderConfig(ISignal signal)
-        {
-            Signal = signal;
-        }
-    }
-
 }

@@ -2,31 +2,17 @@ using System;
 
 namespace APP.Vfx
 {
-    public class VfxControllerDefault: Controller, IConfigurable, IVfxController
+    public class VfxControllerDefault: Controller, IVfxController
     {
-        private VfxControllerConfig m_Config;
+        public VfxControllerDefault() {}
 
-        public VfxControllerDefault(IConfig config) =>
-            Configure(config);
-
-
-        public void Configure(IConfig config)
-        {
-            m_Config = (VfxControllerConfig)config;
-        }
-        
-        
         public override void Init(){ }
         public override void Dispose(){ }
     }
 
-    public interface IVfxController
+    public interface IVfxController: IController
     {
+        
     }
 
-    public struct VfxControllerConfig: IConfig
-    {
-
-
-    }
 }

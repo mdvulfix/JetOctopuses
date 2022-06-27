@@ -1,93 +1,90 @@
 using System;
-using SERVICE.Handler;
 using SERVICE.Factory;
+using SERVICE.Handler;
 
 namespace APP.Signal
 {
-    public abstract class SignalModel<TSignal>
-        where TSignal : class, ISignal
+    public abstract class SignalModel<TSignal> where TSignal : ISignal
+    {
+        private SignalConfig m_Config;
+        private TSignal m_Signal;
+
+        //private SignalProvider<TSignal> m_SignalProvider;
+
+        public bool IsDebug { get; private set; }
+        public bool IsConfigured { get; private set; }
+        public bool IsInitialized { get; private set; }
+
+        public IConfig Config => m_Config;
+
+        public event Action<ISignal> Initialized;
+        public event Action<ISignal> Disposed;
+        public event Action<ISignal> Called;
+
+        public void Configure(IConfig config)
         {
-            private SignalConfig m_Config;
-            private TSignal m_Signal;
+            m_Config = (SignalConfig) config;
+            m_Signal = (TSignal) m_Config.Signal;
+            IsConfigured = true;
+        }
 
-            private SignalProvider<TSignal> m_SignalProvider;
-
-            public bool IsDebug { get; private set; }
-            public bool IsConfigured { get; private set; }
-            public bool IsInitialized { get; private set; }
-
-            public IConfig Config => m_Config;
-
-            public event Action<ISignal> Initialized;
-            public event Action<ISignal> Disposed;
-            public event Action<ISignal> Called;
-
-            public void Configure(IConfig config)
+        public virtual void Init()
+        {
+            if (IsConfigured == false)
             {
-                m_Config = (SignalConfig) config;
-                m_Signal = (TSignal) m_Config.Signal;
-                IsConfigured = true;
+                Send("Configuration has not been done. Initialization aborted!", true);
+                return;
             }
 
-            public virtual void Init()
-            {
-                if (IsConfigured == false)
-                {
-                    Send("Configuration has not been done. Initialization aborted!", true);
-                    return;
-                }
+            //var signalProviderConfig = new SignalProviderConfig(m_Signal);
 
-                var signalProviderConfig = new SignalProviderConfig(m_Signal);
+            //m_SignalProvider = new SignalProvider<TSignal>(signalProviderConfig);
+            //m_SignalProvider.Init();
 
-                m_SignalProvider = new SignalProvider<TSignal>(signalProviderConfig);
-                m_SignalProvider.Init();
+            IsDebug = true;
+            IsInitialized = true;
 
-                IsDebug = true;
-                IsInitialized = true;
-
-                Initialized?.Invoke(m_Signal);
-
-            }
-
-            public virtual void Dispose()
-            {
-                Disposed?.Invoke(m_Signal);
-
-                IsInitialized = false;
-
-                m_SignalProvider.Dispose();
-
-            }
-
-            public void Call()
-            {
-                if (IsInitialized)
-                {
-                    Send("Signal called!");
-                    Called?.Invoke(m_Signal);
-
-                }
-                else
-                {
-                    Send("Initialization has not been done. Calling aborted!", true);
-                    return;
-                }
-
-            }
-
-            public string Send(string text, bool worning = false) =>
-                LogHandler.Send(this, IsDebug, text, worning);
+            Initialized?.Invoke(m_Signal);
 
         }
 
+        public virtual void Dispose()
+        {
+            Disposed?.Invoke(m_Signal);
 
-    public struct SignalConfig : IConfig
+            IsInitialized = false;
+
+            //m_SignalProvider.Dispose();
+
+        }
+
+        public void Call()
+        {
+            if (IsInitialized)
+            {
+                Send("Signal called!");
+                Called?.Invoke(m_Signal);
+
+            }
+            else
+            {
+                Send("Initialization has not been done. Calling aborted!", true);
+                return;
+            }
+
+        }
+
+        public string Send(string text, bool worning = false) =>
+            LogHandler.Send(this, IsDebug, text, worning);
+
+    }
+
+    public class SignalConfig : Config
     {
         public ISignal Signal { get; }
 
-        public SignalConfig(ISignal signal)
+        public SignalConfig(InstanceInfo info): base(info)
         {
-            Signal = signal;
         }
 
     }

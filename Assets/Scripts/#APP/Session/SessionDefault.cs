@@ -7,33 +7,20 @@ using APP.Player;
 
 namespace APP
 {
-
-
-
-
-
-
-
     public class SessionDefault : SessionModel<SessionDefault>, ISession
     {
-        [SerializeField]
-        private bool m_Debug;
-
         private State StateActive;
 
         private ISceneController m_SceneController;
 
-        
-
         protected override void Init()
         {
             //Scene controller...
-            var sceneControllerConfig = new SceneControllerConfig();
-            m_SceneController = new SceneControllerDefault(sceneControllerConfig);
+            m_SceneController = new SceneControllerDefault();
 
-            var sessionConfig = new SessionConfig(m_SceneController);
-
-            Configure(sessionConfig);
+            var info = new InstanceInfo(this);
+            var config = new SessionConfig(info, m_SceneController);
+            base.Configure(config);
             base.Init();
 
             StateChanged += OnStateChanged;
@@ -54,7 +41,7 @@ namespace APP
             base.Dispose();
         }
 
-        private void HandleState(State state)
+        protected override void HandleState(State state)
         {
             switch (state)
             {
@@ -134,15 +121,15 @@ namespace APP
 
         }
 
-        private void SetState(State state)
+        protected override void SetState(State state)
         {
             StateActive = state;
-            StateChanged?.Invoke(state);
+            //StateChanged?.Invoke(state);
         }
 
         private void Activate<TScene, TScreen>()
-            where TScene : IScene
-            where TScreen : IScreen => m_SceneController.Activate<TScene, TScreen>();
+            where TScene : UComponent, IScene
+            where TScreen : UComponent, IScreen => m_SceneController.Activate<TScene, TScreen>();
 
         private void OnPlayerAction(PlayerAction action)
         {

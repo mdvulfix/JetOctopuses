@@ -1,17 +1,8 @@
 namespace APP.Audio
 {
-    public class AudioControllerDefault: Controller, IAudioController, IConfigurable
-    {
-        private AudioControllerConfig m_Config;
-        
-        public AudioControllerDefault(IConfig config) =>
-            Configure(config);
-        
-        
-        public void Configure(IConfig config)
-        {
-            m_Config = (AudioControllerConfig)config;
-        }
+    public class AudioControllerDefault: Controller, IAudioController
+    {       
+        public AudioControllerDefault() { }
         
         public override void Init() { }
         public override void Dispose() { }
@@ -19,14 +10,10 @@ namespace APP.Audio
 
     }
 
-    public interface IAudioController
+    public interface IAudioController: IController
     {
+        
     }
 
-    public struct AudioControllerConfig: IConfig
-    {
-
-
-    }
 }
 

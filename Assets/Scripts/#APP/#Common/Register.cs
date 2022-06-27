@@ -4,7 +4,7 @@ using SERVICE.Handler;
 
 namespace APP
 {
-    public class Register<T> : Register
+    public class Register<T>: Register
     {
         private T m_Instance;
 
@@ -13,29 +13,42 @@ namespace APP
 
         public void Set()
         {
-            m_Cache.Add(typeof(T), m_Instance);
+            Set<T>(m_Instance);
             Send($"{typeof(T)} added to cache.");
         }
 
         public void Remove()
         {
-            m_Cache.Remove(typeof(T));
+            Remove<T>(m_Instance);
             Send($"{typeof(T)} removed from cache.");
         }
-
-        private string Send(string text, bool worning = false) =>
-            LogHandler.Send(this, true, text, worning);
-
     }
 
     public class Register
     {
-        protected readonly static Dictionary<Type, object> m_Cache = new Dictionary<Type, object>(50);
+        public Register() {}
 
-        public static bool Get<T>(out T instance)
+        public Register(Type objType, object instance) =>
+            Set(objType, instance);
+        
+        private bool m_Debug = true;
+        private readonly static Dictionary<Type, object> m_Cache = new Dictionary<Type, object>(50);
+        
+
+        public bool Contains(object instance)
+        {
+            if(m_Cache.ContainsValue(instance))
+                return true;
+
+            var name = instance.GetType().Name;
+            Send($"{name} not found in register!");
+            return false;
+        }
+        
+        
+        public bool Get<T>(out T instance)
         where T: class
         {
-
             if (m_Cache.TryGetValue(typeof(T), out var obj))
             {
                 instance = (T)obj;
@@ -45,5 +58,34 @@ namespace APP
             instance = null;
             return false;
         }
+
+        // SET //
+        public void Set<T>(T instance) => 
+            Set(typeof(T), instance);
+
+        public void Set(Type objType, object instance)
+        {
+            m_Cache.Add(objType, instance);
+            var name = objType.Name;
+            Send($"{name} set to register!");
+        }
+            
+        // REMOVE //
+        public void Remove<T>(T instance) =>
+            Remove(typeof(T), instance);
+
+
+        public void Remove(Type objType, object instance)
+        {   
+            if(Contains(instance))
+            {
+                m_Cache.Remove(objType);
+                var name = objType.Name;
+                Send($"{name} removed from to register!");
+            }
+        }
+
+        protected string Send(string text, bool worning = false) =>
+            LogHandler.Send(this, m_Debug, text, worning);
     }
 }

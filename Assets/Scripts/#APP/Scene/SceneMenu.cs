@@ -25,7 +25,9 @@ namespace APP.Scene
                 m_Score
             };
 
-            Configure(new SceneConfig(this, Index, screens));
+            var info = new InstanceInfo(this);
+            var config = new SceneConfig(info, Index, screens);
+            base.Configure(config);
             base.Init();
         }
 

@@ -7,77 +7,44 @@ using APP.Scene;
 
 namespace SERVICE.Builder
 {
-    public abstract class BuilderModel<TBuilder> : SceneObject, IConfigurable
+    public abstract class BuilderModel<TBuilder> : UComponent
     {
         private BuilderConfig m_Config;
         
-        private SceneObjectHandler m_SceneObjectHandler;
-        private ISceneController m_SceneController;
-
-        
-        public void Configure(IConfig config)
+        public override void Configure(IConfig config)
         {
+            base.Configure(config);
             m_Config = (BuilderConfig)config;
             
-            var sceneControllerConfig = new SceneControllerConfig();
-            m_SceneObjectHandler = m_Config.SceneObjectHandler;
-            m_SceneController = m_Config.SceneController;
-
         }
         
         
         protected override void Init()
         {
             base.Init();
-            m_SceneController.Init();
-            
         }
 
         protected override void Dispose()
         {
-            m_SceneController.Dispose();
             base.Dispose();
         }
 
 
         // BUILD
-        protected abstract void Build(params IConfig[] param);
-
-
-        protected TSystem Set<TSystem>(string name, IConfig config)
-        where TSystem : SceneObject, IConfigurable
-        {
-            var obj = m_SceneObjectHandler.Create(name);
-            return m_SceneObjectHandler.SetComponent<TSystem>(obj, config);
-
-        }
-
-        protected void SceneActivate<TScene>()
-        where TScene : IScene
-        {
-            m_SceneController.Activate<TScene>();
-        }
+        public abstract void Build(params IConfig[] param);
 
 
     }
 
-    public struct BuilderConfig : IConfig
+    public class BuilderConfig : Config
     {
-        public BuilderConfig(
-            SceneObjectHandler sceneObjectHandler,
-            ISceneController sceneController)
+        public BuilderConfig(InstanceInfo info): base(info)
         {
-            SceneObjectHandler = sceneObjectHandler;
-            SceneController = sceneController;
         }
-
-        public SceneObjectHandler SceneObjectHandler {get; private set;}
-        public ISceneController SceneController {get; private set;}
-      
     }
 
     public interface IBuilder
     {
-        void Build();
+        void Build(params IConfig[] parametrs);
     }
 }

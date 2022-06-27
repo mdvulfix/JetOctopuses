@@ -7,48 +7,47 @@ using APP.Scene;
 
 namespace SERVICE.Builder
 {
-    public class BuilderDefault : BuilderModel<BuilderDefault>
+    public class BuilderDefault : BuilderModel<BuilderDefault>, IBuilder
     {
         protected override void Init()
         {
-            var sceneObjectHandler = new SceneObjectHandler();
+            var instanceInfo = new InstanceInfo(this);
+            var builderConfig = new BuilderConfig(instanceInfo);
             
-            var sceneControllerConfig = new SceneControllerConfig();
-            var sceneController = new SceneControllerDefault(sceneControllerConfig);
-            
-            var audioControllerConfig = new AudioControllerConfig();
-            var audioController = new AudioControllerDefault(audioControllerConfig);
-            var audioConfig = new AudioConfig(audioController);
-            
-            
-            var vfxControllerConfig = new VfxControllerConfig();
-            var vfxController = new VfxControllerDefault(vfxControllerConfig);
-            var vfxConfig = new VfxConfig(vfxController);
-            
-            var sessionConfig = new SessionConfig();
-
-            
-            
-            
-            var builderConfig = new BuilderConfig(sceneObjectHandler, sceneController);
-            
-            Configure(builderConfig);
+            base.Configure(builderConfig);
             base.Init();
         
-            
-            Build(audioConfig, vfxConfig, sessionConfig);
+            Build();
         }
 
 
-        protected override void Build(params IConfig[] param)
+        public override void Build(params IConfig[] parametrs)
         {
-            //SceneActivate<SceneCore>();
             
-            Set<AudioDefault>("Audio", param[0]);
-            Set<VfxDefault>("Vfx", param[1]);
-            Set<SessionDefault>("Session", param[2]);
+            var sceneController = new SceneControllerDefault();
+            SceneActivate<SceneCore>(sceneController);
+            
+            //Set<AudioDefault>("Audio");
+            //Set<VfxDefault>("Vfx");
+            //Set<SessionDefault>("Session");
 
         }
+
+        protected TSystem Set<TSystem>(string name)
+        where TSystem : UComponent, IConfigurable
+        {
+            var obj = UComponentHandler.CreateGameObject(name);
+            return UComponentHandler.SetComponent<TSystem>(obj);
+
+        }
+
+        protected void SceneActivate<TScene>(ISceneController controller)
+        where TScene : UComponent, IScene
+        {
+            controller.Activate<TScene>();
+        }
+
+
 
     }
 }

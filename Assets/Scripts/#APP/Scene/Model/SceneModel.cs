@@ -4,13 +4,14 @@ using APP.Screen;
 namespace APP.Scene
 {
     [Serializable]
-    public abstract class SceneModel<TScene> : SceneObject<TScene>, IConfigurable
+    public abstract class SceneModel<TScene> : UComponent
     where TScene : IScene
     {
         
         private SceneConfig m_Conig;
         private TScene m_Instance;
-        
+
+        public bool IsConfigured {get; private set;}
         public SceneIndex SceneIndex { get; private set; }
 
         public event Action<IActionInfo> SceneLoaded;
@@ -20,27 +21,23 @@ namespace APP.Scene
 
         private Register<TScene> m_Register;
 
-        public virtual void Configure (IConfig config)
+        public override void Configure (IConfig config)
         {
-            var sceneConfig = (SceneConfig) config;
-
-            SceneIndex = sceneConfig.SceneIndex;
-
-            
+            if(IsConfigured == true)
+                return;
+        
+            base.Configure(config);
+            m_Conig = (SceneConfig) config;
 
         }
 
         protected override void Init ()
         {
             base.Init ();
-            Set(m_Instance);
-
         }
 
         protected override void Dispose ()
         {
-
-            Remove ();
             base.Dispose ();
         }
 
@@ -98,17 +95,14 @@ namespace APP.Scene
         SceneIndex SceneIndex { get; }
     }
 
-    public struct SceneConfig : IConfig
+    public class SceneConfig : Config
     {
-
-        public IScene Scene { get; private set; }
         public SceneIndex SceneIndex { get; private set; }
         public IScreen[] Screens { get; private set; }
 
-        public SceneConfig (IScene scene, SceneIndex sceneIndex, IScreen[] screens)
+        public SceneConfig (InstanceInfo info, SceneIndex index, IScreen[] screens): base(info)
         {
-            Scene = scene;
-            SceneIndex = sceneIndex;
+            SceneIndex = index;
             Screens = screens;
         }
     }

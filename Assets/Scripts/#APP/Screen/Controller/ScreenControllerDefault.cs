@@ -2,17 +2,11 @@ using System;
 
 namespace APP.Screen
 {
-    public class ScreenController : Controller, IConfigurable
+    public class ScreenControllerDefault : Controller, IScreenController
     {
         private IScreen m_ScreenActive;
 
-        public ScreenController(IConfig config) =>
-            Configure(config);
-
-        public void Configure(IConfig config)
-        {
-
-        }
+        public ScreenControllerDefault() { }
 
         public override void Init() { }
 
@@ -46,12 +40,9 @@ namespace APP.Screen
 
     }
 
-    public class ScreenControllerConfig : IConfig
+    public interface IScreenController: IController
     {
-        public ScreenControllerConfig()
-        {
-
-        }
+        bool Activate<TScreen>(bool animate)
+        where TScreen : IScreen;
     }
-
 }
