@@ -21,15 +21,16 @@ namespace SERVICE.Builder
         }
 
 
-        public override void Build(params IConfig[] parametrs)
+        public override async void Build(params IConfig[] parametrs)
         {
             
             var sceneController = new SceneControllerDefault();
-            SceneActivate<SceneCore>(sceneController);
+            sceneController.Init();
+            await sceneController.Activate<SceneCore>();
             
-            //Set<AudioDefault>("Audio");
-            //Set<VfxDefault>("Vfx");
-            //Set<SessionDefault>("Session");
+            Set<AudioDefault>("Audio");
+            Set<VfxDefault>("Vfx");
+            Set<SessionDefault>("Session");
 
         }
 
@@ -44,7 +45,7 @@ namespace SERVICE.Builder
         protected void SceneActivate<TScene>(ISceneController controller)
         where TScene : UComponent, IScene
         {
-            controller.Activate<TScene>();
+
         }
 
 

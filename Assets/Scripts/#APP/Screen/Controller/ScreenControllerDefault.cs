@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace APP.Screen
 {
@@ -12,12 +13,12 @@ namespace APP.Screen
 
         public override void Dispose() { }
 
-        public bool Activate<TScreen>(bool animate)
+        public async Task Activate<TScreen>(bool animate)
         where TScreen : IScreen
         {
 
             if (m_ScreenActive != null && m_ScreenActive.GetType() == typeof(TScreen))
-                return true;
+                return;
 
             /*
             if (m_CachHandler.Get<TScreen>(out var screen))
@@ -30,7 +31,8 @@ namespace APP.Screen
             }
             */
 
-            return true;
+            await Task.Delay(1);
+
         }
 
         public void Animate(bool animate = true)
@@ -42,7 +44,7 @@ namespace APP.Screen
 
     public interface IScreenController: IController
     {
-        bool Activate<TScreen>(bool animate)
+        Task Activate<TScreen>(bool animate)
         where TScreen : IScreen;
     }
 }

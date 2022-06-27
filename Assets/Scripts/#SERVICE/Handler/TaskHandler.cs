@@ -8,25 +8,14 @@ namespace SERVICE.Handler
 {
     public static class TaskHandler
     {
-        private static bool IsCanceled;
-        
         public static async Task Run(Func<bool> action, float delay = 1, string message = null)
         {
             var tokenSource = new TokenSource();
             var token = tokenSource.Token;
-
+            
             try
             {
-                if(IsCanceled == true)
-                {
-                    await TaskExecuteAsync(action, token, delay, message);
-                }
-                else
-                {
-                    tokenSource.Cancel();
-                    tokenSource.Dispose();
-                }
-
+                await TaskExecuteAsync(action, token, delay, message);
             }
             catch (OperationCanceledException ex)
             {
@@ -42,9 +31,6 @@ namespace SERVICE.Handler
             }
         }
 
-        
-        public static bool Cancel() => IsCanceled = true;
-       
         private static async Task TaskExecuteAsync(Func<bool> action, Token token, float delay = 1, string message = null)
         {
             Send("Start: " + message);

@@ -37,43 +37,42 @@ namespace APP.Scene
         public override void Dispose()
         {
             m_ScreenController.Dispose();
-            TaskHandler.Cancel();
         }
 
-        public void Activate<TScene>()
+        public async Task Activate<TScene>()
         where TScene : UComponent, IScene
         {
-            SceneActivate<TScene>();
+            await SceneActivate<TScene>();
             //ScreenActivate<ScreenLoading>();
 
         }
 
-        public void Activate<TScene, TScreen>()
+        public async Task Activate<TScene, TScreen>()
         where TScene : UComponent, IScene
         where TScreen : UComponent, IScreen
         {
-            SceneActivate<TScene>();
-            ScreenActivate<TScreen>();
+            await SceneActivate<TScene>();
+            await ScreenActivate<TScreen>();
         }
 
 
         // SCREEN METHODS
-        private bool ScreenActivate<TScreen>()
+        private async Task ScreenActivate<TScreen>()
         where TScreen : IScreen
         {
             var animate = true;
-            if (m_ScreenController.Activate<TScreen>(animate))
-                return true;
+            await m_ScreenController.Activate<TScreen>(animate);
+
 
             //SceneManager.LoadSceneAsync((int)scene, LoadSceneMode.Additive);
             //Send ($"{scene} loaded...");
 
-            return false;
+
         }
 
 
         // SCENE METHODS
-        private async void SceneActivate<TScene>()
+        private async Task SceneActivate<TScene>()
         where TScene : UComponent, IScene
         {
 
@@ -129,6 +128,7 @@ namespace APP.Scene
 
         private async Task SceneLoad<TScene>(SceneIndex? sceneIndex)
         {
+
             var operation = SceneManager.LoadSceneAsync((int) sceneIndex, LoadSceneMode.Additive);
             await TaskHandler.Run(() => USceneLoadingAwait(operation));
 
@@ -188,21 +188,19 @@ namespace APP.Scene
 
         private bool USceneLoadingAwait(AsyncOperation operation)
         {
-            while (true)
-            {
-                if (operation.isDone)
-                    return true;
-            }
+            if (operation.isDone)
+                return true;
+
+            return false;
         }
 
         private bool SceneLoadingAwait<TScene>(SceneIndex? index)
         where TScene: UComponent
         {
-            while (true)
-            {
-                if (RegisterHandler.Get<TScene>(out var instance))
-                    return true;
-            }
+            if (RegisterHandler.Get<TScene>(out var instance))
+                return true;
+
+            return false;
         }
 
 
@@ -212,10 +210,10 @@ namespace APP.Scene
 
     public interface ISceneController: IController
     {
-        void Activate<TScene>()
+        Task Activate<TScene>()
         where TScene : UComponent, IScene;
         
-        void Activate<TScene, TScreen>()
+        Task Activate<TScene, TScreen>()
         where TScene : UComponent, IScene
         where TScreen : UComponent ,IScreen;
 
