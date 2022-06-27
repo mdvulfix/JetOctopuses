@@ -6,20 +6,20 @@ namespace APP
 {
     public class Register<T> : Register
     {
-        public T Instance { get; private set; }
+        private T m_Instance;
 
         public Register(T instance) =>
-            Instance = instance;
+            m_Instance = instance;
 
         public void Set()
         {
-            Set(Instance);
+            m_Cache.Add(typeof(T), m_Instance);
             Send($"{typeof(T)} added to cache.");
         }
 
         public void Remove()
         {
-            Remove(Instance);
+            m_Cache.Remove(typeof(T));
             Send($"{typeof(T)} removed from cache.");
         }
 
@@ -30,22 +30,20 @@ namespace APP
 
     public class Register
     {
-        private readonly static Dictionary<Type, object> m_Cache = new Dictionary<Type, object>(50);
+        protected readonly static Dictionary<Type, object> m_Cache = new Dictionary<Type, object>(50);
 
-        public static bool Get(Type type, out object instance)
+        public static bool Get<T>(out T instance)
+        where T: class
         {
-            if (m_Cache.TryGetValue(type, out instance))
-                return true;
 
+            if (m_Cache.TryGetValue(typeof(T), out var obj))
+            {
+                instance = (T)obj;
+                return true;
+            }
+
+            instance = null;
             return false;
         }
-
-        protected static void Set(object instance) =>
-            m_Cache.Add(instance.GetType(), instance);
-
-        protected static void Remove(object instance) =>
-            m_Cache.Remove(instance.GetType());
-
     }
-
 }

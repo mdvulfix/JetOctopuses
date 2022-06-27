@@ -7,7 +7,14 @@ using APP.Player;
 
 namespace APP
 {
-    public class SessionDefault : SceneObject, ISession, IConfigurable
+
+
+
+
+
+
+
+    public class SessionDefault : SessionModel<SessionDefault>, ISession
     {
         [SerializeField]
         private bool m_Debug;
@@ -16,17 +23,19 @@ namespace APP
 
         private ISceneController m_SceneController;
 
-        private event Action<State> StateChanged;
+        
 
-        public void Configure(IConfig config)
+        protected override void Init()
         {
             //Scene controller...
             var sceneControllerConfig = new SceneControllerConfig();
             m_SceneController = new SceneControllerDefault(sceneControllerConfig);
-        }
 
-        protected override void Init()
-        {
+            var sessionConfig = new SessionConfig(m_SceneController);
+
+            Configure(sessionConfig);
+            base.Init();
+
             StateChanged += OnStateChanged;
             m_SceneController.Init();
 
@@ -42,6 +51,7 @@ namespace APP
             SetState(State.UnloadIn);
 
             StateChanged -= OnStateChanged;
+            base.Dispose();
         }
 
         private void HandleState(State state)
@@ -191,80 +201,8 @@ namespace APP
             HandleState(state);
         }
 
-        private string Send(string text, bool worning = false) =>
-            LogHandler.Send(this, m_Debug, text, worning);
+
 
     }
 
-    public interface ISession
-    {
-    }
-
-    public enum State
-    {
-        None,
-
-        //Load
-        LoadIn,
-        LoadFail,
-        LoadRun,
-        LoadOut,
-
-        //Login
-        LoginIn,
-        LoginFail,
-        LoginRun,
-        LoginExit,
-        LoginOut,
-
-        //Menu
-        MenuIn,
-        MenuFail,
-        MenuRun,
-        MenuExit,
-        MenuOut,
-
-        //Level
-        LevelIn,
-        LevelFail,
-        LevelRun,
-        LevelWin,
-        LevelLose,
-        LevelPause,
-        LevelExit,
-        LevelOut,
-
-        //Result
-        ResultIn,
-        ResultFail,
-        ResultRun,
-        ResultExit,
-        ResultOut,
-
-        //Unload
-        UnloadIn,
-        UnloadFail,
-        UnloadRun,
-        UnloadOut,
-
-    }
-
-
-
-    public enum Result
-    {
-        None,
-        Win,
-        Lose
-    }
-
-
-
-    public class SessionConfig : IConfig
-    {
-        public SessionConfig()
-        {
-
-        }
-    }
 }
