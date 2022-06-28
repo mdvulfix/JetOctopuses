@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using SERVICE.Handler;
 
 namespace APP.Screen
 {
@@ -14,12 +15,32 @@ namespace APP.Screen
         public override void Dispose() { }
 
         public async Task Activate<TScreen>(bool animate)
-        where TScreen : IScreen
+        where TScreen: UComponent, IScreen
         {
 
             if (m_ScreenActive != null && m_ScreenActive.GetType() == typeof(TScreen))
                 return;
 
+            TScreen screen = null;
+            await TaskHandler.Run(() => AwaitScreenActivation<TScreen>(out screen), "Waiting for screen activation...");
+            
+            if(screen == null)
+            {
+                Send($"{screen.GetType().Name} not found!", true);
+                return;
+            }
+                
+            if(m_ScreenActive != null)
+                m_ScreenActive.Activate(false);
+            
+            screen.Activate(true);
+            m_ScreenActive = screen;
+           
+
+            //Send($"{sceneIndex} activated...");
+            
+            
+            
             /*
             if (m_CachHandler.Get<TScreen>(out var screen))
             {
@@ -31,8 +52,19 @@ namespace APP.Screen
             }
             */
 
-            await Task.Delay(1);
+            //await Task.Delay(1);
 
+        }
+
+        private bool AwaitScreenActivation<TScreen>(out TScreen screen)
+        where TScreen: UComponent, IScreen
+        {
+            screen = null;
+            
+            if (RegisterHandler.Get<TScreen>(out screen))
+                return true;
+
+            return false;
         }
 
         public void Animate(bool animate = true)
@@ -45,6 +77,6 @@ namespace APP.Screen
     public interface IScreenController: IController
     {
         Task Activate<TScreen>(bool animate)
-        where TScreen : IScreen;
+        where TScreen: UComponent, IScreen;
     }
 }

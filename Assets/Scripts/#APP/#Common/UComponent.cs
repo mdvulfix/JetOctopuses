@@ -37,10 +37,10 @@ namespace APP
         }
            
 
-        protected void Activate(bool Activate = true) =>
+        public void Activate(bool Activate = true) =>
             gameObject.SetActive(Activate);
 
-        protected void Animate(bool Activate = true)
+        public void Animate(bool Activate = true)
         {
 
         }

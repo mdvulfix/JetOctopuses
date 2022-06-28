@@ -7,7 +7,7 @@ using APP.Scene;
 
 namespace SERVICE.Builder
 {
-    public class BuilderDefault : BuilderModel<BuilderDefault>, IBuilder
+    public class BuilderDefault : UComponent, IBuilder
     {
         protected override void Init()
         {
@@ -21,12 +21,12 @@ namespace SERVICE.Builder
         }
 
 
-        public override async void Build(params IConfig[] parametrs)
+        public async void Build(params IConfig[] parametrs)
         {
             
             var sceneController = new SceneControllerDefault();
             sceneController.Init();
-            await sceneController.Activate<SceneCore>();
+            await USceneHandler.SceneActivate(SceneIndex.System);
             
             Set<AudioDefault>("Audio");
             Set<VfxDefault>("Vfx");
@@ -42,13 +42,20 @@ namespace SERVICE.Builder
 
         }
 
-        protected void SceneActivate<TScene>(ISceneController controller)
-        where TScene : UComponent, IScene
-        {
-
-        }
-
 
 
     }
+
+    public class BuilderConfig : Config
+    {
+        public BuilderConfig(InstanceInfo info): base(info)
+        {
+        }
+    }
+
+    public interface IBuilder
+    {
+        void Build(params IConfig[] parametrs);
+    }
+
 }

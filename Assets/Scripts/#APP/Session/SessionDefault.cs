@@ -7,11 +7,13 @@ using APP.Player;
 
 namespace APP
 {
-    public class SessionDefault : SessionModel<SessionDefault>, ISession
+    public class SessionDefault : UComponent, ISession
     {
         private State StateActive;
 
         private ISceneController m_SceneController;
+
+        public event Action<State> StateChanged;
 
         protected override void Init()
         {
@@ -41,7 +43,7 @@ namespace APP
             base.Dispose();
         }
 
-        protected override void HandleState(State state)
+        protected void HandleState(State state)
         {
             switch (state)
             {
@@ -54,7 +56,7 @@ namespace APP
                     Send("System loading...");
                     SetState(State.LoadRun);
 
-                    Activate<SceneMenu, ScreenLoading>();
+                    //Activate<SceneMenu, ScreenLoading>();
 
                     Send("System complete loading...");
                     SetState(State.LoadOut);
@@ -68,7 +70,7 @@ namespace APP
                     Send("System logining...");
                     SetState(State.LoginRun);
 
-                    Activate<SceneMenu, ScreenLogin>();
+                    //Activate<SceneMenu, ScreenLogin>();
 
                     Send("System complete logining...");
                     SetState(State.LoginOut);
@@ -121,15 +123,15 @@ namespace APP
 
         }
 
-        protected override void SetState(State state)
+        protected void SetState(State state)
         {
             StateActive = state;
             //StateChanged?.Invoke(state);
         }
 
-        private void Activate<TScene, TScreen>()
-            where TScene : UComponent, IScene
-            where TScreen : UComponent, IScreen => m_SceneController.Activate<TScene, TScreen>();
+       // private void Activate<TScene, TScreen>()
+           // where TScene : UComponent, IScene
+            //where TScreen : UComponent, IScreen => m_SceneController.Activate<TScene, TScreen>();
 
         private void OnPlayerAction(PlayerAction action)
         {
@@ -190,6 +192,71 @@ namespace APP
 
 
 
+    }
+    public class SessionConfig : Config
+    {
+        public ISceneController SceneController { get; private set; }
+
+        public SessionConfig(InstanceInfo info, ISceneController sceneController) : base(info)
+        {
+            SceneController = sceneController;
+        }
+    }
+
+    public enum State
+    {
+        None,
+
+        //Load
+        LoadIn,
+        LoadFail,
+        LoadRun,
+        LoadOut,
+
+        //Login
+        LoginIn,
+        LoginFail,
+        LoginRun,
+        LoginExit,
+        LoginOut,
+
+        //Menu
+        MenuIn,
+        MenuFail,
+        MenuRun,
+        MenuExit,
+        MenuOut,
+
+        //Level
+        LevelIn,
+        LevelFail,
+        LevelRun,
+        LevelWin,
+        LevelLose,
+        LevelPause,
+        LevelExit,
+        LevelOut,
+
+        //Result
+        ResultIn,
+        ResultFail,
+        ResultRun,
+        ResultExit,
+        ResultOut,
+
+        //Unload
+        UnloadIn,
+        UnloadFail,
+        UnloadRun,
+        UnloadOut,
+
+    }
+
+    public enum Result
+    {
+        None,
+        Win,
+        Lose
     }
 
 }

@@ -5,9 +5,9 @@ using APP.Screen;
 namespace APP.Scene
 {
     [Serializable]
-    public class SceneCore : SceneModel<SceneCore>, IScene
+    public class SceneLogin : SceneModel<SceneLogin>, IScene
     {
-        public static readonly SceneIndex Index = SceneIndex.Core;
+        public static readonly SceneIndex Index = SceneIndex.Login;
 
         [SerializeField] private ScreenLoading m_Loading;
 

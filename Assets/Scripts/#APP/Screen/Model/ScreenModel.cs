@@ -28,8 +28,7 @@ namespace APP.Screen
             base.Dispose();
         }
 
-
-
+        
         /*
         public event Action<IEventArgs> PlayButtonClicked;
         public event Action<IEventArgs> OptionsButtonClicked;
@@ -78,7 +77,11 @@ namespace APP.Screen
         */
 
     }
-    public interface IScreen : IConfigurable { }
+    public interface IScreen : IConfigurable 
+    {
+        void Activate(bool active);
+    
+    }
 
     public class ScreenConfig : Config
     {

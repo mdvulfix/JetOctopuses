@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UScene = UnityEngine.SceneManagement.Scene;
 using SERVICE.Handler;
 using APP.Screen;
 
@@ -10,168 +11,75 @@ namespace APP.Scene
 {
     public class SceneControllerDefault : Controller, ISceneController
     {
-        public bool IsInitialized {get; private set;}
-        
         private IScene m_SceneActive;
-        private IScreen m_ScreenActive;
-
-        private IScreenController m_ScreenController;
 
         private Dictionary<Type, SceneIndex?> m_SceneIndexes;
+
+        public bool IsInitialized {get; private set;}
+        public Action<IScene> SceneActivated;
 
         public SceneControllerDefault()
         {
             m_SceneIndexes = new Dictionary<Type, SceneIndex?>(5);
-            m_ScreenController = new ScreenControllerDefault();
         }
 
         public override void Init()
         {           
-            SetSceneIndex<SceneCore>(SceneCore.Index);
+            SetSceneIndex<SceneLogin>(SceneLogin.Index);
             SetSceneIndex<SceneMenu>(SceneMenu.Index);
             SetSceneIndex<SceneLevel>(SceneLevel.Index);
 
-            m_ScreenController.Init();
         }
 
         public override void Dispose()
         {
-            m_ScreenController.Dispose();
+ 
         }
 
-        public async Task Activate<TScene>()
-        where TScene : UComponent, IScene
+        public async Task Activate<TScene>() where TScene : UComponent, IScene
         {
-            await SceneActivate<TScene>();
-            //ScreenActivate<ScreenLoading>();
-
-        }
-
-        public async Task Activate<TScene, TScreen>()
-        where TScene : UComponent, IScene
-        where TScreen : UComponent, IScreen
-        {
-            await SceneActivate<TScene>();
-            await ScreenActivate<TScreen>();
-        }
-
-
-        // SCREEN METHODS
-        private async Task ScreenActivate<TScreen>()
-        where TScreen : IScreen
-        {
-            var animate = true;
-            await m_ScreenController.Activate<TScreen>(animate);
-
-
-            //SceneManager.LoadSceneAsync((int)scene, LoadSceneMode.Additive);
-            //Send ($"{scene} loaded...");
-
-
-        }
-
-
-        // SCENE METHODS
-        private async Task SceneActivate<TScene>()
-        where TScene : UComponent, IScene
-        {
-
             if (m_SceneActive != null && m_SceneActive.GetType() == typeof(TScene))
                 return;
 
+            await SceneActivate<TScene>();
+        }
+
+        private async Task SceneActivate<TScene>() where TScene : UComponent, IScene
+        {
             if (GetSceneIndex<TScene>(out var index))
-            {
                 await SceneActivate<TScene>(index);
-            }
 
-            //SceneManager.LoadSceneAsync((int)scene, LoadSceneMode.Additive);
-            //Send ($"{scene} loaded...");
         }
 
-        private async Task SceneActivate<TScene>(SceneIndex? sceneIndex)
-        where TScene: UComponent
+        private async Task SceneActivate<TScene>(SceneIndex? sceneIndex) where TScene: UComponent, IScene
         {
-            //SceneActivated?.Invoke();
-            //Send($"{scene} activated...");
+            await USceneHandler.SceneActivate(sceneIndex);
 
-            var index = (int) sceneIndex;
-            for (int i = 0; i < SceneManager.sceneCount; i++)
+            TScene scene = null;
+            await TaskHandler.Run(() => AwaitSceneActivation<TScene>(sceneIndex, out scene),"Waiting for scene activation...");
+
+            if(scene == null)
             {
-                var uScene = SceneManager.GetSceneAt(i);
-                if (uScene.buildIndex == index)
-                {
-
-                    await TaskHandler.Run(() => SceneLoadingAwait<TScene>(sceneIndex));
-
-                    SceneManager.SetActiveScene(uScene);
-                    //SceneActivated?.Invoke();
-                    return;
-                }
+                Send($"{scene.GetType().Name} not found!", true);
+                return;
             }
-
-            await SceneLoad<TScene>(sceneIndex);
-            await SceneActivate<TScene>(sceneIndex);
-
-            Send($"{sceneIndex} activated...");
+            
+            m_SceneActive = scene;
+            m_SceneActive.Activate<ScreenLoading>();
 
         }
 
-        private async void SceneLoad<TScene>()
-        where TScene : IScene
+        private bool AwaitSceneActivation<TScene>(SceneIndex? index, out TScene scene) where TScene: UComponent, IScene
         {
-            if (GetSceneIndex<TScene>(out var index))
-            {
-                await SceneLoad<TScene>(index);
-            }
+            scene = null;
+            if (RegisterHandler.Get<TScene>(out scene))
+                return true;
 
+            return false;
         }
 
-        private async Task SceneLoad<TScene>(SceneIndex? sceneIndex)
-        {
-
-            var operation = SceneManager.LoadSceneAsync((int) sceneIndex, LoadSceneMode.Additive);
-            await TaskHandler.Run(() => USceneLoadingAwait(operation));
-
-            //SceneLoaded?.Invoke();
-            Send($"{sceneIndex} loaded...");
-        }
-
-        private void SceneUnload<TScene>()
-        where TScene : IScene
-        {
-
-            //SceneManager.UnloadSceneAsync((int)scene);
-            //Send ($"{scene} unloaded...");
-            //SetActive(SceneIndex.Core);
-        }
-
-        private void SceneUnload(SceneIndex scene)
-        {
-
-            //SceneManager.UnloadSceneAsync((int)scene);
-            //Send ($"{scene} unloaded...");
-            //SetActive(SceneIndex.Core);
-        }
-
-        private void SceneReload<TScene>()
-        where TScene : IScene
-        {
-            //Unload(scene);
-            //Load(scene);
-            //Send ($"{scene} reloaded...");
-        }
-
-        private void SceneReload(SceneIndex scene)
-        {
-            //Unload(scene);
-            //Load(scene);
-            //Send ($"{scene} reloaded...");
-        }
-
-        private void SetSceneIndex<TScene>(SceneIndex index)
-        {
+        private void SetSceneIndex<TScene>(SceneIndex index) =>
             m_SceneIndexes.Add(typeof(TScene), index);
-        }
 
         private bool GetSceneIndex<TScene>(out SceneIndex? index)
         where TScene : IScene
@@ -186,47 +94,17 @@ namespace APP.Scene
             return false;
         }
 
-        private bool USceneLoadingAwait(AsyncOperation operation)
-        {
-            if (operation.isDone)
-                return true;
-
-            return false;
-        }
-
-        private bool SceneLoadingAwait<TScene>(SceneIndex? index)
-        where TScene: UComponent
-        {
-            if (RegisterHandler.Get<TScene>(out var instance))
-                return true;
-
-            return false;
-        }
-
-
-
-
     }
+
 
     public interface ISceneController: IController
     {
-        Task Activate<TScene>()
-        where TScene : UComponent, IScene;
+        Task Activate<TScene>() 
+            where TScene : UComponent, IScene;
         
-        Task Activate<TScene, TScreen>()
-        where TScene : UComponent, IScene
-        where TScreen : UComponent ,IScreen;
-
-
     }
 
 
-    public enum SceneIndex
-    {
-        Service,
-        Core,
-        Menu,
-        Level
-    }
+
 
 }

@@ -11,6 +11,8 @@ namespace APP.Scene
         private SceneConfig m_Conig;
         private TScene m_Instance;
 
+        private IScreenController m_ScreenController;
+        
         public bool IsConfigured {get; private set;}
         public SceneIndex SceneIndex { get; private set; }
 
@@ -28,19 +30,33 @@ namespace APP.Scene
         
             base.Configure(config);
             m_Conig = (SceneConfig) config;
+            m_ScreenController = new ScreenControllerDefault();
 
         }
 
         protected override void Init ()
         {
             base.Init ();
+            m_ScreenController.Init();
         }
 
         protected override void Dispose ()
         {
+            
+            m_ScreenController.Dispose();
             base.Dispose ();
         }
 
+        
+        public void Activate<TScreen>()
+            where TScreen: UComponent, IScreen
+        {
+            //var animate = true;
+            //m_ScreenController.Activate<TScreen>(animate);
+            Send("Activating screen...");
+        }
+        
+        
         /*
         public event Action<IEventArgs> PlayButtonClicked;
         public event Action<IEventArgs> OptionsButtonClicked;
@@ -93,6 +109,9 @@ namespace APP.Scene
     public interface IScene : IConfigurable
     {
         SceneIndex SceneIndex { get; }
+        
+        void Activate<TScreen>() 
+            where TScreen: UComponent, IScreen;
     }
 
     public class SceneConfig : Config
