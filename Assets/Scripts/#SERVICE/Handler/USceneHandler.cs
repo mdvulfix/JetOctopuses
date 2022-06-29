@@ -16,31 +16,39 @@ namespace SERVICE.Handler
             {
                 var uScene = GetUSceneByIndex(i);
                 if (uScene.buildIndex == index)
+                {
+                    Send($"{sceneIndex} already loaded...");
                     return;
+                }
             }
 
             var operation = SceneManager.LoadSceneAsync(index, LoadSceneMode.Additive);
-            await TaskHandler.Run(() => AwaitSceneOperation(operation),"Await scene operation complete...");
+            await TaskHandler.Run(() => AwaitSceneLoading(operation),"Await scene loading complete...");
+
+            
+
+
             Send($"{sceneIndex} loaded...");
         }
 
         public static async Task SceneActivate(SceneIndex? sceneIndex)
         {
+            await SceneLoad(sceneIndex);
+            
             var index = (int) sceneIndex;
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 var uScene = GetUSceneByIndex(i);
                 if (uScene.buildIndex == index)
                 {
+                    await Task.Delay(5);
                     SceneManager.SetActiveScene(uScene);
                     Send($"{sceneIndex} activated...");
                     return;
                 }
             }
 
-            await SceneLoad(sceneIndex);
-            await SceneActivate(sceneIndex);
-            Send($"{sceneIndex} activated...");
+            Send($"{sceneIndex} not found. Activation failed!", true);
         }
 
         public static async Task SceneUnload(SceneIndex? sceneIndex)
@@ -56,9 +64,9 @@ namespace SERVICE.Handler
         }
 
         
-        private static bool AwaitSceneOperation(AsyncOperation operation)
+        private static bool AwaitSceneLoading(AsyncOperation loading)
         {
-            if (operation.isDone)
+            if (loading.isDone)
                 return true;
 
             return false;

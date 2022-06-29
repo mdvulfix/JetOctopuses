@@ -106,14 +106,6 @@ namespace APP.Scene
 
     }
 
-    public interface IScene : IConfigurable
-    {
-        SceneIndex SceneIndex { get; }
-        
-        void Activate<TScreen>() 
-            where TScreen: UComponent, IScreen;
-    }
-
     public class SceneConfig : Config
     {
         public SceneIndex SceneIndex { get; private set; }

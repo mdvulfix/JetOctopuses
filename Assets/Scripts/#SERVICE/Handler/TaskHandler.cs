@@ -35,7 +35,7 @@ namespace SERVICE.Handler
 
         private static async Task TaskExecuteAsync(Func<bool> action, Token token, string message, float delay = 1)
         {
-            Send("Start operation: " + message);
+            Send("Start: " + message);
             while (true)
             {
                 token.ThrowIfCancellationRequested();

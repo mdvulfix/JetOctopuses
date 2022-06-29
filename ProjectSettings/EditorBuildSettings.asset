@@ -9,8 +9,14 @@ EditorBuildSettings:
     path: Assets/Scene/Service.unity
     guid: d61289e21e8027443894fd593371769f
   - enabled: 1
-    path: Assets/Scene/System.unity
+    path: Assets/Scene/Core.unity
     guid: 3a730ab8df474f7498dd3ae6077e35df
+  - enabled: 1
+    path: Assets/Scene/Net.unity
+    guid: fe24c08ac9029c044ac9b76d1a8b8445
+  - enabled: 1
+    path: Assets/Scene/Login.unity
+    guid: 4e16643092f18f247bb0b675d3f208aa
   - enabled: 1
     path: Assets/Scene/Menu.unity
     guid: 24d462ee92cafa04284b7b7708d17b53

@@ -77,11 +77,6 @@ namespace APP.Screen
         */
 
     }
-    public interface IScreen : IConfigurable 
-    {
-        void Activate(bool active);
-    
-    }
 
     public class ScreenConfig : Config
     {

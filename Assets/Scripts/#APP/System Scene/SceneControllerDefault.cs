@@ -21,13 +21,16 @@ namespace APP.Scene
         public SceneControllerDefault()
         {
             m_SceneIndexes = new Dictionary<Type, SceneIndex?>(5);
+            
+            SetSceneIndex<SceneLogin>(SceneLogin.Index);
+            SetSceneIndex<SceneMenu>(SceneMenu.Index);
+            SetSceneIndex<SceneLevel>(SceneLevel.Index);
+        
         }
 
         public override void Init()
         {           
-            SetSceneIndex<SceneLogin>(SceneLogin.Index);
-            SetSceneIndex<SceneMenu>(SceneMenu.Index);
-            SetSceneIndex<SceneLevel>(SceneLevel.Index);
+
 
         }
 
@@ -39,15 +42,22 @@ namespace APP.Scene
         public async Task Activate<TScene>() where TScene : UComponent, IScene
         {
             if (m_SceneActive != null && m_SceneActive.GetType() == typeof(TScene))
+            {
+                Send($"{typeof(TScene).Name} is already active!");
                 return;
-
+            }
+                
             await SceneActivate<TScene>();
+            
         }
 
+        
         private async Task SceneActivate<TScene>() where TScene : UComponent, IScene
         {
             if (GetSceneIndex<TScene>(out var index))
                 await SceneActivate<TScene>(index);
+            else
+                Send($"{typeof(TScene).Name} not set to scene indexes!", true);
 
         }
 
@@ -69,12 +79,16 @@ namespace APP.Scene
 
         }
 
+
         private bool AwaitSceneActivation<TScene>(SceneIndex? index, out TScene scene) where TScene: UComponent, IScene
         {
             scene = null;
-            if (RegisterHandler.Get<TScene>(out scene))
+            if (RegisterHandler.Contains<TScene>())
+            {
+                scene = RegisterHandler.Get<TScene>();
                 return true;
-
+            }
+                
             return false;
         }
 

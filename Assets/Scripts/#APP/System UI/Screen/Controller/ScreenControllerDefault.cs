@@ -61,9 +61,12 @@ namespace APP.Screen
         {
             screen = null;
             
-            if (RegisterHandler.Get<TScreen>(out screen))
+            if (RegisterHandler.Contains<TScreen>())
+            {
+                screen = RegisterHandler.Get<TScreen>();
                 return true;
-
+            }
+                
             return false;
         }
 

@@ -4,12 +4,13 @@ using APP;
 using APP.Audio;
 using APP.Vfx;
 using APP.Scene;
+using System.Threading.Tasks;
 
 namespace SERVICE.Builder
 {
     public class BuilderDefault : UComponent, IBuilder
     {
-        protected override void Init()
+        protected async override void Init()
         {
             var instanceInfo = new InstanceInfo(this);
             var builderConfig = new BuilderConfig(instanceInfo);
@@ -17,32 +18,14 @@ namespace SERVICE.Builder
             base.Configure(builderConfig);
             base.Init();
         
-            Build();
-        }
-
-
-        public async void Build(params IConfig[] parametrs)
-        {
             
-            var sceneController = new SceneControllerDefault();
-            sceneController.Init();
-            await USceneHandler.SceneActivate(SceneIndex.System);
-            
-            Set<AudioDefault>("Audio");
-            Set<VfxDefault>("Vfx");
-            Set<SessionDefault>("Session");
-
-        }
-
-        protected TSystem Set<TSystem>(string name)
-        where TSystem : UComponent, IConfigurable
-        {
-            var obj = UComponentHandler.CreateGameObject(name);
-            return UComponentHandler.SetComponent<TSystem>(obj);
-
+            var scheme = new BuildSchemeCore(SceneIndex.Core);
+            await Build(scheme);
         }
 
 
+        public async Task Build(IBuildScheme scheme) => 
+            await scheme.Execute();
 
     }
 
@@ -55,7 +38,63 @@ namespace SERVICE.Builder
 
     public interface IBuilder
     {
-        void Build(params IConfig[] parametrs);
+        Task Build(IBuildScheme scheme);
     }
 
+    
+    
+    public class BuildSchemeCore: BuildSchemeModel<BuildSchemeCore>, IBuildScheme
+    {
+        public BuildSchemeCore(SceneIndex sceneIndex): base(sceneIndex) {}
+         
+        public override async Task Execute()
+        {
+            await SceneActivate();
+
+            //Set<AudioDefault>("Audio");
+            //Set<VfxDefault>("Vfx");
+            Set<SessionDefault>("Session");
+        }
+    }
+
+    public class BuildSchemeNet: BuildSchemeModel<BuildSchemeNet>, IBuildScheme
+    {
+        public BuildSchemeNet(SceneIndex sceneIndex): base(sceneIndex) {}
+         
+        public override async Task Execute()
+        {
+            await SceneActivate();
+
+            Set<SceneNet>("SceneNet");
+        }
+    }
+
+
+
+    public abstract class BuildSchemeModel<T>
+    {   
+        private SceneIndex m_SceneIndex;
+
+        public BuildSchemeModel(SceneIndex sceneIndex)
+        {
+            m_SceneIndex = sceneIndex;
+        }
+
+        public abstract Task Execute();
+        
+        protected async Task SceneActivate() =>
+            await USceneHandler.SceneActivate(m_SceneIndex);
+        
+        protected TSystem Set<TSystem>(string name) where TSystem : UComponent, IConfigurable
+        {
+            var obj = UComponentHandler.CreateGameObject(name);
+            return UComponentHandler.SetComponent<TSystem>(obj);
+
+        }
+    }
+
+    public interface IBuildScheme
+    {
+        Task Execute();
+    }
 }

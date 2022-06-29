@@ -1,8 +1,9 @@
 using System;
+using System.Threading.Tasks;
 using UnityEngine;
 using SERVICE.Handler;
+using SERVICE.Builder;
 using APP.Scene;
-using APP.Screen;
 using APP.Player;
 
 namespace APP
@@ -11,24 +12,42 @@ namespace APP
     {
         private State StateActive;
 
+        
+        private IBuilder m_Builder;
         private ISceneController m_SceneController;
+
+        public bool IsConfigured { get; private set; }
 
         public event Action<State> StateChanged;
 
-        protected override void Init()
+        // CONFIGURE //
+        public override void Configure(IConfig config)
         {
-            //Scene controller...
+            if(IsConfigured == true)
+                return;
+            
+            base.Configure(config);
+            
+            m_Builder = RegisterHandler.Get<BuilderDefault>();
             m_SceneController = new SceneControllerDefault();
 
+            IsConfigured = true;
+        }
+        
+        protected override void Init()
+        {
             var info = new InstanceInfo(this);
             var config = new SessionConfig(info, m_SceneController);
-            base.Configure(config);
+            
+            Configure(config);
             base.Init();
 
-            StateChanged += OnStateChanged;
+            Subscrube();
+
+
             m_SceneController.Init();
 
-            Send("System enter...");
+            Send("System enter loading...");
             SetState(State.LoadIn);
         }
 
@@ -39,11 +58,26 @@ namespace APP
             Send("System exit...");
             SetState(State.UnloadIn);
 
-            StateChanged -= OnStateChanged;
+            Unsubscrube();
             base.Dispose();
         }
 
-        protected void HandleState(State state)
+        // SUBSCRUBE //
+        protected override void Subscrube()
+        {
+            base.Subscrube();
+            StateChanged += OnStateChanged;
+        }
+        
+        protected override void Unsubscrube()
+        {
+            
+            StateChanged -= OnStateChanged;
+            base.Unsubscrube();
+        }
+
+        // STATE MANAGE //
+        private async void HandleState(State state)
         {
             switch (state)
             {
@@ -53,38 +87,60 @@ namespace APP
 
                 case State.LoadIn:
 
-                    Send("System loading...");
+                    Send("System start loading...");
                     SetState(State.LoadRun);
 
-                    //Activate<SceneMenu, ScreenLoading>();
-
+                    await Task.Delay(5);
+                    
                     Send("System complete loading...");
                     SetState(State.LoadOut);
 
-                    Send("System enter logining...");
-                    SetState(State.LoginIn);
+                    Send("System enter net...");
+                    SetState(State.NetIn);
                     break;
 
+                
+                case State.NetIn:
+
+                    Send("System start net connection...");
+                    SetState(State.NetRun);
+
+                    
+                    var scheme = new BuildSchemeNet(SceneIndex.Net);
+                    await m_Builder.Build(scheme);
+
+                    Send("System complete net connection...");
+                    SetState(State.NetOut);
+                    
+                    Send("System enter login...");
+                    //SetState(State.MenuIn);
+                    break;
+                
+                
+                
                 case State.LoginIn:
 
-                    Send("System logining...");
+                    Send("System start logining...");
                     SetState(State.LoginRun);
 
-                    //Activate<SceneMenu, ScreenLogin>();
+                    await Activate<SceneLogin>();
 
                     Send("System complete logining...");
                     SetState(State.LoginOut);
+                    
+                    Send("System enter menu...");
+                    SetState(State.MenuIn);
                     break;
 
                 case State.MenuIn:
 
-                    Send("Menu loading...");
+                    Send("System start menu...");
+                    SetState(State.MenuRun);
+
+                    await Activate<SceneMenu>();
+                    
                     break;
 
-                case State.MenuRun:
-                    Send("In menu...");
-
-                    break;
 
                 case State.LevelIn:
                     Send("Level loading...");
@@ -123,16 +179,17 @@ namespace APP
 
         }
 
-        protected void SetState(State state)
+        private void SetState(State state)
         {
             StateActive = state;
-            //StateChanged?.Invoke(state);
+            StateChanged?.Invoke(state);
         }
 
-       // private void Activate<TScene, TScreen>()
-           // where TScene : UComponent, IScene
-            //where TScreen : UComponent, IScreen => m_SceneController.Activate<TScene, TScreen>();
+       // SCENE MANAGE //
+        private async Task Activate<TScene>() where TScene: UComponent, IScene =>
+            await m_SceneController.Activate<TScene>();
 
+        // CALLBACK //
         private void OnPlayerAction(PlayerAction action)
         {
             switch (action)
@@ -190,8 +247,6 @@ namespace APP
             HandleState(state);
         }
 
-
-
     }
     public class SessionConfig : Config
     {
@@ -213,6 +268,13 @@ namespace APP
         LoadRun,
         LoadOut,
 
+        //Net
+        NetIn,
+        NetFail,
+        NetRun,
+        NetExit,
+        NetOut,
+        
         //Login
         LoginIn,
         LoginFail,

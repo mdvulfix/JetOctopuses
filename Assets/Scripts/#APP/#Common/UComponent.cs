@@ -59,13 +59,13 @@ namespace APP
             LogHandler.Send(this, m_Debug, text, worning);
 
         
-        private void Subscrube()
+        protected virtual void Subscrube()
         {
             Initialized += m_Register.Set;
             Disposed += m_Register.Remove;
         }
         
-        private void Unsubscrube()
+        protected virtual void Unsubscrube()
         {
             Initialized -= m_Register.Set;
             Disposed -= m_Register.Remove;

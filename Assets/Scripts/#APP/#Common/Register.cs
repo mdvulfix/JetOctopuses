@@ -11,6 +11,18 @@ namespace APP
         public Register(T instance) =>
             m_Instance = instance;
 
+        
+        
+        public bool Contains()
+        {
+            if(Contains(m_Instance))
+                return true;
+
+            return false;
+        }
+        
+        
+        
         public void Set()
         {
             Set<T>(m_Instance);
@@ -35,6 +47,16 @@ namespace APP
         private readonly static Dictionary<Type, object> m_Cache = new Dictionary<Type, object>(50);
         
 
+        public bool Contains<T>()
+        {
+            if(m_Cache.ContainsKey(typeof(T)))
+                return true;
+
+            var name = typeof(T).Name;
+            Send($"{name} not found in register!");
+            return false;
+        }
+         
         public bool Contains(object instance)
         {
             if(m_Cache.ContainsValue(instance))
@@ -44,7 +66,6 @@ namespace APP
             Send($"{name} not found in register!");
             return false;
         }
-        
         
         public bool Get<T>(out T instance)
         where T: class

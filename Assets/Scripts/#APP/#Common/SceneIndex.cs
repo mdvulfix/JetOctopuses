@@ -3,7 +3,8 @@ namespace APP
     public enum SceneIndex
     {
         Service,
-        System,
+        Core,
+        Net,
         Login,
         Menu,
         Level
