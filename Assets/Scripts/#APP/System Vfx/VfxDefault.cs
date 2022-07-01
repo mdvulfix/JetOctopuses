@@ -23,10 +23,7 @@ namespace APP.Vfx
 
 
     public class VfxModel<TVfx>: UComponent
-    {
-        
-        public bool IsConfigured {get; private set;}
-        
+    {        
         private VfxConfig m_Config;
         private IVfxController m_VfxController;
         
@@ -40,7 +37,6 @@ namespace APP.Vfx
             m_Config = (VfxConfig)config;
             m_VfxController = m_Config.VfxController;
 
-            IsConfigured = true;
         }
 
         protected override void Init() => 

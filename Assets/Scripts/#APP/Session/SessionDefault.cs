@@ -16,36 +16,34 @@ namespace APP
         private IBuilder m_Builder;
         private ISceneController m_SceneController;
 
-        public bool IsConfigured { get; private set; }
-
-        public event Action<State> StateChanged;
+        private event Action<State> StateChanged;
 
         // CONFIGURE //
         public override void Configure(IConfig config)
         {
-            if(IsConfigured == true)
+            if(ConfigValidate())
                 return;
-            
-            base.Configure(config);
             
             m_Builder = RegisterHandler.Get<BuilderDefault>();
             m_SceneController = new SceneControllerDefault();
-
-            IsConfigured = true;
+            
+            base.Configure(config);
+            
         }
         
         // INIT //
         protected override void Init()
         {
-            var info = new InstanceInfo(this);
-            var config = new SessionConfig(info, m_SceneController);
+            if(InitValidate())
+                return;
             
-            Configure(config);            
+         
             base.Init();
 
             m_SceneController.Init();
-            
-            
+
+            Send("System enter loading...");
+            SetState(State.LoadIn);
         }
 
         protected override void Dispose()
@@ -55,8 +53,6 @@ namespace APP
             Send("System exit...");
             SetState(State.UnloadIn);
 
-            
-            
             base.Dispose();
         }
 
@@ -73,17 +69,15 @@ namespace APP
             base.Unsubscrube();
         }
 
-
-
         // RUN //
         protected override void Run()
         {
-            Send("System enter loading...");
-            SetState(State.LoadIn);
+            Send("System enter login...");
+            SetState(State.LoginIn);
         }
         
         // STATE MANAGE //
-        private async void HandleState(State state)
+        private async void UpdateState(State state)
         {
             switch (state)
             {
@@ -108,37 +102,29 @@ namespace APP
                 
                 case State.NetIn:
 
-                    Send("Start waitining for building scene net");
-
+                    Send("Build scene...");
                     await m_Builder.Build(new NetBuildScheme());
-
-                    Send("Stop waitining for building scene net");
-
                     
-                    Send("System start net connection...");
+                    //Send("System start net connection...");
                     //SetState(State.NetRun);
 
-                    Send("System complete net connection...");
+                    //Send("System complete net connection...");
                     //SetState(State.NetOut);
                     
-                    Send("System enter login...");
-                    //SetState(State.MenuIn);
+
                     break;
-                
-                
-                
-                
                 
                 
                 case State.LoginIn:
 
+                    Send("Build scene...");
+                    await m_Builder.Build(new LoginBuildScheme());
+                    
                     Send("System start logining...");
-                    SetState(State.LoginRun);
+                    //SetState(State.LoginRun);
 
-                    await Activate<SceneLogin>();
-
-                    Send("System complete logining...");
-                    SetState(State.LoginOut);
+                    //Send("System complete logining...");
+                    //SetState(State.LoginOut);
                     
                     Send("System enter menu...");
                     SetState(State.MenuIn);
@@ -146,17 +132,29 @@ namespace APP
 
                 case State.MenuIn:
 
-                    Send("System start menu...");
-                    SetState(State.MenuRun);
-
-                    await Activate<SceneMenu>();
                     
-                    break;
+                    Send("Build scene...");
+                    await m_Builder.Build(new MenuBuildScheme());
+                    
+                    Send("System start menu...");
+                    //SetState(State.MenuRun);
 
+                    
+                    Send("System enter level...");
+                    SetState(State.LevelIn);
+                    break;
+                    
 
                 case State.LevelIn:
-                    Send("Level loading...");
+                    
+                    Send("Build scene...");
+                    await m_Builder.Build(new LevelBuildScheme());
+                    
+                    Send("System start level...");
+                    SetState(State.LevelRun);
+
                     break;
+                    
 
                 case State.LevelRun:
                     Send("In level...");
@@ -256,81 +254,81 @@ namespace APP
         private void OnStateChanged(State state)
         {
             Send($"State changed. {state} state activated...");
-            HandleState(state);
+            UpdateState(state);
         }
 
+    
+    
+        private enum State
+        {
+            None,
+
+            //Load
+            LoadIn,
+            LoadFail,
+            LoadRun,
+            LoadOut,
+
+            //Net
+            NetIn,
+            NetFail,
+            NetRun,
+            NetExit,
+            NetOut,
+            
+            //Login
+            LoginIn,
+            LoginFail,
+            LoginRun,
+            LoginExit,
+            LoginOut,
+
+            //Menu
+            MenuIn,
+            MenuFail,
+            MenuRun,
+            MenuExit,
+            MenuOut,
+
+            //Level
+            LevelIn,
+            LevelFail,
+            LevelRun,
+            LevelWin,
+            LevelLose,
+            LevelPause,
+            LevelExit,
+            LevelOut,
+
+            //Result
+            ResultIn,
+            ResultFail,
+            ResultRun,
+            ResultExit,
+            ResultOut,
+
+            //Unload
+            UnloadIn,
+            UnloadFail,
+            UnloadRun,
+            UnloadOut,
+
+        }
+
+        protected enum Result
+        {
+            None,
+            Win,
+            Lose
+        }
     }
     public class SessionConfig : Config
     {
-        public ISceneController SceneController { get; private set; }
-
-        public SessionConfig(InstanceInfo info, ISceneController sceneController) : base(info)
+        public SessionConfig(InstanceInfo info) : base(info)
         {
-            SceneController = sceneController;
         }
     }
 
-    public enum State
-    {
-        None,
 
-        //Load
-        LoadIn,
-        LoadFail,
-        LoadRun,
-        LoadOut,
-
-        //Net
-        NetIn,
-        NetFail,
-        NetRun,
-        NetExit,
-        NetOut,
-        
-        //Login
-        LoginIn,
-        LoginFail,
-        LoginRun,
-        LoginExit,
-        LoginOut,
-
-        //Menu
-        MenuIn,
-        MenuFail,
-        MenuRun,
-        MenuExit,
-        MenuOut,
-
-        //Level
-        LevelIn,
-        LevelFail,
-        LevelRun,
-        LevelWin,
-        LevelLose,
-        LevelPause,
-        LevelExit,
-        LevelOut,
-
-        //Result
-        ResultIn,
-        ResultFail,
-        ResultRun,
-        ResultExit,
-        ResultOut,
-
-        //Unload
-        UnloadIn,
-        UnloadFail,
-        UnloadRun,
-        UnloadOut,
-
-    }
-
-    public enum Result
-    {
-        None,
-        Win,
-        Lose
-    }
 
 }

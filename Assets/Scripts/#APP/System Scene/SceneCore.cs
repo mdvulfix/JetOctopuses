@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+
+using SERVICE.Builder;
 using APP.Screen;
 
 namespace APP.Scene
@@ -8,21 +10,59 @@ namespace APP.Scene
     public class SceneCore : SceneModel<SceneCore>, IScene
     {
         [SerializeField] private ScreenLoading m_Loading;
-        [SerializeField] private ScreenLevel m_Level_1;
+        [SerializeField] private ScreenSplash m_Splash;
 
+        
+        public override void Configure(IConfig config)
+        {
+            if(ConfigValidate())
+                return;
+            
+            var sceneConfig = (SceneConfig) config;
+            var screens = sceneConfig.Screens;
+            
+            SetScreen<ScreenLoading>(ref m_Loading, screens);
+            SetScreen<ScreenSplash>(ref m_Splash, screens);
+
+            base.Configure(config);
+        }
+        
+        
         protected override void Init()
         {
-            var screens = new IScreen[]
-            {
-                m_Loading,
-                m_Level_1
-            };
+            if(InitValidate())
+                return;
 
-            var info = new InstanceInfo(this);
-            var config = new SceneConfig(info, screens);
-            base.Configure(config);
             base.Init();
         }
 
+
+        protected override void Run()
+        {
+
+
+
+        }
+
+
+        private void UpdateState(SceneState state)
+        {
+            switch (state)
+            {
+                case SceneState.None:
+
+                    break;
+
+                case SceneState.LoadIn:
+
+                    
+                    break;
+
+                
+                default:
+                    Send($"{state}: State is not implemented!", true);
+                    break;
+            }
+        }
     }
 }

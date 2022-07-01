@@ -21,8 +21,6 @@ namespace APP.Audio
     public class AudioModel<TAudio> : UComponent, IConfigurable
     {
 
-        public bool IsConfigured { get; private set; }
-
         private AudioConfig m_Config;
         private IAudioController m_AudioController;
 
@@ -36,7 +34,7 @@ namespace APP.Audio
 
             m_Config = (AudioConfig)config;
             m_AudioController = m_Config.AudioController;
-            IsConfigured = true;
+
         }
 
         protected override void Init() =>

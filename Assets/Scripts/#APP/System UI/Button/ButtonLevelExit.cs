@@ -4,12 +4,14 @@ using APP.Player;
 
 namespace APP.Button
 {
+    
+    /*
     [Serializable]
     public class ButtonLevelExit : ButtonModel<ButtonLevelExit>, IButton
     {
         [SerializeField] private PlayerAction m_PlayerAction;
 
-        protected override void Init()
+        public override void Init()
         {
             if (m_PlayerAction == PlayerAction.None)
             {
@@ -24,5 +26,6 @@ namespace APP.Button
             base.Init();
         }
     }
+    */
 
 }

@@ -76,6 +76,9 @@ namespace APP.Screen
 
         */
 
+    
+    
+    
     }
 
     public class ScreenConfig : Config
@@ -87,5 +90,27 @@ namespace APP.Screen
             Buttons = buttons;
         }
     }
+
+
+    [Serializable]
+    public class ScreenSplash : ScreenModel<ScreenSplash>, IScreen
+    {
+
+        protected override void Init()
+        {
+            var buttons = new IButton[]
+            {
+            };
+
+            var instanceInfo = new InstanceInfo(this);
+            var screenConfig = new ScreenConfig(instanceInfo, buttons);
+            
+            base.Configure(screenConfig);
+            base.Init();
+        }
+
+    }
+
+
 
 }

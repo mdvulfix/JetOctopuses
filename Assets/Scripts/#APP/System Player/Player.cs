@@ -33,6 +33,9 @@ namespace APP.Player
 
         private int m_Speed;
 
+        public bool IsConfigured => throw new NotImplementedException();
+        public bool IsInitialized => throw new NotImplementedException();
+
         public void Configure(IConfig config)
         {
 
@@ -40,6 +43,16 @@ namespace APP.Player
 
         public override void Move() { }
         public override void Eat() { }
+
+        public void Init()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
+        }
     }
 
 

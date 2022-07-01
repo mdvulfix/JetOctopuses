@@ -15,24 +15,40 @@ namespace APP
         protected Action<Type, object> Initialized;
         protected Action<Type, object> Disposed;
 
+        public bool IsConfigured {get; private set;}
+        public bool IsInitialized {get; private set;}
+
+
 
         // CONFIGURE //
         public virtual void Configure(IConfig config)
         {
+            if(ConfigValidate())
+                return;
+            
             m_Config = (Config)config;
             m_Register = new Register();
+
+            IsConfigured = true;
         }
 
         protected virtual void Init()
         {
+            if(InitValidate())
+                return;
+            
             Subscrube();
             OnInitialize(m_Config.InstanceInfo);
+
+            IsInitialized = true;
         }
 
         protected virtual void Dispose()
         {
             OnDispose(m_Config.InstanceInfo);
             Unsubscrube();
+
+            IsInitialized = false;
         }
            
         protected virtual void Run()
@@ -59,6 +75,37 @@ namespace APP
 
         }
     
+        // VALIDATION //
+        protected bool ConfigValidate()
+        {
+            if(IsConfigured == true)
+            {
+                Send("Component already configured.");
+                return true;
+            }
+            
+            return false;
+        }
+        
+        protected bool InitValidate()
+        {
+
+            if(IsConfigured == false)
+            {
+                Send("Component must be configured before initialization!", true); 
+                return true;
+            }
+            
+            if(IsInitialized == true)
+            {
+                Send("Component already initialized."); 
+                return true;
+            }
+            
+            return false;
+        }
+
+        
         protected string Send(string text, bool worning = false) =>
             LogHandler.Send(this, m_Debug, text, worning);
 
@@ -89,7 +136,7 @@ namespace APP
             Disposed?.Invoke(info.ObjType,info.Obj);
         } 
             
-
+        /*
         // UNITY //
         private void OnEnable() =>
             Init();
@@ -99,8 +146,17 @@ namespace APP
 
         private void Start() =>
             Run();
-    
-    
+        */
+        
+        void IConfigurable.Init()
+        {
+            throw new NotImplementedException();
+        }
+
+        void IConfigurable.Dispose()
+        {
+            throw new NotImplementedException();
+        }
     }
 
 }

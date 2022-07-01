@@ -14,9 +14,12 @@ namespace APP.Scene
 
         private IScreenController m_ScreenController;
         
+        protected SceneState StateActive { get; private set; }
+        protected Action<SceneState> StateChanged { get; private set; }
+
         public static SceneIndex Index => SceneIndex<TScene>.Index;
 
-        public bool IsConfigured {get; private set;}
+        
 
         public event Action<IActionInfo> SceneLoaded;
         public event Action<IActionInfo> SceneUnloaded;
@@ -27,24 +30,29 @@ namespace APP.Scene
 
         public override void Configure (IConfig config)
         {
-            if(IsConfigured == true)
+            if(ConfigValidate())
                 return;
         
             base.Configure(config);
             m_Conig = (SceneConfig) config;
+            
+            
+            
             m_ScreenController = new ScreenControllerDefault();
 
         }
 
         protected override void Init ()
         {
+            if(InitValidate())
+                return;
+            
             base.Init ();
             m_ScreenController.Init();
         }
 
         protected override void Dispose ()
         {
-            
             m_ScreenController.Dispose();
             base.Dispose ();
         }
@@ -58,7 +66,31 @@ namespace APP.Scene
             Send("Activating screen...");
         }
         
-        
+        protected void SetScreen<TScreen>(ref TScreen screenField, IScreen[] screens)
+        {
+            foreach (var screen in screens)
+            {
+                if(screen.GetType() == typeof(TScreen))
+                {
+                    screenField = (TScreen)screen;
+                    return;
+                }
+                    
+                Send($"{typeof(TScreen).Name} was not found! Check scene config.", true);
+            } 
+            
+            
+        }
+
+        private void SetState(SceneState state)
+        {
+            StateActive = state;
+            StateChanged?.Invoke(state);
+        }
+
+
+
+
         /*
         public event Action<IEventArgs> PlayButtonClicked;
         public event Action<IEventArgs> OptionsButtonClicked;
@@ -106,13 +138,31 @@ namespace APP.Scene
 
         */
 
+    
+        protected enum SceneState
+        {
+            None,
+
+            //Load
+            LoadIn,
+            LoadFail,
+            LoadRun,
+            LoadOut,
+        
+        
+            //Unoad
+            UnloadIn,
+            UnloadFail,
+            UnloadRun,
+            UnloadOut,
+        }
     }
 
     public class SceneConfig : Config
     {
         public IScreen[] Screens { get; private set; }
 
-        public SceneConfig (InstanceInfo info, IScreen[] screens): base(info)
+        public SceneConfig (InstanceInfo info, params IScreen[] screens): base(info)
         {
             Screens = screens;
         }

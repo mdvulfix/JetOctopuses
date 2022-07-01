@@ -8,15 +8,15 @@ namespace APP.Screen
     public class ScreenScore : ScreenModel<ScreenScore>, IScreen
     {
 
-        [SerializeField] private ButtonScoreMenu m_Menu;
-        [SerializeField] private ButtonScoreExit m_Exit;
+        //[SerializeField] private ButtonScoreMenu m_Menu;
+        //[SerializeField] private ButtonScoreExit m_Exit;
 
         protected override void Init()
         {
             var buttons = new IButton[]
             {
-                m_Menu,
-                m_Exit
+                //m_Menu,
+                //m_Exit
             };
 
             var info = new InstanceInfo(this);

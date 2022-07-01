@@ -18,6 +18,7 @@ namespace APP.Button
 
         public bool IsDebug { get; private set; }
         public bool IsConfigured { get; private set; }
+        public bool IsInitialized { get; private set; }
 
         public event Action<ISignal> ButtonClicked;
 
@@ -27,7 +28,7 @@ namespace APP.Button
             IsConfigured = true;
         }
 
-        protected virtual void Init()
+        public virtual void Init()
         {
             if (IsConfigured == false)
             {
@@ -44,7 +45,7 @@ namespace APP.Button
             IsDebug = true;
         }
 
-        protected virtual void Dispose()
+        public virtual void Dispose()
         {
             Unsubscribe();
 
@@ -66,7 +67,6 @@ namespace APP.Button
             //m_Signal.Call();
             //ButtonClicked?.Invoke(m_Signal);
         }
-
     }
 
     public class ButtonConfig : Config

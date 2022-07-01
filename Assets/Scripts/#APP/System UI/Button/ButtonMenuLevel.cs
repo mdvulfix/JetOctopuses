@@ -4,13 +4,16 @@ using APP.Player;
 
 namespace APP.Button
 {
+    
+    /*
     [Serializable]
     public class ButtonMenuLevel : ButtonModel<ButtonMenuLevel>, IButton
     {
+        
         [SerializeField] private PlayerAction m_PlayerAction;
         //[SerializeField] private LevelIndex m_LevelIndex;
 
-        protected override void Init()
+        public override void Init()
         {
             if (m_PlayerAction == PlayerAction.None)
             {
@@ -32,5 +35,6 @@ namespace APP.Button
         }
 
     }
+    */
 
 }
