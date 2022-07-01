@@ -34,21 +34,18 @@ namespace APP
             IsConfigured = true;
         }
         
+        // INIT //
         protected override void Init()
         {
             var info = new InstanceInfo(this);
             var config = new SessionConfig(info, m_SceneController);
             
-            Configure(config);
+            Configure(config);            
             base.Init();
 
-            Subscrube();
-
-
             m_SceneController.Init();
-
-            Send("System enter loading...");
-            SetState(State.LoadIn);
+            
+            
         }
 
         protected override void Dispose()
@@ -58,7 +55,8 @@ namespace APP
             Send("System exit...");
             SetState(State.UnloadIn);
 
-            Unsubscrube();
+            
+            
             base.Dispose();
         }
 
@@ -71,11 +69,19 @@ namespace APP
         
         protected override void Unsubscrube()
         {
-            
             StateChanged -= OnStateChanged;
             base.Unsubscrube();
         }
 
+
+
+        // RUN //
+        protected override void Run()
+        {
+            Send("System enter loading...");
+            SetState(State.LoadIn);
+        }
+        
         // STATE MANAGE //
         private async void HandleState(State state)
         {
@@ -102,19 +108,25 @@ namespace APP
                 
                 case State.NetIn:
 
-                    Send("System start net connection...");
-                    SetState(State.NetRun);
+                    Send("Start waitining for building scene net");
+
+                    await m_Builder.Build(new NetBuildScheme());
+
+                    Send("Stop waitining for building scene net");
 
                     
-                    var scheme = new BuildSchemeNet(SceneIndex.Net);
-                    await m_Builder.Build(scheme);
+                    Send("System start net connection...");
+                    //SetState(State.NetRun);
 
                     Send("System complete net connection...");
-                    SetState(State.NetOut);
+                    //SetState(State.NetOut);
                     
                     Send("System enter login...");
                     //SetState(State.MenuIn);
                     break;
+                
+                
+                
                 
                 
                 

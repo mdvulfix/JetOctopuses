@@ -88,7 +88,7 @@ namespace APP
         {
             m_Cache.Add(objType, instance);
             var name = objType.Name;
-            Send($"{name} set to register!");
+            Send($"{name} was registered!");
         }
             
         // REMOVE //
@@ -102,7 +102,7 @@ namespace APP
             {
                 m_Cache.Remove(objType);
                 var name = objType.Name;
-                Send($"{name} removed from to register!");
+                Send($"{name} removed from register!");
             }
         }
 

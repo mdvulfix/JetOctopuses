@@ -13,20 +13,10 @@ namespace APP.Scene
     {
         private IScene m_SceneActive;
 
-        private Dictionary<Type, SceneIndex?> m_SceneIndexes;
-
         public bool IsInitialized {get; private set;}
         public Action<IScene> SceneActivated;
 
-        public SceneControllerDefault()
-        {
-            m_SceneIndexes = new Dictionary<Type, SceneIndex?>(5);
-            
-            SetSceneIndex<SceneLogin>(SceneLogin.Index);
-            SetSceneIndex<SceneMenu>(SceneMenu.Index);
-            SetSceneIndex<SceneLevel>(SceneLevel.Index);
-        
-        }
+        public SceneControllerDefault() { }
 
         public override void Init()
         {           
@@ -51,7 +41,7 @@ namespace APP.Scene
             
         }
 
-        
+        /*
         private async Task SceneActivate<TScene>() where TScene : UComponent, IScene
         {
             if (GetSceneIndex<TScene>(out var index))
@@ -60,10 +50,13 @@ namespace APP.Scene
                 Send($"{typeof(TScene).Name} not set to scene indexes!", true);
 
         }
-
-        private async Task SceneActivate<TScene>(SceneIndex? sceneIndex) where TScene: UComponent, IScene
+        */
+        
+        private async Task SceneActivate<TScene>() where TScene: UComponent, IScene
         {
-            await USceneHandler.SceneActivate(sceneIndex);
+            
+            var sceneIndex = SceneIndex<TScene>.Index;
+            await USceneHandler.Activate(sceneIndex);
 
             TScene scene = null;
             await TaskHandler.Run(() => AwaitSceneActivation<TScene>(sceneIndex, out scene),"Waiting for scene activation...");
@@ -79,7 +72,6 @@ namespace APP.Scene
 
         }
 
-
         private bool AwaitSceneActivation<TScene>(SceneIndex? index, out TScene scene) where TScene: UComponent, IScene
         {
             scene = null;
@@ -91,23 +83,17 @@ namespace APP.Scene
                 
             return false;
         }
-
-        private void SetSceneIndex<TScene>(SceneIndex index) =>
-            m_SceneIndexes.Add(typeof(TScene), index);
-
-        private bool GetSceneIndex<TScene>(out SceneIndex? index)
+        /*
+        private bool GetSceneIndex<TScene>(out SceneIndex index)
         where TScene : IScene
         {
-            index = null;
-            if (m_SceneIndexes.ContainsKey(typeof(TScene)))
-            {
-                m_SceneIndexes.TryGetValue(typeof(TScene), out index);
+            index = SceneIndex<TScene>.Index;
+            if(index != default(SceneIndex))
                 return true;
-            }
 
             return false;
         }
-
+        */
     }
 
 
@@ -117,8 +103,4 @@ namespace APP.Scene
             where TScene : UComponent, IScene;
         
     }
-
-
-
-
 }

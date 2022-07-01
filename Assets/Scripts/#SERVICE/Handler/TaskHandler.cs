@@ -10,6 +10,8 @@ namespace SERVICE.Handler
     public static class TaskHandler
     {
                 
+        private static bool m_Debug = false;
+        
         public static async Task Run(Func<bool> action, string message, float delay = 1)
         {
             var tokenSource = new TokenSource();
@@ -58,24 +60,40 @@ namespace SERVICE.Handler
         }       
 
         private static string Send(string text, bool isWorning = false) =>
-            LogHandler.Send("TaskHandler", true, text, isWorning);
+            LogHandler.Send("TaskHandler", m_Debug, text, isWorning);
 
     
     
     }
 
-    public struct TaskResult
+    public struct TaskResult<TTaskInfo> where TTaskInfo: ITaskInfo
     {
-        public TaskResult(bool result, InstanceInfo info)
+        public TaskResult(bool status, TTaskInfo info)
         {
-            Result = result;
-            InstanceInfo = info;
+            Status = status;
+            Info = info;
         }
 
-        public bool Result {get; private set;}
-        public InstanceInfo InstanceInfo {get; private set;}
+        public bool Status {get; private set;}
+        public TTaskInfo Info {get; private set;}
 
         
         
     }
+
+
+    
+    
+    public class TaskInfo: ITaskInfo
+    {
+
+        
+    }
+
+    public interface ITaskInfo
+    {
+
+        
+    }
+
 }

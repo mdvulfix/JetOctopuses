@@ -7,9 +7,6 @@ namespace APP.Scene
     [Serializable]
     public class SceneMenu : SceneModel<SceneMenu>, IScene
     {
-
-        public static readonly SceneIndex Index = SceneIndex.Menu;
-
         [SerializeField] private ScreenLoading m_Loading;
         [SerializeField] private ScreenLogin m_Login;
         [SerializeField] private ScreenMain m_Main;
@@ -26,7 +23,7 @@ namespace APP.Scene
             };
 
             var info = new InstanceInfo(this);
-            var config = new SceneConfig(info, Index, screens);
+            var config = new SceneConfig(info, screens);
             base.Configure(config);
             base.Init();
         }

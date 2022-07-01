@@ -1,12 +1,11 @@
 using System;
-using SERVICE.Handler;
 using UnityEngine;
+using SERVICE.Handler;
 
 namespace APP
 {
     public abstract class UComponent : MonoBehaviour, IConfigurable
     {
-
         [SerializeField]
         private bool m_Debug = true;
         
@@ -36,6 +35,11 @@ namespace APP
             Unsubscrube();
         }
            
+        protected virtual void Run()
+        {
+
+        }
+
 
         public void Activate(bool Activate = true) =>
             gameObject.SetActive(Activate);
@@ -75,7 +79,7 @@ namespace APP
         {
             Initialized?.Invoke(info.ObjType,info.Obj);
             var name = info.ObjType.Name;
-            Send($"{name} initialization process successfully completed!");
+            Send($"Initialization successfully completed!");
         }
             
         private void OnDispose(InstanceInfo info) 
@@ -93,7 +97,8 @@ namespace APP
         private void OnDisable() =>
             Dispose();
 
-
+        private void Start() =>
+            Run();
     
     
     }

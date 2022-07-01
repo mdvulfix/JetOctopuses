@@ -8,13 +8,15 @@ namespace APP.Scene
     where TScene : IScene
     {
         
+        
         private SceneConfig m_Conig;
         private TScene m_Instance;
 
         private IScreenController m_ScreenController;
         
+        public static SceneIndex Index => SceneIndex<TScene>.Index;
+
         public bool IsConfigured {get; private set;}
-        public SceneIndex SceneIndex { get; private set; }
 
         public event Action<IActionInfo> SceneLoaded;
         public event Action<IActionInfo> SceneUnloaded;
@@ -108,12 +110,10 @@ namespace APP.Scene
 
     public class SceneConfig : Config
     {
-        public SceneIndex SceneIndex { get; private set; }
         public IScreen[] Screens { get; private set; }
 
-        public SceneConfig (InstanceInfo info, SceneIndex index, IScreen[] screens): base(info)
+        public SceneConfig (InstanceInfo info, IScreen[] screens): base(info)
         {
-            SceneIndex = index;
             Screens = screens;
         }
     }

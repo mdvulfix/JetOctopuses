@@ -7,8 +7,6 @@ namespace APP.Scene
     [Serializable]
     public class SceneNet : SceneModel<SceneNet>, IScene
     {
-        public static readonly SceneIndex Index = SceneIndex.Net;
-
         [SerializeField] private ScreenLoading m_Loading;
 
         protected override void Init()
@@ -19,7 +17,7 @@ namespace APP.Scene
             };
 
             var info = new InstanceInfo(this);
-            var config = new SceneConfig(info, Index, screens);
+            var config = new SceneConfig(info, screens);
             base.Configure(config);
             base.Init();
         }
