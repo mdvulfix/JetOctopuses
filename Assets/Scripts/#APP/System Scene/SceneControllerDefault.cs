@@ -45,7 +45,7 @@ namespace APP.Scene
         {
             if(IsConfigured == false)
             {
-                Send("Instance was not configured. Initialization was failed!", true);
+                Send("Instance was not configured. Initialization was failed!", LogFormat.Worning);
                 return;
             }
             
@@ -94,7 +94,7 @@ namespace APP.Scene
 
             if (scene == null)
             {
-                Send($"{scene.GetType().Name} not found!", true);
+                Send($"{scene.GetType().Name} not found!", LogFormat.Worning);
                 return;
             }
 

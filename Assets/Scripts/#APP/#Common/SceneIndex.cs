@@ -48,15 +48,15 @@ namespace APP
             }
 
             
-            Send($"{typeof(TScene).Name} was not found. Please update scene index handler!", true);
+            Send($"{typeof(TScene).Name} was not found. Please update scene index handler!", LogFormat.Worning);
             return false;
         }
 
         public static IEnumerable<Type> GetSceneTypeArray() =>
             m_SceneIndexes.Keys;
         
-        private static string Send(string text, bool isWorning = false) =>
-            LogHandler.Send("SceneIndex", m_Debug, text, isWorning);
+        public static string Send(string text, LogFormat worning = LogFormat.None) =>
+            Messager.Send("SceneIndex", m_Debug, text, worning);
 
     }
 

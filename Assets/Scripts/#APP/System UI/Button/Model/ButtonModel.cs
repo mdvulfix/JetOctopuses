@@ -32,7 +32,7 @@ namespace APP.Button
         {
             if (IsConfigured == false)
             {
-                Send("Configuration has not been done. Initialization aborted!", true);
+                Send("Configuration has not been done. Initialization aborted!", LogFormat.Worning);
                 return;
             }
 
@@ -53,8 +53,8 @@ namespace APP.Button
 
         }
 
-        public string Send(string text, bool worning = false) =>
-            LogHandler.Send(this, IsDebug, text, worning);
+        public string Send(string text, LogFormat worning = LogFormat.None) =>
+            Messager.Send(this, IsDebug, text, worning);
 
         protected void Subscribe() =>
             onClick.AddListener(() => ButtonClick());

@@ -24,9 +24,9 @@ namespace SERVICE.Handler
             catch (OperationCanceledException ex)
             {
                 if (ex.CancellationToken == token)
-                    Send("Await system state async task cancelled by local token!", true);
+                    Send("Await system state async task cancelled by local token!", LogFormat.Worning);
                 else
-                    Send(ex.Message, true);
+                    Send(ex.Message, LogFormat.Error);
             }
             finally
             {
@@ -50,7 +50,7 @@ namespace SERVICE.Handler
 
                 if (delay <= 0)
                 {
-                    Send("Cancelled by time delay: " + message, true);
+                    Send("Cancelled by time delay: " + message, LogFormat.Worning);
                     break;
                 }
 
@@ -59,8 +59,8 @@ namespace SERVICE.Handler
             }
         }       
 
-        private static string Send(string text, bool isWorning = false) =>
-            LogHandler.Send("TaskHandler", m_Debug, text, isWorning);
+        private static string Send(string text, LogFormat warning = LogFormat.None) =>
+            Messager.Send("TaskHandler", m_Debug, text, warning);
 
     
     

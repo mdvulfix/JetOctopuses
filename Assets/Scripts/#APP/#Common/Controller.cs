@@ -12,8 +12,8 @@ namespace APP
         public abstract void Dispose();
 
     
-        protected string Send(string text, bool worning = false) =>
-            LogHandler.Send(this, m_Debug, text, worning);
+        protected string Send(string text, LogFormat worning = LogFormat.None) =>
+            Messager.Send(this, m_Debug, text, worning);
     }
 
     public interface IController

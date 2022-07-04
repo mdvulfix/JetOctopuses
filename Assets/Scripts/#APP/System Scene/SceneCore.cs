@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
-
-using SERVICE.Builder;
+using APP;
 using APP.Screen;
 
 namespace APP.Scene
@@ -44,7 +43,7 @@ namespace APP.Scene
 
                 
                 default:
-                    Send($"{state}: State is not implemented!", true);
+                    Send($"{state}: State is not implemented!", LogFormat.Worning);
                     break;
             }
         }

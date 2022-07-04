@@ -32,7 +32,7 @@ namespace APP.Signal
         {
             if (IsConfigured == false)
             {
-                Send("Configuration has not been done. Initialization aborted!", true);
+                Send("Configuration has not been done. Initialization aborted!", LogFormat.Worning);
                 return;
             }
 
@@ -68,14 +68,14 @@ namespace APP.Signal
             }
             else
             {
-                Send("Initialization has not been done. Calling aborted!", true);
+                Send("Initialization has not been done. Calling aborted!", LogFormat.Worning);
                 return;
             }
 
         }
 
-        public string Send(string text, bool worning = false) =>
-            LogHandler.Send(this, IsDebug, text, worning);
+        public string Send(string text, LogFormat worning = LogFormat.None) =>
+            Messager.Send(this, IsDebug, text, worning);
 
     }
 

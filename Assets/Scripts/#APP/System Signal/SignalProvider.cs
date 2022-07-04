@@ -56,8 +56,8 @@ namespace APP.Signal
         public static event Action<ISignal> SignalDisposed;
         public event Action<ISignal> SignalCalled;
 
-        public string Send(string text, bool worning = false) =>
-            LogHandler.Send("Provider", IsDebug, text, worning);
+        public string Send(string text, LogFormat worning = LogFormat.None) =>
+            Messager.Send("Provider", IsDebug, text, worning);
 
         protected void OnSignalInitialized(ISignal signal)
         {

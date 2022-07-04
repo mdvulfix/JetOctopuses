@@ -2,12 +2,11 @@ using System.Threading.Tasks;
 using UnityEngine;
 using SERVICE.Handler;
 using SERVICE.Factory;
-using APP;
 using APP.Scene;
 using APP.Screen;
 using APP.Button;
 
-namespace SERVICE.Builder
+namespace APP
 {
     
     public abstract class SceneBuildScheme<TScene> : SceneBuildScheme where TScene: IScene

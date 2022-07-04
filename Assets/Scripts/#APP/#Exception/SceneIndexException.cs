@@ -9,16 +9,16 @@ namespace APP
         
         public SceneIndexException()
         {
-           Send("Scene index was not implemented!", true);
+           Send("Scene index was not implemented!", LogFormat.Error);
         }
         
         public SceneIndexException(string description)
         {
-            Send(description, true);
+            Send(description, LogFormat.Error);
         }
 
 
-        private static string Send(string text, bool isWorning = false) =>
-            LogHandler.Send("SceneIndexException", m_Debug, text, isWorning);
+        private static string Send(string text, LogFormat worning = LogFormat.None) =>
+            Messager.Send("SceneIndexException", m_Debug, text, worning);
     }
 }

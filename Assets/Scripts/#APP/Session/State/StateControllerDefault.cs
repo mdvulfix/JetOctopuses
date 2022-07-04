@@ -42,7 +42,7 @@ namespace APP
         {
             if(IsConfigured == false)
             {
-                Send("Instance was not configured. Initialization was failed!", true);
+                Send("Instance was not configured. Initialization was failed!", LogFormat.Worning);
                 return;
             }
             
@@ -67,7 +67,7 @@ namespace APP
                 return state;
             }
             
-            Send($"{typeof(TState).Name} was not registered!", true);
+            Send($"{typeof(TState).Name} was not registered!", LogFormat.Worning);
             return null;
         }
 

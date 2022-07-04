@@ -44,7 +44,7 @@ namespace SERVICE.Handler
             }
             else
             {
-                Send($"UScene {sceneIndex} not found. Activation failed!", true);
+                Send($"UScene {sceneIndex} not found. Activation failed!", LogFormat.Worning);
                 await Load(sceneIndex);
                 await Activate(sceneIndex);
             }
@@ -53,13 +53,13 @@ namespace SERVICE.Handler
         public static async Task USceneUnload(SceneIndex? sceneIndex)
         {
             await Task.Delay(1);
-            Send($"UScene {sceneIndex} was unloaded... Not implemented!", true);
+            Send($"UScene {sceneIndex} was unloaded... Not implemented!", LogFormat.Worning);
         }
 
         public static async Task USceneReload(SceneIndex? sceneIndex)
         {
             await Task.Delay(1);
-            Send($"UScene {sceneIndex} was eloaded... Not implemented!", true);
+            Send($"UScene {sceneIndex} was eloaded... Not implemented!", LogFormat.Worning);
         }
 
         
@@ -105,8 +105,8 @@ namespace SERVICE.Handler
         private static UScene GetUScene(int index) =>
             SceneManager.GetSceneByBuildIndex(index);
         
-        private static string Send(string text, bool isWorning = false) =>
-            LogHandler.Send("USceneHandler", m_Debug, text, isWorning);
+        private static string Send(string text, LogFormat worning = LogFormat.None) =>
+            Messager.Send("USceneHandler", m_Debug, text, worning);
 
     }
 

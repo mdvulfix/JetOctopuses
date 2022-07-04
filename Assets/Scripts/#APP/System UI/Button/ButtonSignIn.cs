@@ -13,7 +13,7 @@ namespace APP.Button
         {
             if (m_PlayerAction == PlayerAction.None)
             {
-                Send("Player action not assigned!", true);
+                Send("Player action not assigned!", LogFormat.Worning);
                 return;
             }
 

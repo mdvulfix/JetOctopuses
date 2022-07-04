@@ -1,10 +1,6 @@
-using System;
 using System.Threading.Tasks;
 using APP.Player;
 using APP.Scene;
-using SERVICE.Builder;
-using SERVICE.Handler;
-using UnityEngine;
 
 namespace APP
 {
@@ -327,136 +323,15 @@ namespace APP
 
         */
 
-        public class StateModel<TState>: IState
-        {
-            private bool m_Debug = true;
+    }
 
-            private TState m_State;
+    
 
-            public event Action<Type> NeedScene;
-
-            public virtual Task Enter()
-            {
-                Send("Enter state.");
-                return null;
-            }
-
-            public virtual Task Fail()
-            {
-                Send("Fail state.", LogWorningFormat.Worning);
-                return null;
-            }
-
-            public virtual Task Run()
-            {
-                Send("Exit state.");
-                return null;
-            }
-
-            public virtual Task Exit()
-            {
-                Send("Exit state.");
-                return null;
-            }
-
-            protected string Send(string text, LogWorningFormat worning = LogWorningFormat.None) =>
-                LogHandler.Send(this, m_Debug, text, worning);
-
-        }
-
-        public class StateLoad : StateModel<StateLoad>, IState 
-        { 
-            public override Task Enter()
-            {
-                Send("System enter loading...");
-                return null;
-            }
-            
-            public async override Task Run()
-            {
-                Send("System start loading...");
-                
-                await BuildHandler.Build(new CoreBuildScheme());
-                
-                //NeedScene?.Invoke(typeof(SceneCore));
-                
-                return;
-            }
-
-            public override Task Exit()
-            {
-                Send("System complete loading...");
-                return null;
-            }
-        }
-        public class StateLogin : StateModel<StateLoad>, IState { }
-        public class StateMenu : StateModel<StateLoad>, IState { }
-        public class StateLevel : StateModel<StateLoad>, IState { }
-        public class StateResult : StateModel<StateLoad>, IState { }
-        public class StateUnload : StateModel<StateLoad>, IState { }
-
-        private enum State
-        {
-            None,
-
-            //Load
-            LoadIn,
-            LoadFail,
-            LoadRun,
-            LoadOut,
-
-            //Net
-            NetIn,
-            NetFail,
-            NetRun,
-            NetExit,
-            NetOut,
-
-            //Login
-            LoginIn,
-            LoginFail,
-            LoginRun,
-            LoginExit,
-            LoginOut,
-
-            //Menu
-            MenuIn,
-            MenuFail,
-            MenuRun,
-            MenuExit,
-            MenuOut,
-
-            //Level
-            LevelIn,
-            LevelFail,
-            LevelRun,
-            LevelWin,
-            LevelLose,
-            LevelPause,
-            LevelExit,
-            LevelOut,
-
-            //Result
-            ResultIn,
-            ResultFail,
-            ResultRun,
-            ResultExit,
-            ResultOut,
-
-            //Unload
-            UnloadIn,
-            UnloadFail,
-            UnloadRun,
-            UnloadOut,
-
-        }
-
-        protected enum Result
-        {
-            None,
-            Win,
-            Lose
-        }
+    public enum Result
+    {
+        None,
+        Win,
+        Lose
     }
 
     public interface IState

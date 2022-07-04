@@ -26,7 +26,7 @@ namespace APP.Screen
             
             if(screen == null)
             {
-                Send($"{screen.GetType().Name} not found!", true);
+                Send($"{screen.GetType().Name} not found!", LogFormat.Worning);
                 return;
             }
                 
