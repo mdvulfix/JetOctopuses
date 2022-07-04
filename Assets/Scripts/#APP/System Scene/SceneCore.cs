@@ -13,35 +13,19 @@ namespace APP.Scene
         [SerializeField] private ScreenSplash m_Splash;
 
         
-        public override void Configure(IConfig config)
+        public override void Init()
         {
-            if(ConfigValidate())
-                return;
-            
-            var sceneConfig = (SceneConfig) config;
-            var screens = sceneConfig.Screens;
-            
-            SetScreen<ScreenLoading>(ref m_Loading, screens);
-            SetScreen<ScreenSplash>(ref m_Splash, screens);
+            var instance =  new Instance(this);
+            var screens = new IScreen[2] 
+            {
+                m_Loading = Set<ScreenLoading>("Screen: Loading"),
+                m_Splash = Set<ScreenSplash>("Screen: Splash")
+            };
 
-            base.Configure(config);
-        }
-        
-        
-        protected override void Init()
-        {
-            if(InitValidate())
-                return;
-
+            var config =  new SceneConfig(instance, screens);
+            
+            Configure(config);
             base.Init();
-        }
-
-
-        protected override void Run()
-        {
-
-
-
         }
 
 

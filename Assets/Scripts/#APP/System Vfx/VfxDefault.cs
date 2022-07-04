@@ -5,10 +5,10 @@ namespace APP.Vfx
 
     public class VfxDefault: VfxModel<VfxDefault>, IVfx
     {
-        protected override void Init()
+        public override void Init()
         {
             
-            var info = new InstanceInfo(this);
+            var info = new Instance(this);
             var vfxController = new VfxControllerDefault();
             
             
@@ -39,10 +39,10 @@ namespace APP.Vfx
 
         }
 
-        protected override void Init() => 
+        public override void Init() => 
             base.Init();
 
-        protected override void Dispose() => 
+        public override void Dispose() => 
             base.Dispose();
     }
 
@@ -54,7 +54,7 @@ namespace APP.Vfx
     {
         public IVfxController VfxController {get; private set;}
 
-        public VfxConfig(InstanceInfo info, IVfxController vfxController): base(info)
+        public VfxConfig(Instance info, IVfxController vfxController): base(info)
         {
             VfxController = vfxController;
         }    

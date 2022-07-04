@@ -71,7 +71,7 @@ namespace APP.Button
 
     public class ButtonConfig : Config
     {
-        public ButtonConfig(InstanceInfo info): base(info)
+        public ButtonConfig(Instance info): base(info)
         {
 
         }

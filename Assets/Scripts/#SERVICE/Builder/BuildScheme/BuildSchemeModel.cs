@@ -12,10 +12,8 @@ namespace SERVICE.Builder
     
     public abstract class SceneBuildScheme<TScene> : SceneBuildScheme where TScene: IScene
     {   
-
         protected async Task SceneActivate() =>
             await USceneHandler.Activate(SceneIndex<TScene>.Index);
-        
     }
 
     public abstract class SceneBuildScheme
@@ -26,7 +24,6 @@ namespace SERVICE.Builder
         {
             var obj = UComponentHandler.CreateGameObject(name, parent);
             return UComponentHandler.SetComponent<TSystem>(obj);
-
         }
     }
 
@@ -40,41 +37,31 @@ namespace SERVICE.Builder
             await SceneActivate();
             
             var scene = Set<SceneCore>("Scene: Core");
-            
-            var sceneInfo = new InstanceInfo(scene);
-            
-            
-            var screenLoading = Set<ScreenLoading>("Screen: Loading", scene.gameObject);
+            //var sceneInfo = new Instance(scene);
             
             
+            //var screenLoading = Set<ScreenLoading>("Screen: Loading", scene.gameObject);
+            //var screenLoadingInfo = new Instance(screenLoading);
+            //var screenLoadingButtons = new IButton[10];
+            //var screenLoadingConfig = new ScreenConfig(screenLoadingInfo, screenLoadingButtons);
             
-            var screenLoadingInfo = new InstanceInfo(screenLoading);
-            var screenLoadingConfig = new ScreenConfig(screenLoadingInfo,);
-
-            var screenLoading = Set<ScreenLoading>("Screen: Loading", scene.gameObject);
+            //var screenSplash = Set<ScreenSplash>("Screen: Splash", scene.gameObject);
+            //var screenSplashInfo = new Instance(screenSplash);
+            //var screenSplashButtons = new IButton[10];
+            //var screenSplashConfig = new ScreenConfig(screenSplashInfo, screenSplashButtons);
             
-            var screens = new IScreen[]
-            {
-                ,
-                Set<ScreenSplash>("Screen: Splash", scene.gameObject),
-            };
+            //var screens = new IScreen[]
+            //{
+            //    screenLoading,
+            //    screenSplash
+            //};
+            //
+            //var sceneConfig = new SceneConfig(sceneInfo, screens);
+            //scene.Configure(sceneConfig);
             
-            
-
-
-
-            var sceneConfig = new SceneConfig(sceneInfo, )
-            
-            var sce
-            scene.Configure();
-            
-            
-            
-            Set<ScreenSplash>("Screen: Splash");
-
             //Set<AudioDefault>("Audio");
             //Set<VfxDefault>("Vfx");
-            Set<SessionDefault>("Session");
+            //Set<SessionDefault>("Session");
         }
     }
 
@@ -129,9 +116,6 @@ namespace SERVICE.Builder
 
     public class ScreenFactory : IFactory
     {
-        
-
-        
         public ScreenFactory()
         {
         
@@ -141,25 +125,20 @@ namespace SERVICE.Builder
 
         
         
-        public TScreen Get<TScreen>(params object[] p) where TScreen: UComponent, IScreen
+        public TScreen Get<TScreen>(params object[] p) where TScreen: UComponent, IConfigurable
         {
             var name =  (string)p[1];
             var component =  (UComponent)p[2];
 
             var screen = Set<TScreen>(name, component.gameObject);
-            var screenInfo = new InstanceInfo(screen);
-            var screenButtons = new IButton[10];
-            var screenConfig = new ScreenConfig(screenInfo, screenButtons);
-            
-            screen.Configure(screenConfig);
             return screen;
         }
 
+    
         private TSystem Set<TSystem>(string name, GameObject parent = null) where TSystem : UComponent, IConfigurable
         {
             var obj = UComponentHandler.CreateGameObject(name, parent);
             return UComponentHandler.SetComponent<TSystem>(obj);
-
         }
 
 

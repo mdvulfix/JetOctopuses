@@ -1,7 +1,9 @@
+using System;
+
 namespace APP
 {
-    public interface ISession
+    public interface ISession: IConfigurable
     {
-        
+        IState StateActive { get; }
     }
 }

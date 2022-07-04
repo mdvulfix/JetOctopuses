@@ -6,14 +6,14 @@ namespace APP.Screen
     [Serializable]
     public class ScreenLoading : ScreenModel<ScreenLoading>, IScreen
     {
-        protected override void Init()
+        public override void Init()
         {
             var buttons = new IButton[]
             {
 
             };
 
-            var info = new InstanceInfo(this);
+            var info = new Instance(this);
             var config = new ScreenConfig(info, buttons);
             
             base.Configure(config);

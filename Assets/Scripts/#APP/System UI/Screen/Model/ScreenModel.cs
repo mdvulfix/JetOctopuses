@@ -17,12 +17,12 @@ namespace APP.Screen
             m_Config = (ScreenConfig) config;
         }
 
-        protected override void Init()
+        public override void Init()
         {
             base.Init();
         }
 
-        protected override void Dispose()
+        public override void Dispose()
         {
 
             base.Dispose();
@@ -85,7 +85,7 @@ namespace APP.Screen
     {
         public IButton[] Buttons { get; private set; }
 
-        public ScreenConfig(InstanceInfo info, IButton[] buttons): base(info)
+        public ScreenConfig(Instance info, IButton[] buttons): base(info)
         {
             Buttons = buttons;
         }
@@ -96,14 +96,14 @@ namespace APP.Screen
     public class ScreenSplash : ScreenModel<ScreenSplash>, IScreen
     {
 
-        protected override void Init()
+        public override void Init()
         {
             var buttons = new IButton[]
             {
             };
 
-            var instanceInfo = new InstanceInfo(this);
-            var screenConfig = new ScreenConfig(instanceInfo, buttons);
+            var Instance = new Instance(this);
+            var screenConfig = new ScreenConfig(Instance, buttons);
             
             base.Configure(screenConfig);
             base.Init();

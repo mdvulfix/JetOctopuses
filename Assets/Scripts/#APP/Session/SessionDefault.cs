@@ -1,83 +1,166 @@
 using System;
 using System.Threading.Tasks;
-using UnityEngine;
-using SERVICE.Handler;
-using SERVICE.Builder;
-using APP.Scene;
 using APP.Player;
+using APP.Scene;
+using SERVICE.Builder;
+using SERVICE.Handler;
+using UnityEngine;
 
 namespace APP
 {
-    public class SessionDefault : UComponent, ISession
+
+    public abstract class Session<TSession> : UComponent
+    where TSession : UComponent, ISession
     {
-        private State StateActive;
+        private SessionConfig m_Config;
 
         
-        private IBuilder m_Builder;
         private ISceneController m_SceneController;
+        private IStateController m_StateController;
 
-        private event Action<State> StateChanged;
 
-        // CONFIGURE //
+        public IState StateActive { get; private set; }
+    
+    
         public override void Configure(IConfig config)
         {
-            if(ConfigValidate())
-                return;
             
-            m_Builder = RegisterHandler.Get<BuilderDefault>();
+            m_Config = (SessionConfig)config;
+            
             m_SceneController = new SceneControllerDefault();
-            
+            var sceneControllerInstance = new Instance(m_SceneController);
+            var sceneControllerConfig = new SceneControllerConfig(sceneControllerInstance, m_Config.Scenes);
+            m_SceneController.Configure(sceneControllerConfig);
+
+            m_StateController = new StateControllerDefault();
+            var stateControllerInstance = new Instance(m_StateController);
+            var stateControllerConfig = new StateControllerConfig(stateControllerInstance, m_Config.States);
+            m_StateController.Configure(stateControllerConfig);
+
             base.Configure(config);
-            
         }
-        
+    
+    
         // INIT //
-        protected override void Init()
+        public override void Init()
         {
-            if(InitValidate())
-                return;
-            
-         
             base.Init();
-
+            m_StateController.Init();
             m_SceneController.Init();
-
-            Send("System enter loading...");
-            SetState(State.LoadIn);
         }
-
-        protected override void Dispose()
+    
+    
+        public override void Dispose()
         {
             m_SceneController.Dispose();
-
-            Send("System exit...");
-            SetState(State.UnloadIn);
-
+            m_StateController.Dispose();
             base.Dispose();
         }
+
 
         // SUBSCRUBE //
         protected override void Subscrube()
         {
             base.Subscrube();
-            StateChanged += OnStateChanged;
+            m_StateController.StateChanged += OnStateChanged;
         }
-        
+
         protected override void Unsubscrube()
         {
-            StateChanged -= OnStateChanged;
+            m_StateController.StateChanged -= OnStateChanged;
             base.Unsubscrube();
         }
 
-        // RUN //
-        protected override void Run()
+       
+        //protected virtual void StateUpdate(IState state) { }
+       
+        
+        
+        protected void StateExecute<TState>() where TState: class, IState
         {
-            Send("System enter login...");
-            SetState(State.LoginIn);
+            m_StateController.Execute<TState>();
+        }
+
+
+        private void OnStateChanged(IState state)
+        {
+            Send($"State changed. {state} state activated...");
+            StateActive = state;
+            //StateUpdate(StateActive);
         }
         
+    }
+
+
+    public class SessionDefault : Session<SessionDefault>, ISession
+    {
+        private SceneCore m_SceneCore;
+        private SceneNet m_SceneNet;
+        private SceneLogin m_SceneLogin;
+        private SceneMenu m_SceneMenu;
+        private SceneLevel m_SceneLevel;
+
+    
+        // CONFIGURE //
+        public override void Configure(IConfig config)
+        {
+            SceneIndex<SceneCore>.SetIndex(SceneIndex.Core);
+            SceneIndex<SceneNet>.SetIndex(SceneIndex.Net);
+            SceneIndex<SceneLogin>.SetIndex(SceneIndex.Login);
+            SceneIndex<SceneMenu>.SetIndex(SceneIndex.Menu);
+            SceneIndex<SceneLevel>.SetIndex(SceneIndex.Level);
+
+            base.Configure(config);
+        }
+
+        // INIT //
+        public override void Init()
+        {
+
+            var instance = new Instance(this);
+            
+            var scenes = new IScene[5]
+            {
+                m_SceneCore,
+                m_SceneNet,
+                m_SceneLogin,
+                m_SceneMenu,
+                m_SceneLevel
+            };
+            
+            var states = new IState[6]
+            {
+                new StateLoad(),
+                new StateLogin(),
+                new StateMenu(),
+                new StateLevel(),
+                new StateResult(),
+                new StateUnload(),
+            };
+
+
+            var config = new SessionConfig(instance, states, scenes);
+            
+            
+            
+            Configure(config);
+            base.Init();
+
+            Send("System enter loading...");
+            StateExecute<StateLoad>();
+        }
+
+        public override void Dispose()
+        {
+            Send("System exit...");
+            StateExecute<StateUnload>();
+
+            base.Dispose();
+        }
+
+        /*
         // STATE MANAGE //
-        private async void UpdateState(State state)
+        protected override async void StateUpdate(IState state)
         {
             switch (state)
             {
@@ -90,8 +173,10 @@ namespace APP
                     Send("System start loading...");
                     SetState(State.LoadRun);
 
+                    await BuildHandler.Build(new CoreBuildScheme());
+
                     await Task.Delay(5);
-                    
+
                     Send("System complete loading...");
                     SetState(State.LoadOut);
 
@@ -99,62 +184,55 @@ namespace APP
                     SetState(State.NetIn);
                     break;
 
-                
                 case State.NetIn:
 
                     Send("Build scene...");
-                    await m_Builder.Build(new NetBuildScheme());
-                    
+                    await BuildHandler.Build(new NetBuildScheme());
+
                     //Send("System start net connection...");
                     //SetState(State.NetRun);
 
                     //Send("System complete net connection...");
                     //SetState(State.NetOut);
-                    
 
                     break;
-                
-                
+
                 case State.LoginIn:
 
                     Send("Build scene...");
-                    await m_Builder.Build(new LoginBuildScheme());
-                    
+                    await BuildHandler.Build(new LoginBuildScheme());
+
                     Send("System start logining...");
                     //SetState(State.LoginRun);
 
                     //Send("System complete logining...");
                     //SetState(State.LoginOut);
-                    
+
                     Send("System enter menu...");
                     SetState(State.MenuIn);
                     break;
 
                 case State.MenuIn:
 
-                    
                     Send("Build scene...");
-                    await m_Builder.Build(new MenuBuildScheme());
-                    
+                    await BuildHandler.Build(new MenuBuildScheme());
+
                     Send("System start menu...");
                     //SetState(State.MenuRun);
 
-                    
                     Send("System enter level...");
                     SetState(State.LevelIn);
                     break;
-                    
 
                 case State.LevelIn:
-                    
+
                     Send("Build scene...");
-                    await m_Builder.Build(new LevelBuildScheme());
-                    
+                    await BuildHandler.Build(new LevelBuildScheme());
+
                     Send("System start level...");
                     SetState(State.LevelRun);
 
                     break;
-                    
 
                 case State.LevelRun:
                     Send("In level...");
@@ -189,14 +267,10 @@ namespace APP
 
         }
 
-        private void SetState(State state)
-        {
-            StateActive = state;
-            StateChanged?.Invoke(state);
-        }
+        
 
-       // SCENE MANAGE //
-        private async Task Activate<TScene>() where TScene: UComponent, IScene =>
+        // SCENE MANAGE //
+        private async Task Activate<TScene>() where TScene : UComponent, IScene =>
             await m_SceneController.Activate<TScene>();
 
         // CALLBACK //
@@ -251,14 +325,76 @@ namespace APP
 
         }
 
-        private void OnStateChanged(State state)
+        */
+
+        public class StateModel<TState>: IState
         {
-            Send($"State changed. {state} state activated...");
-            UpdateState(state);
+            private bool m_Debug = true;
+
+            private TState m_State;
+
+            public event Action<Type> NeedScene;
+
+            public virtual Task Enter()
+            {
+                Send("Enter state.");
+                return null;
+            }
+
+            public virtual Task Fail()
+            {
+                Send("Fail state.", LogWorningFormat.Worning);
+                return null;
+            }
+
+            public virtual Task Run()
+            {
+                Send("Exit state.");
+                return null;
+            }
+
+            public virtual Task Exit()
+            {
+                Send("Exit state.");
+                return null;
+            }
+
+            protected string Send(string text, LogWorningFormat worning = LogWorningFormat.None) =>
+                LogHandler.Send(this, m_Debug, text, worning);
+
         }
 
-    
-    
+        public class StateLoad : StateModel<StateLoad>, IState 
+        { 
+            public override Task Enter()
+            {
+                Send("System enter loading...");
+                return null;
+            }
+            
+            public async override Task Run()
+            {
+                Send("System start loading...");
+                
+                await BuildHandler.Build(new CoreBuildScheme());
+                
+                //NeedScene?.Invoke(typeof(SceneCore));
+                
+                return;
+            }
+
+            public override Task Exit()
+            {
+                Send("System complete loading...");
+                return null;
+            }
+        }
+        public class StateLogin : StateModel<StateLoad>, IState { }
+        public class StateMenu : StateModel<StateLoad>, IState { }
+        public class StateLevel : StateModel<StateLoad>, IState { }
+        public class StateResult : StateModel<StateLoad>, IState { }
+        public class StateUnload : StateModel<StateLoad>, IState { }
+
         private enum State
         {
             None,
@@ -275,7 +411,7 @@ namespace APP
             NetRun,
             NetExit,
             NetOut,
-            
+
             //Login
             LoginIn,
             LoginFail,
@@ -322,13 +458,30 @@ namespace APP
             Lose
         }
     }
-    public class SessionConfig : Config
+
+    public interface IState
     {
-        public SessionConfig(InstanceInfo info) : base(info)
-        {
-        }
+        
+        Task Enter();
+        Task Fail();
+        Task Run();
+        Task Exit();
     }
 
-
+    public class SessionConfig : Config
+    {
+        public IState[] States {get; private set;}
+        public IScene[] Scenes {get; private set;}
+        
+        
+        public SessionConfig(
+            Instance info,
+            IState[] states,
+            IScene[] scenes) : base(info)
+        {
+            States = states;
+            Scenes = scenes;
+        }
+    }
 
 }

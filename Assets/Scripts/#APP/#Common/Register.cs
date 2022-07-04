@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using SERVICE.Handler;
 
@@ -6,32 +7,25 @@ namespace APP
 {
     public class Register<T>: Register
     {
-        private T m_Instance;
+        public Register() { } 
 
-        public Register(T instance) =>
-            m_Instance = instance;
-
-        
-        
-        public bool Contains()
+        public bool Contains(T instance)
         {
-            if(Contains(m_Instance))
+            if(Contains(instance))
                 return true;
 
             return false;
         }
         
-        
-        
-        public void Set()
+        public void Set(T instance)
         {
-            Set<T>(m_Instance);
+            Set<T>(instance);
             Send($"{typeof(T)} added to cache.");
         }
 
-        public void Remove()
+        public void Remove(T instance)
         {
-            Remove<T>(m_Instance);
+            Remove<T>(instance);
             Send($"{typeof(T)} removed from cache.");
         }
     }
@@ -44,11 +38,11 @@ namespace APP
             Set(objType, instance);
         
         private bool m_Debug = true;
-        private readonly static Dictionary<Type, object> m_Cache = new Dictionary<Type, object>(50);
         
-
+        private readonly Dictionary<Type, object> m_Cache = new Dictionary<Type, object>(50);
+        
         public bool Contains<T>()
-        {
+        {            
             if(m_Cache.ContainsKey(typeof(T)))
                 return true;
 
@@ -69,7 +63,7 @@ namespace APP
         
         public bool Get<T>(out T instance)
         where T: class
-        {
+        {           
             if (m_Cache.TryGetValue(typeof(T), out var obj))
             {
                 instance = (T)obj;

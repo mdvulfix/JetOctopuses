@@ -11,7 +11,7 @@ namespace APP.Screen
         [SerializeField] private ButtonSignIn m_SignIn;
         [SerializeField] private ButtonSignUp m_SignUp;
 
-        protected override void Init()
+        public override void Init()
         {
             var buttons = new IButton[]
             {
@@ -19,7 +19,7 @@ namespace APP.Screen
                 m_SignUp
             };
 
-            var info = new InstanceInfo(this);
+            var info = new Instance(this);
             var config = new ScreenConfig(info, buttons);
             
             base.Configure(config);

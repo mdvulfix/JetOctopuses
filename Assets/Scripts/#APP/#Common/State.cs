@@ -5,6 +5,8 @@ using APP.Scene;
 
 namespace APP
 {
+    
+    /*
     public static class State<T>
     {
         
@@ -54,7 +56,7 @@ namespace APP
         }
     
     }
-
+    */
 
 
 }

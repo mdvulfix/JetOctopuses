@@ -1,9 +1,14 @@
 using System.Threading.Tasks;
 
-namespace SERVICE.Builder
+namespace APP
 {
     public interface IBuilder
     {
         Task Build(IBuildScheme scheme);
+    }
+
+    public interface IBuildScheme
+    {
+        Task Execute();
     }
 }

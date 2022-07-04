@@ -9,7 +9,6 @@ namespace APP
         [SerializeField]
         private bool m_Debug = true;
         
-        private Register m_Register;
         private Config m_Config;
 
         protected Action<Type, object> Initialized;
@@ -19,39 +18,32 @@ namespace APP
         public bool IsInitialized {get; private set;}
 
 
-
         // CONFIGURE //
         public virtual void Configure(IConfig config)
-        {
-            if(ConfigValidate())
-                return;
-            
+        {            
             m_Config = (Config)config;
-            m_Register = new Register();
 
             IsConfigured = true;
         }
 
-        protected virtual void Init()
+        public virtual void Init()
         {
-            if(InitValidate())
-                return;
             
             Subscrube();
-            OnInitialize(m_Config.InstanceInfo);
+            OnInit(m_Config.Instance);
 
             IsInitialized = true;
         }
 
-        protected virtual void Dispose()
+        public virtual void Dispose()
         {
-            OnDispose(m_Config.InstanceInfo);
+            OnDispose(m_Config.Instance);
             Unsubscrube();
 
             IsInitialized = false;
         }
            
-        protected virtual void Run()
+        protected virtual void Load()
         {
 
         }
@@ -75,69 +67,32 @@ namespace APP
 
         }
     
-        // VALIDATION //
-        protected bool ConfigValidate()
-        {
-            if(IsConfigured == true)
-            {
-                Send("Component already configured.");
-                return true;
-            }
-            
-            return false;
-        }
-        
-        protected bool InitValidate()
-        {
-
-            if(IsConfigured == false)
-            {
-                Send("Component must be configured before initialization!", true); 
-                return true;
-            }
-            
-            if(IsInitialized == true)
-            {
-                Send("Component already initialized."); 
-                return true;
-            }
-            
-            return false;
-        }
-
         
         protected string Send(string text, bool worning = false) =>
             LogHandler.Send(this, m_Debug, text, worning);
 
         
-        protected virtual void Subscrube()
-        {
-            Initialized += m_Register.Set;
-            Disposed += m_Register.Remove;
-        }
-        
-        protected virtual void Unsubscrube()
-        {
-            Initialized -= m_Register.Set;
-            Disposed -= m_Register.Remove;
-        }
+        protected virtual void Subscrube() { }
+        protected virtual void Unsubscrube() { }
 
-        private void OnInitialize(InstanceInfo info)
+
+        private void OnInit(Instance info)
         {
             Initialized?.Invoke(info.ObjType,info.Obj);
             var name = info.ObjType.Name;
-            Send($"Initialization successfully completed!");
+            Send($"{name} initialization successfully completed!");
         }
             
-        private void OnDispose(InstanceInfo info) 
+        private void OnDispose(Instance info) 
         {
             var name = info.ObjType.Name;
             Send($"{name} dispose process successfully completed!");
             Disposed?.Invoke(info.ObjType,info.Obj);
         } 
             
-        /*
+
         // UNITY //
+
         private void OnEnable() =>
             Init();
 
@@ -145,18 +100,8 @@ namespace APP
             Dispose();
 
         private void Start() =>
-            Run();
-        */
-        
-        void IConfigurable.Init()
-        {
-            throw new NotImplementedException();
-        }
+            Load();
 
-        void IConfigurable.Dispose()
-        {
-            throw new NotImplementedException();
-        }
     }
 
 }

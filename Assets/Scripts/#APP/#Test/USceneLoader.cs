@@ -6,9 +6,9 @@ namespace APP.Test
     public class USceneLoader : UComponent
     {
         
-        protected override void Init()
+        public override void Init()
         {
-            var info = new InstanceInfo(this);
+            var info = new Instance(this);
             var config = new Config(info);
             
             base.Configure(config);

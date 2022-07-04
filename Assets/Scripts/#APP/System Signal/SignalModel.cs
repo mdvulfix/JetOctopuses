@@ -83,14 +83,14 @@ namespace APP.Signal
     {
         public ISignal Signal { get; }
 
-        public SignalConfig(InstanceInfo info): base(info)
+        public SignalConfig(Instance info): base(info)
         {
         }
 
     }
 
     public class SignalFactory<TSignal> : IFactory
-    where TSignal : class, ISignal
+    where TSignal : UComponent, ISignal, IComparable
     {
 
         public TSignal Get()
@@ -108,6 +108,10 @@ namespace APP.Signal
             return signal;
         }
 
+        public T Get<T>(params object[] p) where T : UComponent, IConfigurable
+        {
+            throw new NotImplementedException();
+        }
     }
 
 }

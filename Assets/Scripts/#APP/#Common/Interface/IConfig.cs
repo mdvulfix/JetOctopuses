@@ -1,28 +1,47 @@
 using System;
+using UnityEngine;
 
 namespace APP
 {
     public interface IConfig
     {
-        InstanceInfo InstanceInfo {get; }
+        Instance Instance { get; }
     }
 
-
-    public struct InstanceInfo
+    public class Instance
     {
-        public Type ObjType {get; private set;}
-        public object Obj {get; private set;}
-        
-        public InstanceInfo(object obj)
+        public object Obj { get; private set; }
+        public Type ObjType { get; private set; }
+
+        public Instance(object obj)
         {
+            Obj = obj;
             ObjType = obj.GetType();
-            Obj = obj;
         }
-        
-        public InstanceInfo(Type objType, object obj)
+    }
+
+    public class Instance<TScene> : Instance
+    where TScene : UComponent, IScene
+    {
+        public String Name { get; private set; }
+        public SceneIndex SceneIndex { get; private set; }
+        public GameObject GObj { get; private set; }
+        public GameObject GObjParent { get; private set; }
+
+        public Instance(
+            object instance,
+            string name = null) : base(instance)
         {
-            ObjType = objType;
-            Obj = obj;
+            Name = name;
+            SceneIndex = SceneIndex<TScene>.Index;
+            GObj = ((UComponent) instance).gameObject;
+            
+            if(name == null) 
+                GObj.name = "Unnamed"; 
+            else 
+                GObj.name = name;
+            
+            GObjParent = ((UComponent) instance).transform.parent.gameObject;
         }
     }
 

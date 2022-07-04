@@ -10,17 +10,18 @@ namespace APP.Scene
         [SerializeField] private ScreenLoading m_Loading;
         [SerializeField] private ScreenLevel m_Level_1;
 
-        protected override void Init()
+        public override void Init()
         {
-            var screens = new IScreen[]
+            var instance =  new Instance(this);
+            var screens = new IScreen[2] 
             {
-                m_Loading,
-                m_Level_1
+                m_Loading = Set<ScreenLoading>("Screen: Loading"),
+                m_Level_1 = Set<ScreenLevel>("Screen: Level")
             };
 
-            var info = new InstanceInfo(this);
-            var config = new SceneConfig(info, screens);
-            base.Configure(config);
+            var config =  new SceneConfig(instance, screens);
+            
+            Configure(config);
             base.Init();
         }
 

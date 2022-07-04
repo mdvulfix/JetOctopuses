@@ -11,7 +11,7 @@ namespace APP.Screen
         //[SerializeField] private ButtonLevelResume m_Resume;
         //[SerializeField] private ButtonLevelExit m_Exit;
 
-        protected override void Init()
+        public override void Init()
         {
             var buttons = new IButton[]
             {
@@ -20,8 +20,8 @@ namespace APP.Screen
                 //m_Exit
             };
 
-            var instanceInfo = new InstanceInfo(this);
-            var screenConfig = new ScreenConfig(instanceInfo, buttons);
+            var Instance = new Instance(this);
+            var screenConfig = new ScreenConfig(Instance, buttons);
             
             base.Configure(screenConfig);
             base.Init();

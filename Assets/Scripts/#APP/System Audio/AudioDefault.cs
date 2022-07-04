@@ -4,9 +4,9 @@ namespace APP.Audio
 {
     public class AudioDefault : AudioModel<AudioDefault>, IAudio
     {
-        protected override void Init()
+        public override void Init()
         {
-            var info = new InstanceInfo(this);
+            var info = new Instance(this);
             var audioController = new AudioControllerDefault();
 
             var config = new AudioConfig(info, audioController);
@@ -37,10 +37,10 @@ namespace APP.Audio
 
         }
 
-        protected override void Init() =>
+        public override void Init() =>
             base.Init();
 
-        protected override void Dispose() =>
+        public override void Dispose() =>
             base.Dispose();
     }
 
@@ -51,7 +51,7 @@ namespace APP.Audio
 
     public class AudioConfig : Config
     {
-        public AudioConfig(InstanceInfo info, IAudioController audioController): base(info)
+        public AudioConfig(Instance info, IAudioController audioController): base(info)
         {
             AudioController = audioController;
         }

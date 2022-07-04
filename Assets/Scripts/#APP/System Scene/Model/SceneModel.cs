@@ -1,5 +1,6 @@
 using System;
 using APP.Screen;
+using SERVICE.Handler;
 
 namespace APP.Scene
 {
@@ -7,10 +8,12 @@ namespace APP.Scene
     public abstract class SceneModel<TScene> : UComponent
     where TScene : IScene
     {
-        
-        
         private SceneConfig m_Conig;
         private TScene m_Instance;
+        
+        private Register<IScreen> m_Screens;
+
+
 
         private IScreenController m_ScreenController;
         
@@ -18,8 +21,6 @@ namespace APP.Scene
         protected Action<SceneState> StateChanged { get; private set; }
 
         public static SceneIndex Index => SceneIndex<TScene>.Index;
-
-        
 
         public event Action<IActionInfo> SceneLoaded;
         public event Action<IActionInfo> SceneUnloaded;
@@ -30,28 +31,27 @@ namespace APP.Scene
 
         public override void Configure (IConfig config)
         {
-            if(ConfigValidate())
-                return;
-        
             base.Configure(config);
             m_Conig = (SceneConfig) config;
             
+            foreach (var screen in m_Conig.Screens)
+            {
+                m_Register.Set(screen);
+            }
             
-            
+
             m_ScreenController = new ScreenControllerDefault();
 
         }
 
-        protected override void Init ()
+        public override void Init ()
         {
-            if(InitValidate())
-                return;
             
             base.Init ();
             m_ScreenController.Init();
         }
 
-        protected override void Dispose ()
+        public override void Dispose ()
         {
             m_ScreenController.Dispose();
             base.Dispose ();
@@ -66,20 +66,11 @@ namespace APP.Scene
             Send("Activating screen...");
         }
         
-        protected void SetScreen<TScreen>(ref TScreen screenField, IScreen[] screens)
+        protected TScreen Set<TScreen>(string name) where TScreen: UComponent, IScreen
         {
-            foreach (var screen in screens)
-            {
-                if(screen.GetType() == typeof(TScreen))
-                {
-                    screenField = (TScreen)screen;
-                    return;
-                }
-                    
-                Send($"{typeof(TScreen).Name} was not found! Check scene config.", true);
-            } 
-            
-            
+            var obj = UComponentHandler.CreateGameObject(name, this.gameObject);
+            return UComponentHandler.SetComponent<TScreen>(obj);
+
         }
 
         private void SetState(SceneState state)
@@ -162,7 +153,7 @@ namespace APP.Scene
     {
         public IScreen[] Screens { get; private set; }
 
-        public SceneConfig (InstanceInfo info, params IScreen[] screens): base(info)
+        public SceneConfig (Instance info, IScreen[] screens): base(info)
         {
             Screens = screens;
         }
