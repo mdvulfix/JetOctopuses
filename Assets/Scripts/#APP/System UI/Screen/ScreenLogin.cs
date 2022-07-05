@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using APP.Button;
+using APP.UI;
 
 namespace APP.Screen
 {
@@ -11,7 +11,7 @@ namespace APP.Screen
         [SerializeField] private ButtonSignIn m_SignIn;
         [SerializeField] private ButtonSignUp m_SignUp;
 
-        public override void Init()
+        protected override void Init()
         {
             var buttons = new IButton[]
             {
@@ -19,8 +19,7 @@ namespace APP.Screen
                 m_SignUp
             };
 
-            var info = new Instance(this);
-            var config = new ScreenConfig(info, buttons);
+            var config = new ScreenConfig(this, buttons);
             
             base.Configure(config);
             base.Init();

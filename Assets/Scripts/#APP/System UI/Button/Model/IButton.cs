@@ -1,8 +1,6 @@
 using System;
 
-using APP.Signal;
-
-namespace APP.Button
+namespace APP
 {
     public interface IButton : IConfigurable
     {

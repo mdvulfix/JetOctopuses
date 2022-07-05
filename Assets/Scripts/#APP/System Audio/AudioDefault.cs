@@ -4,12 +4,11 @@ namespace APP.Audio
 {
     public class AudioDefault : AudioModel<AudioDefault>, IAudio
     {
-        public override void Init()
+        protected override void Init()
         {
-            var info = new Instance(this);
             var audioController = new AudioControllerDefault();
 
-            var config = new AudioConfig(info, audioController);
+            var config = new AudioConfig(this, audioController);
             base.Configure(config);
             base.Init();
         }
@@ -18,30 +17,30 @@ namespace APP.Audio
 
 
     ////////////////////////////////////////////////////////////
-    public class AudioModel<TAudio> : UComponent, IConfigurable
+    public class AudioModel<TAudio> : SceneObject, IConfigurable
     {
 
         private AudioConfig m_Config;
         private IAudioController m_AudioController;
 
+        public bool IsConfigured {get; private set;}
 
-        public override void Configure(IConfig config)
+        public virtual void Configure(IConfig config)
         {
             if (IsConfigured == true)
                 return;
 
-            base.Configure(config);
 
             m_Config = (AudioConfig)config;
             m_AudioController = m_Config.AudioController;
 
+
+            IsConfigured = true;
         }
 
-        public override void Init() =>
-            base.Init();
+        protected override void Init() { }
+        protected override void Dispose() { }
 
-        public override void Dispose() =>
-            base.Dispose();
     }
 
     public interface IAudio
@@ -51,7 +50,7 @@ namespace APP.Audio
 
     public class AudioConfig : Config
     {
-        public AudioConfig(Instance info, IAudioController audioController): base(info)
+        public AudioConfig(IAudio audio, IAudioController audioController): base(audio)
         {
             AudioController = audioController;
         }

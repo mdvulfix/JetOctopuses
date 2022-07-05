@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using APP.Scene;
+using APP.Signal;
 
 namespace APP
 {
@@ -13,9 +14,10 @@ namespace APP
         private IState m_StateActive;
         private IScene m_SceneActive;
 
-        public Action<SceneIndex> SceneNeed;
-        public Action<IState> StateNeed;
-
+        
+        private ISignal[] m_Signals;
+        
+        
         public virtual Task Enter()
         {
             Send("Enter state.");
@@ -54,31 +56,42 @@ namespace APP
 
         }
 
+        protected void SignalSend(ISignal signal)
+        {
+            signal.Call();
+        }
+
     }
 
     public class StateLoad : StateModel<StateLoad>, IState 
     { 
-        public override Task Enter()
+        public async override Task Enter()
         {
             Send("System enter loading...");
-            return null;
+            await Task.Delay(1);
+            //return null;
         }
         
-        public override Task Run()
+        public async override Task Run()
         {
             Send("System start loading...");
+            await Task.Delay(1);
 
+            //var signal = new SignalSceneActivate<SceneCore>();
+            //SignalSend(signal);
+            
             //await Builder.Execute(new CoreBuildScheme());
 
-            SceneNeed?.Invoke(SceneIndex<SceneCore>.Index);
+            //SceneNeed?.Invoke(SceneIndex<SceneCore>.Index);
             
-            return null;
+            //return null;
         }
 
-        public override Task Exit()
+        public async override Task Exit()
         {
             Send("System complete loading...");
-            return null;
+            await Task.Delay(1);
+            //return null;
         }
     }
     

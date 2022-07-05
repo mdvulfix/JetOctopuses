@@ -7,10 +7,11 @@ using System;
 
 namespace SERVICE.Handler
 {
-    public static class USceneHandler
+    public static class SceneHandler
     {
         private static bool m_Debug = true;
 
+        // SCENE TASK //
         public static async Task Load(SceneIndex? sceneIndex)
         {
             if(GetUSceneLoaded(sceneIndex, out var uScene))
@@ -61,8 +62,32 @@ namespace SERVICE.Handler
             await Task.Delay(1);
             Send($"UScene {sceneIndex} was eloaded... Not implemented!", LogFormat.Worning);
         }
+        
+
+        // SCENE OBJECT //
+        public static GameObject SetGameObject(string name = "Unnamed", GameObject parent = null)
+        {
+            var obj = new GameObject(name);
+        
+            if (parent != null)
+                obj.transform.SetParent(parent.transform);
+
+            return obj;
+        }
+        
+        public static TComponent SetComponent<TComponent>(GameObject gameObject)
+        where TComponent : SceneObject
+        {
+            return gameObject.AddComponent<TComponent>();
+        }
 
         
+
+
+
+
+        
+        // HELPERS //
         private static bool AwaitLoadingOperationComplete(AsyncOperation loading)
         {           
             Send($"UScene loading progress {Math.Round(loading.progress * 100, 1)}%...");
@@ -109,16 +134,4 @@ namespace SERVICE.Handler
             Messager.Send("USceneHandler", m_Debug, text, worning);
 
     }
-
-    public class USceneLoadingTaskInfo: TaskInfo
-    {
-        public USceneLoadingTaskInfo(UScene uScene)
-        {
-            UScene = uScene;
-        }
-
-        public UScene UScene {get; private set;}
-    }
-
-
 }

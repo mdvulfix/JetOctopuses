@@ -24,9 +24,7 @@ namespace APP
 
         public void Configure(IConfig config)
         {
-
             m_Config = (StateControllerConfig)config;
-
             m_Register = new Register<IState>();
             
             foreach (var state in m_Config.States)
@@ -55,9 +53,11 @@ namespace APP
             IsInitialized = false;
         }
 
-        public TState Execute<TState>() where TState : class, IState
+        public TState Execute<TState>() 
+        where TState : class, IState
         {
-            m_StateActive.Exit();
+            if(m_StateActive != null)
+                m_StateActive.Exit();
             
             if(m_Register.Get<TState>(out var state))
             {

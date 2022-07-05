@@ -5,19 +5,18 @@ using APP.Screen;
 namespace APP.Scene
 {
     [Serializable]
-    public class SceneLogin : SceneModel<SceneLogin>, IScene
+    public class SceneLogin : SceneModel, IScene
     {
         [SerializeField] private ScreenLoading m_Loading;
 
-        public override void Init()
+        protected override void Init()
         {
-            var instance =  new Instance(this);
             var screens = new IScreen[1] 
             {
                 m_Loading = Set<ScreenLoading>("Screen: Loading")
             };
 
-            var config =  new SceneConfig(instance, screens);
+            var config =  new SceneConfig<SceneLogin>(this, screens);
             
             Configure(config);
             base.Init();

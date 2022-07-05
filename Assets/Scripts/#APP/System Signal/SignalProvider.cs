@@ -3,6 +3,8 @@ using SERVICE.Handler;
 
 namespace APP.Signal
 {
+    
+    /*
     public class SignalProvider<TSignal> : SignalProvider
     where TSignal : class, ISignal
     {
@@ -38,13 +40,13 @@ namespace APP.Signal
 
         }
 
-        /*
+
         private void Set(IFactory<TSignal> factory, IConfig config)
         {
             var signal = factory.Get(config);
             m_Signals.Add(typeof(TSignal), signal);
         }
-        */
+
 
     }
 
@@ -78,4 +80,5 @@ namespace APP.Signal
         }
 
     }
+    */
 }

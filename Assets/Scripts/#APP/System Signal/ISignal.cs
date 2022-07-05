@@ -65,14 +65,10 @@ public class SignalMenuLevel:
 
 */
 
-namespace APP.Signal
+namespace APP
 {
-    public interface ISignal : IConfigurable
+    public interface ISignal
     {
-        event Action<ISignal> Initialized;
-        event Action<ISignal> Disposed;
-        event Action<ISignal> Called;
-
         void Call ();
 
     }

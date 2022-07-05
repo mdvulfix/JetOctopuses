@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using APP.Player;
 
-namespace APP.Button
+namespace APP.UI
 {
     
     /*

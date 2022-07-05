@@ -15,7 +15,7 @@ namespace APP.Screen
         public override void Dispose() { }
 
         public async Task Activate<TScreen>(bool animate)
-        where TScreen: UComponent, IScreen
+        where TScreen: SceneObject, IScreen
         {
 
             if (m_ScreenActive != null && m_ScreenActive.GetType() == typeof(TScreen))
@@ -57,13 +57,13 @@ namespace APP.Screen
         }
 
         private bool AwaitScreenActivation<TScreen>(out TScreen screen)
-        where TScreen: UComponent, IScreen
+        where TScreen: SceneObject, IScreen
         {
             screen = null;
             
-            if (RegisterHandler.Contains<TScreen>())
+            if (CacheHandler.Contains<TScreen>())
             {
-                screen = RegisterHandler.Get<TScreen>();
+                screen = CacheHandler.Get<TScreen>();
                 return true;
             }
                 
@@ -80,6 +80,6 @@ namespace APP.Screen
     public interface IScreenController: IController
     {
         Task Activate<TScreen>(bool animate)
-        where TScreen: UComponent, IScreen;
+        where TScreen: SceneObject, IScreen;
     }
 }

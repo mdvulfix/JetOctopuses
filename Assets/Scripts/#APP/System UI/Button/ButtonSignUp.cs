@@ -3,14 +3,14 @@ using UnityEngine;
 using APP;
 using APP.Player;
 
-namespace APP.Button
+namespace APP.UI
 {
     [Serializable]
     public class ButtonSignUp : ButtonModel<ButtonSignUp>, IButton
     {
         [SerializeField] private PlayerAction m_PlayerAction;
 
-        public override void Init()
+        protected override void Init()
         {
             if (m_PlayerAction == PlayerAction.None)
             {
@@ -18,8 +18,8 @@ namespace APP.Button
                 return;
             }
 
-            var info = new Instance(this);
-            var config = new ButtonConfig(info);
+   
+            var config = new ButtonConfig(this);
 
             base.Configure(config);
             base.Init();

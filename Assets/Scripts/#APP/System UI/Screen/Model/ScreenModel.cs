@@ -1,32 +1,32 @@
 using System;
-using APP.Button;
+using UnityEngine;
 
 namespace APP.Screen
 {
 
     [Serializable]
-    public abstract class ScreenModel<TScreen> : UComponent, IConfigurable
+    public abstract class ScreenModel<TScreen> : SceneObject, IConfigurable
     where TScreen : IScreen
     {
+        
+        [SerializeField] private bool m_Debug = true;
+        
         private ScreenConfig m_Config;
         private IScreenController m_ScreenController;
 
-        public override void Configure(IConfig config)
+        public bool IsConfigured {get; private set; }
+
+        public void Configure(IConfig config)
         {
-            base.Configure(config);
+            
+            
             m_Config = (ScreenConfig) config;
+
         }
 
-        public override void Init()
-        {
-            base.Init();
-        }
+        protected override void Init() { }
+        protected override void Dispose() { }
 
-        public override void Dispose()
-        {
-
-            base.Dispose();
-        }
 
         
         /*
@@ -76,7 +76,17 @@ namespace APP.Screen
 
         */
 
-    
+
+
+        public void Activate(bool Activate = true) =>
+            gameObject.SetActive(Activate);
+
+        public void Animate(bool Activate = true)
+        {
+
+        }
+
+
     
     
     }
@@ -85,7 +95,7 @@ namespace APP.Screen
     {
         public IButton[] Buttons { get; private set; }
 
-        public ScreenConfig(Instance info, IButton[] buttons): base(info)
+        public ScreenConfig(IScreen screen, IButton[] buttons): base(screen)
         {
             Buttons = buttons;
         }
@@ -96,14 +106,13 @@ namespace APP.Screen
     public class ScreenSplash : ScreenModel<ScreenSplash>, IScreen
     {
 
-        public override void Init()
+        protected override void Init()
         {
             var buttons = new IButton[]
             {
             };
 
-            var Instance = new Instance(this);
-            var screenConfig = new ScreenConfig(Instance, buttons);
+            var screenConfig = new ScreenConfig(this, buttons);
             
             base.Configure(screenConfig);
             base.Init();

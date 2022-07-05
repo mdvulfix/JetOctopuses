@@ -1,13 +1,37 @@
+using System;
+
 namespace APP.Signal
 {
-    public class SignalAction : SignalModel<SignalAction>, ISignal
+    public class SignalSceneActivate<TScene> : ISignal
     {
-        public SignalAction() { }
+        public SignalSceneActivate() { }
 
-        public SignalAction(IConfig config)
+        public event Action<ISignal> Called;
+        
+        public void Call()
         {
-            Configure(config);
-            base.Init();
+            
+            //var instance =  new Instance()
+            //Called?.Invoke(this);
+        }
+    }
+
+
+    public class SignalStateSet : ISignal
+    {
+        private IState m_State;
+
+        public SignalStateSet(IState state)
+        {
+            m_State = state;
+        }
+
+        public event Action<IState> Called;
+        
+
+        public void Call()
+        {
+            Called?.Invoke(m_State);
         }
     }
 

@@ -1,18 +1,13 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
-using UButton = UnityEngine.UI.Button;
 
-using SERVICE.Handler;
-using APP.Signal;
-using APP.Screen;
-
-namespace APP.Button
+namespace APP.UI
 {
-    public abstract class ButtonModel<TButton> : UButton, IConfigurable
+    public abstract class ButtonModel<TButton> : Button, IConfigurable
     where TButton : class, IButton
     {
-        [SerializeField] private UButton m_Button;
+        [SerializeField] private Button m_Button;
 
         private ButtonConfig m_Config;
 
@@ -28,7 +23,7 @@ namespace APP.Button
             IsConfigured = true;
         }
 
-        public virtual void Init()
+        protected virtual void Init()
         {
             if (IsConfigured == false)
             {
@@ -45,7 +40,7 @@ namespace APP.Button
             IsDebug = true;
         }
 
-        public virtual void Dispose()
+        protected virtual void Dispose()
         {
             Unsubscribe();
 
@@ -53,7 +48,7 @@ namespace APP.Button
 
         }
 
-        public string Send(string text, LogFormat worning = LogFormat.None) =>
+        protected string Send(string text, LogFormat worning = LogFormat.None) =>
             Messager.Send(this, IsDebug, text, worning);
 
         protected void Subscribe() =>
@@ -71,7 +66,7 @@ namespace APP.Button
 
     public class ButtonConfig : Config
     {
-        public ButtonConfig(Instance info): base(info)
+        public ButtonConfig(IButton button): base(button)
         {
 
         }
@@ -80,7 +75,7 @@ namespace APP.Button
 
     public struct ButtonClickedEventArgs : IEventArgs
     {
-        public UButton Button { get; }
+        public IButton Button { get; }
         public IScreen Screen { get; }
 
         /*

@@ -5,14 +5,14 @@ namespace APP.Vfx
 
     public class VfxDefault: VfxModel<VfxDefault>, IVfx
     {
-        public override void Init()
+        protected override void Init()
         {
             
-            var info = new Instance(this);
+
             var vfxController = new VfxControllerDefault();
             
             
-            var config = new VfxConfig(info, vfxController);
+            var config = new VfxConfig(this, vfxController);
             
             base.Configure(config);
             base.Init();
@@ -22,28 +22,28 @@ namespace APP.Vfx
 
 
 
-    public class VfxModel<TVfx>: UComponent
+    public class VfxModel<TVfx>: SceneObject, IConfigurable
     {        
         private VfxConfig m_Config;
         private IVfxController m_VfxController;
-        
-        public override void Configure(IConfig config)
+
+        public bool IsConfigured {get; private set;}
+
+        public void Configure(IConfig config)
         {
             if(IsConfigured == true)
                 return;
             
-            base.Configure(config);
             
             m_Config = (VfxConfig)config;
             m_VfxController = m_Config.VfxController;
 
+        
+            IsConfigured = true;
         }
 
-        public override void Init() => 
-            base.Init();
-
-        public override void Dispose() => 
-            base.Dispose();
+        protected override void Init() { }
+        protected override void Dispose() { }
     }
 
     public interface IVfx
@@ -54,7 +54,7 @@ namespace APP.Vfx
     {
         public IVfxController VfxController {get; private set;}
 
-        public VfxConfig(Instance info, IVfxController vfxController): base(info)
+        public VfxConfig(IVfx vfx, IVfxController vfxController): base(vfx)
         {
             VfxController = vfxController;
         }    

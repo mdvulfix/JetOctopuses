@@ -1,10 +1,9 @@
 using System.Threading.Tasks;
 using UnityEngine;
+
 using SERVICE.Handler;
 using SERVICE.Factory;
 using APP.Scene;
-using APP.Screen;
-using APP.Button;
 
 namespace APP
 {
@@ -12,17 +11,17 @@ namespace APP
     public abstract class SceneBuildScheme<TScene> : SceneBuildScheme where TScene: IScene
     {   
         protected async Task SceneActivate() =>
-            await USceneHandler.Activate(SceneIndex<TScene>.Index);
+            await SceneHandler.Activate(SceneIndex<TScene>.Index);
     }
 
     public abstract class SceneBuildScheme
     {   
         public abstract Task Execute();
         
-        protected TSystem Set<TSystem>(string name, GameObject parent = null) where TSystem : UComponent, IConfigurable
+        protected TSystem Set<TSystem>(string name, GameObject parent = null) where TSystem : SceneObject, IConfigurable
         {
-            var obj = UComponentHandler.CreateGameObject(name, parent);
-            return UComponentHandler.SetComponent<TSystem>(obj);
+            var obj = SceneHandler.SetGameObject(name, parent);
+            return SceneHandler.SetComponent<TSystem>(obj);
         }
     }
 
@@ -124,20 +123,20 @@ namespace APP
 
         
         
-        public TScreen Get<TScreen>(params object[] p) where TScreen: UComponent, IConfigurable
+        public TScreen Get<TScreen>(params object[] p) where TScreen: SceneObject, IConfigurable
         {
             var name =  (string)p[1];
-            var component =  (UComponent)p[2];
+            var obj =  (SceneObject)p[2];
 
-            var screen = Set<TScreen>(name, component.gameObject);
+            var screen = Set<TScreen>(name, obj.gameObject);
             return screen;
         }
 
     
-        private TSystem Set<TSystem>(string name, GameObject parent = null) where TSystem : UComponent, IConfigurable
+        private TSystem Set<TSystem>(string name, GameObject parent = null) where TSystem : SceneObject, IConfigurable
         {
-            var obj = UComponentHandler.CreateGameObject(name, parent);
-            return UComponentHandler.SetComponent<TSystem>(obj);
+            var obj = SceneHandler.SetGameObject(name, parent);
+            return SceneHandler.SetComponent<TSystem>(obj);
         }
 
 

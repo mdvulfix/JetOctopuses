@@ -12,11 +12,12 @@ namespace APP.Scene
     public class SceneControllerDefault : Controller, ISceneController
     {
         private SceneControllerConfig m_Config;
-        private Register<IScene> m_SceneRegister;
 
         private IScene m_SceneActive;
 
         public bool IsConfigured { get; private set; }
+
+
 
         public Action<IScene> SceneActivated;
 
@@ -27,18 +28,12 @@ namespace APP.Scene
 
 
         public void Configure(IConfig config)
-        {
-
+        {           
             m_Config = (SceneControllerConfig)config;
 
-            m_SceneRegister = new Register<IScene>();
-            foreach (var scene in m_Config.Scenes)
-            {
-                m_SceneRegister.Set(scene);
-            }
+
 
             IsConfigured = true;
-
         }
 
         public override void Init()
@@ -60,34 +55,17 @@ namespace APP.Scene
             IsInitialized = false;
         }
 
-        public async Task Activate<TScene>() where TScene : UComponent, IScene
+        public async Task Activate<TScene>() 
+        where TScene : SceneObject, IScene
         {
             if (m_SceneActive != null && m_SceneActive.GetType() == typeof(TScene))
             {
                 Send($"{typeof(TScene).Name} is already active!");
                 return;
             }
-
-            await SceneActivate<TScene>();
-
-        }
-
-        /*
-        private async Task SceneActivate<TScene>() where TScene : UComponent, IScene
-        {
-            if (GetSceneIndex<TScene>(out var index))
-                await SceneActivate<TScene>(index);
-            else
-                Send($"{typeof(TScene).Name} not set to scene indexes!", true);
-
-        }
-        */
-
-        private async Task SceneActivate<TScene>() where TScene : UComponent, IScene
-        {
-
+            
             var sceneIndex = SceneIndex<TScene>.Index;
-            await USceneHandler.Activate(sceneIndex);
+            await SceneHandler.Activate(sceneIndex);
 
             TScene scene = null;
             await TaskHandler.Run(() => AwaitSceneActivation<TScene>(sceneIndex, out scene), "Waiting for scene activation...");
@@ -103,12 +81,12 @@ namespace APP.Scene
 
         }
 
-        private bool AwaitSceneActivation<TScene>(SceneIndex? index, out TScene scene) where TScene : UComponent, IScene
+        private bool AwaitSceneActivation<TScene>(SceneIndex? index, out TScene scene) where TScene : SceneObject, IScene
         {
             scene = null;
-            if (RegisterHandler.Contains<TScene>())
+            if (CacheHandler.Contains<TScene>())
             {
-                scene = RegisterHandler.Get<TScene>();
+                scene = m_CacheHandler.Get();
                 return true;
             }
 
@@ -116,34 +94,22 @@ namespace APP.Scene
         }
 
 
-        /*
-private bool GetSceneIndex<TScene>(out SceneIndex index)
-where TScene : IScene
-{
-   index = SceneIndex<TScene>.Index;
-   if(index != default(SceneIndex))
-       return true;
-
-   return false;
-}
-*/
     }
 
-    public class SceneControllerConfig : Config
+    public struct SceneControllerConfig : IConfig
     {
-        public IScene[] Scenes { get; private set; }
+        public Cache<IScene> Cache { get; }
 
-        public SceneControllerConfig(Instance info, IScene[] scenes): base(info)
+        public SceneControllerConfig(Cache<IScene> cache)
         {
-            Scenes = scenes;
+            Cache = cache;
         }
-
     }
 
     public interface ISceneController : IController, IConfigurable
     {
         Task Activate<TScene>()
-            where TScene : UComponent, IScene;
+            where TScene : SceneObject, IScene;
 
     }
 }

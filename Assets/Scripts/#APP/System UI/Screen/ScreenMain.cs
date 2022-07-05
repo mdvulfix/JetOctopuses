@@ -1,6 +1,4 @@
 ﻿using System;
-using UnityEngine;
-using APP.Button;
 
 namespace APP.Screen
 {
@@ -11,7 +9,7 @@ namespace APP.Screen
         //[SerializeField] private ButtonMenuOptions m_Options;
         //[SerializeField] private ButtonMenuExit m_Exit;
 
-        public override void Init()
+        protected override void Init()
         {
             var buttons = new IButton[]
             {
@@ -20,8 +18,7 @@ namespace APP.Screen
                 //m_Exit,
             };
 
-            var info = new Instance(this);
-            var config = new ScreenConfig(info, buttons);
+            var config = new ScreenConfig(this, buttons);
             
             base.Configure(config);
             base.Init();

@@ -1,86 +1,119 @@
 using System;
-using APP.Screen;
+using System.Collections;
+using UnityEngine;
+
 using SERVICE.Handler;
+using APP.Screen;
 
 namespace APP.Scene
 {
     [Serializable]
-    public abstract class SceneModel<TScene> : UComponent
-    where TScene : IScene
+    public abstract class SceneModel : SceneObject, IConfigurable
     {
-        private SceneConfig m_Conig;
-        private TScene m_Instance;
+        private static Cache<IScene> m_Cache;
         
-        private Register<IScreen> m_Screens;
-
-
-
+        [SerializeField]
+        private bool m_Debug = true;
+        
+        private ISceneConfig m_Config;
+        private IScene m_Scene;
+        
         private IScreenController m_ScreenController;
+        private IScreen[] m_Screens;
         
-        protected SceneState StateActive { get; private set; }
-        protected Action<SceneState> StateChanged { get; private set; }
 
-        public static SceneIndex Index => SceneIndex<TScene>.Index;
+        public bool IsConfigured {get; private set;}
+        public bool IsInitialized {get; private set;}
 
-        public event Action<IActionInfo> SceneLoaded;
-        public event Action<IActionInfo> SceneUnloaded;
-        public event Action<IActionInfo> SceneActivated;
+      
+        public event Action<ICacheable> CacheWrite;
+        public event Action<ICacheable> CacheClear;
+
         public event Action<IActionInfo> ScreenActivated;
 
-        private Register<TScene> m_Register;
 
-        public override void Configure (IConfig config)
+        // CONFIGURE //
+        public virtual void Configure (IConfig config)
         {
-            base.Configure(config);
-            m_Conig = (SceneConfig) config;
+            m_Config = (ISceneConfig) config;
             
-            foreach (var screen in m_Conig.Screens)
-            {
-                m_Register.Set(screen);
-            }
-            
+            Index = m_Config.Index;
+            m_Scene = m_Config.Instance;
 
+            
+            
+        
             m_ScreenController = new ScreenControllerDefault();
-
+            
+            IsConfigured = true;
         }
 
-        public override void Init ()
+        // SUBSCRUBE //
+        public void Subscrube()
         {
             
-            base.Init ();
-            m_ScreenController.Init();
+            // Cache //
+            CacheWrite += m_Cache.OnCacheWrite;
+            CacheClear += m_Cache.OnCacheClear;
         }
 
-        public override void Dispose ()
+        public void Unsubscrube()
         {
+           
+            // Cache //
+            CacheWrite -= m_Cache.OnCacheWrite;
+            CacheClear -= m_Cache.OnCacheClear;
+        }
+        
+        
+        // INIT //
+        protected override void Init ()
+        {
+            if(IsConfigured == false)
+            {
+                Send("Instance is not configured! Initialization aborted!", LogFormat.Worning);
+                return;
+            }
+                
+            Subscrube();
+            
+            m_ScreenController.Init();
+
+            Send($"Initialization successfully completed!");
+            IsInitialized = true;
+        }
+
+        protected override void Dispose ()
+        {
+            Unsubscrube();
+            
+            
             m_ScreenController.Dispose();
-            base.Dispose ();
+
+            Send($"Dispose process successfully completed!");
+            IsInitialized = false;
         }
 
         
+    
+        
         public void Activate<TScreen>()
-            where TScreen: UComponent, IScreen
+            where TScreen: SceneObject, IScreen
         {
             //var animate = true;
             //m_ScreenController.Activate<TScreen>(animate);
             Send("Activating screen...");
         }
         
-        protected TScreen Set<TScreen>(string name) where TScreen: UComponent, IScreen
+        protected TScreen Set<TScreen>(string name) where TScreen: SceneObject, IScreen
         {
-            var obj = UComponentHandler.CreateGameObject(name, this.gameObject);
-            return UComponentHandler.SetComponent<TScreen>(obj);
+            var obj = SceneHandler.SetGameObject(name, this.gameObject);
+            return SceneHandler.SetComponent<TScreen>(obj);
 
         }
 
-        private void SetState(SceneState state)
-        {
-            StateActive = state;
-            StateChanged?.Invoke(state);
-        }
-
-
-
+        protected string Send(string text, LogFormat worning = LogFormat.None) =>
+            Messager.Send(this, m_Debug, text, worning);
 
         /*
         public event Action<IEventArgs> PlayButtonClicked;
@@ -129,32 +162,29 @@ namespace APP.Scene
 
         */
 
-    
-        protected enum SceneState
-        {
-            None,
 
-            //Load
-            LoadIn,
-            LoadFail,
-            LoadRun,
-            LoadOut,
-        
-        
-            //Unoad
-            UnloadIn,
-            UnloadFail,
-            UnloadRun,
-            UnloadOut,
-        }
     }
 
-    public class SceneConfig : Config
+    public interface ISceneConfig
     {
+        IScene Instance { get; }
+        SceneIndex Index { get; }
+        IScreen[] Screens { get; }
+    }
+
+    public struct SceneConfig<TScene> : IConfig, ISceneConfig 
+    where TScene : IScene
+    {
+        public IScene Instance { get; private set; }
+        public SceneIndex Index { get; private set; }
+
         public IScreen[] Screens { get; private set; }
 
-        public SceneConfig (Instance info, IScreen[] screens): base(info)
+        public SceneConfig(TScene instance, IScreen[] screens)
         {
+            Instance = instance;
+            Index = SceneIndex<TScene>.Index;
+
             Screens = screens;
         }
     }

@@ -5,15 +5,14 @@ using APP.Screen;
 namespace APP.Scene
 {
     [Serializable]
-    public class SceneMenu : SceneModel<SceneMenu>, IScene
+    public class SceneMenu : SceneModel, IScene
     {
         [SerializeField] private ScreenLoading m_Loading;
         [SerializeField] private ScreenMain m_Main;
         [SerializeField] private ScreenScore m_Score;
 
-        public override void Init()
+        protected override void Init()
         {
-            var instance =  new Instance(this);
             var screens = new IScreen[3] 
             {
                 m_Loading = Set<ScreenLoading>("Screen: Loading"),
@@ -21,7 +20,7 @@ namespace APP.Scene
                 m_Score = Set<ScreenScore>("Screen: Score")
             };
 
-            var config =  new SceneConfig(instance, screens);
+            var config =  new SceneConfig<SceneMenu>(this, screens);
             
             Configure(config);
             base.Init();

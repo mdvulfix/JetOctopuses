@@ -1,11 +1,15 @@
 namespace APP
 {
-    public class Config: IConfig
+    
+    
+    
+    
+    public struct Config: IConfig
     {
-        public Instance Instance{get; private set;}
+        public object Instance {get; private set;}
 
-        public Config(Instance info) =>
-            Instance = info;
+        public Config(object instance) =>
+            Instance = instance;
 
     }
 

@@ -1,101 +1,12 @@
-using System.Threading.Tasks;
 using APP.Player;
 using APP.Scene;
+using APP.Signal;
 
 namespace APP
 {
 
-    public abstract class Session<TSession> : UComponent
-    where TSession : UComponent, ISession
+    public class SessionDefault : SessionModel<SessionDefault>, ISession
     {
-        private SessionConfig m_Config;
-
-        
-        private ISceneController m_SceneController;
-        private IStateController m_StateController;
-
-
-        public IState StateActive { get; private set; }
-    
-    
-        public override void Configure(IConfig config)
-        {
-            
-            m_Config = (SessionConfig)config;
-            
-            m_SceneController = new SceneControllerDefault();
-            var sceneControllerInstance = new Instance(m_SceneController);
-            var sceneControllerConfig = new SceneControllerConfig(sceneControllerInstance, m_Config.Scenes);
-            m_SceneController.Configure(sceneControllerConfig);
-
-            m_StateController = new StateControllerDefault();
-            var stateControllerInstance = new Instance(m_StateController);
-            var stateControllerConfig = new StateControllerConfig(stateControllerInstance, m_Config.States);
-            m_StateController.Configure(stateControllerConfig);
-
-            base.Configure(config);
-        }
-    
-    
-        // INIT //
-        public override void Init()
-        {
-            base.Init();
-            m_StateController.Init();
-            m_SceneController.Init();
-        }
-    
-    
-        public override void Dispose()
-        {
-            m_SceneController.Dispose();
-            m_StateController.Dispose();
-            base.Dispose();
-        }
-
-
-        // SUBSCRUBE //
-        protected override void Subscrube()
-        {
-            base.Subscrube();
-            m_StateController.StateChanged += OnStateChanged;
-        }
-
-        protected override void Unsubscrube()
-        {
-            m_StateController.StateChanged -= OnStateChanged;
-            base.Unsubscrube();
-        }
-
-       
-        //protected virtual void StateUpdate(IState state) { }
-       
-        
-        
-        protected void StateExecute<TState>() where TState: class, IState
-        {
-            m_StateController.Execute<TState>();
-        }
-
-
-        private void OnStateChanged(IState state)
-        {
-            Send($"State changed. {state} state activated...");
-            StateActive = state;
-            //StateUpdate(StateActive);
-        }
-        
-    }
-
-
-    public class SessionDefault : Session<SessionDefault>, ISession
-    {
-        private SceneCore m_SceneCore;
-        private SceneNet m_SceneNet;
-        private SceneLogin m_SceneLogin;
-        private SceneMenu m_SceneMenu;
-        private SceneLevel m_SceneLevel;
-
     
         // CONFIGURE //
         public override void Configure(IConfig config)
@@ -111,19 +22,7 @@ namespace APP
 
         // INIT //
         public override void Init()
-        {
-
-            var instance = new Instance(this);
-            
-            var scenes = new IScene[5]
-            {
-                m_SceneCore,
-                m_SceneNet,
-                m_SceneLogin,
-                m_SceneMenu,
-                m_SceneLevel
-            };
-            
+        {                        
             var states = new IState[6]
             {
                 new StateLoad(),
@@ -133,9 +32,8 @@ namespace APP
                 new StateResult(),
                 new StateUnload(),
             };
-
-
-            var config = new SessionConfig(instance, states, scenes);
+            
+            var config = new SessionConfig(this, states);
             
             
             
@@ -323,39 +221,31 @@ namespace APP
 
         */
 
+    
+        public enum Result
+        {
+            None,
+            Win,
+            Lose
+        }
+    
     }
 
     
 
-    public enum Result
-    {
-        None,
-        Win,
-        Lose
-    }
 
-    public interface IState
-    {
-        
-        Task Enter();
-        Task Fail();
-        Task Run();
-        Task Exit();
-    }
 
     public class SessionConfig : Config
     {
         public IState[] States {get; private set;}
-        public IScene[] Scenes {get; private set;}
         
         
         public SessionConfig(
-            Instance info,
-            IState[] states,
-            IScene[] scenes) : base(info)
+            ISession session,
+            IState[] states) : base(session)
         {
             States = states;
-            Scenes = scenes;
+
         }
     }
 
