@@ -33,6 +33,8 @@ namespace APP.Player
 
         private int m_Speed;
 
+        public event Action Configured;
+
         public bool IsConfigured => throw new NotImplementedException();
         public bool IsInitialized => throw new NotImplementedException();
 

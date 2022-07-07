@@ -9,7 +9,7 @@ namespace APP.Screen
         //[SerializeField] private ButtonScoreMenu m_Menu;
         //[SerializeField] private ButtonScoreExit m_Exit;
 
-        protected override void Init()
+        public override void Init()
         {
             var buttons = new IButton[]
             {

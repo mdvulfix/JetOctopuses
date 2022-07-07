@@ -1,6 +1,6 @@
 namespace APP
 {
-    public interface IScreen : IConfigurable 
+    public interface IScreen : IConfigurable, ICacheable
     {
         void Activate(bool active);
     

@@ -76,15 +76,10 @@ namespace SERVICE.Handler
         }
         
         public static TComponent SetComponent<TComponent>(GameObject gameObject)
-        where TComponent : SceneObject
+        where TComponent : Component
         {
             return gameObject.AddComponent<TComponent>();
         }
-
-        
-
-
-
 
         
         // HELPERS //

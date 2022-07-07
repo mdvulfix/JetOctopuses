@@ -1,17 +1,12 @@
-using SERVICE.Handler;
+using System;
 
 namespace APP
 {
-    public abstract class Controller: IController
+    public abstract class Handler: IHandler
     {
         private bool m_Debug = true;
-            
+    
         protected string Send(string text, LogFormat worning = LogFormat.None) =>
             Messager.Send(this, m_Debug, text, worning);
-    }
-
-    public interface IController
-    {
-
     }
 }

@@ -4,26 +4,33 @@ using UnityEngine.UI;
 
 namespace APP.UI
 {
-    public abstract class ButtonModel<TButton> : Button, IConfigurable
+    public abstract class ButtonModel<TButton> : Button, IConfigurable, IInitializable, ISubscriber
     where TButton : class, IButton
     {
         [SerializeField] private Button m_Button;
 
+        private bool m_Debug = true;
+        
         private ButtonConfig m_Config;
+        
 
-        public bool IsDebug { get; private set; }
         public bool IsConfigured { get; private set; }
         public bool IsInitialized { get; private set; }
 
+        public event Action Configured;
+        public event Action Initialized;
+        public event Action Disposed;
         public event Action<ISignal> ButtonClicked;
 
         public void Configure(IConfig config)
         {
             m_Config = (ButtonConfig) config;
-            IsConfigured = true;
+            
+            
+            OnConfigured();
         }
 
-        protected virtual void Init()
+        public virtual void Init()
         {
             if (IsConfigured == false)
             {
@@ -36,25 +43,25 @@ namespace APP.UI
             //m_Signal.Init();
 
             Subscribe();
-
-            IsDebug = true;
+            OnInitialized();
         }
 
-        protected virtual void Dispose()
+        public virtual void Dispose()
         {
+            
+            OnDisposed();
             Unsubscribe();
 
             //m_Signal.Dispose();
-
         }
 
         protected string Send(string text, LogFormat worning = LogFormat.None) =>
-            Messager.Send(this, IsDebug, text, worning);
+            Messager.Send(this, m_Debug, text, worning);
 
-        protected void Subscribe() =>
+        public void Subscribe() =>
             onClick.AddListener(() => ButtonClick());
 
-        protected void Unsubscribe() =>
+        public void Unsubscribe() =>
             onClick.RemoveListener(() => ButtonClick());
 
         private void ButtonClick()
@@ -62,15 +69,39 @@ namespace APP.UI
             //m_Signal.Call();
             //ButtonClicked?.Invoke(m_Signal);
         }
-    }
 
-    public class ButtonConfig : Config
-    {
-        public ButtonConfig(IButton button): base(button)
+        // CALLBACK //
+        private void OnConfigured()
         {
-
+            Send($"Configuration successfully completed!");
+            IsConfigured = true;
+            Configured?.Invoke();
+        }
+        
+        private void OnInitialized()
+        {
+            Send($"Initialization successfully completed!");
+            IsInitialized = true;
+            Initialized?.Invoke();
         }
 
+        private void OnDisposed()
+        {
+            Send($"Dispose process successfully completed!");
+            IsInitialized = false;
+            Disposed?.Invoke();
+        }
+
+    }
+
+    public struct ButtonConfig : IConfig
+    {
+        public ButtonConfig(IButton button)
+        {
+            Button = button;
+        }
+
+        public IButton Button { get; }
     }
 
     public struct ButtonClickedEventArgs : IEventArgs

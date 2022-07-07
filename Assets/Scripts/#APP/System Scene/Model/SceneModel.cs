@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using UnityEngine;
 
 using SERVICE.Handler;
@@ -7,17 +6,18 @@ using APP.Screen;
 
 namespace APP.Scene
 {
-    [Serializable]
-    public abstract class SceneModel : SceneObject, IConfigurable
+    public abstract class SceneModel<TScene> : IConfigurable, IInitializable
+    where TScene: IScene
     {
-        private static Cache<IScene> m_Cache;
-        
         [SerializeField]
         private bool m_Debug = true;
         
-        private ISceneConfig m_Config;
-        private IScene m_Scene;
+        private SceneConfig m_Config;
         
+        private ISceneObject m_SceneObject;
+        
+        private ICacheHandler m_CacheHandler;
+
         private IScreenController m_ScreenController;
         private IScreen[] m_Screens;
         
@@ -25,49 +25,57 @@ namespace APP.Scene
         public bool IsConfigured {get; private set;}
         public bool IsInitialized {get; private set;}
 
-      
-        public event Action<ICacheable> CacheWrite;
-        public event Action<ICacheable> CacheClear;
+        public string Name {get; private set;}
+        public IScene Scene {get; private set;}
+        public SceneObject SceneObject {get; private set;}
+
+        public event Action Configured;
+        public event Action Initialized;
+        public event Action Disposed;
 
         public event Action<IActionInfo> ScreenActivated;
 
-
         // CONFIGURE //
-        public virtual void Configure (IConfig config)
-        {
-            m_Config = (ISceneConfig) config;
-            
-            Index = m_Config.Index;
-            m_Scene = m_Config.Instance;
+        public virtual void Configure() =>
+            Configure(config: null);
 
+        public virtual void Configure(IConfig config) =>
+            Configure(config: config, param: null);
+
+        public virtual void Configure (IConfig config, params object[] param)
+        {
+            if(config != null)
+            {
+                m_Config = (SceneConfig) config;
+
+                Name = m_Config.Name;
+                Scene = m_Config.Scene;
+            }          
+               
             
             
+            
+            if(param.Length > 0)
+            {
+                foreach (var obj in param)
+                {   
+                    if(obj is object)
+                    Send("Param is not used", LogFormat.Worning);
+                }
+            }          
+                
+            
+            m_CacheHandler = new CacheHandlerDefault<TScene>();
+            m_CacheHandler.Configure(new CacheHandlerConfig(Scene));
+
         
             m_ScreenController = new ScreenControllerDefault();
             
-            IsConfigured = true;
+            OnConfigured();
         }
-
-        // SUBSCRUBE //
-        public void Subscrube()
-        {
-            
-            // Cache //
-            CacheWrite += m_Cache.OnCacheWrite;
-            CacheClear += m_Cache.OnCacheClear;
-        }
-
-        public void Unsubscrube()
-        {
-           
-            // Cache //
-            CacheWrite -= m_Cache.OnCacheWrite;
-            CacheClear -= m_Cache.OnCacheClear;
-        }
-        
         
         // INIT //
-        protected override void Init ()
+        public virtual void Init ()
         {
             if(IsConfigured == false)
             {
@@ -75,27 +83,22 @@ namespace APP.Scene
                 return;
             }
                 
-            Subscrube();
+            m_SceneObject = SetComponent<SceneObject>(Name);
             
+            m_CacheHandler.Init();
             m_ScreenController.Init();
 
-            Send($"Initialization successfully completed!");
-            IsInitialized = true;
+            OnInitialized();
         }
 
-        protected override void Dispose ()
-        {
-            Unsubscrube();
-            
-            
+        public virtual void Dispose ()
+        {          
             m_ScreenController.Dispose();
+            m_CacheHandler.Dispose();
 
-            Send($"Dispose process successfully completed!");
-            IsInitialized = false;
+            OnDisposed();
         }
 
-        
-    
         
         public void Activate<TScreen>()
             where TScreen: SceneObject, IScreen
@@ -105,15 +108,56 @@ namespace APP.Scene
             Send("Activating screen...");
         }
         
-        protected TScreen Set<TScreen>(string name) where TScreen: SceneObject, IScreen
-        {
-            var obj = SceneHandler.SetGameObject(name, this.gameObject);
-            return SceneHandler.SetComponent<TScreen>(obj);
 
+        protected TComponent SetComponent<TComponent>() 
+        where TComponent: Component, ISceneObject
+        {
+            return SceneHandler.SetComponent<TComponent>(m_SceneObject.gameObject);
         }
 
+        protected TComponent SetComponent<TComponent>(string name, ISceneObject parent = null) 
+        where TComponent: Component, ISceneObject
+        {
+            var obj = SceneHandler.SetGameObject(name, parent.gameObject);
+            return SceneHandler.SetComponent<TComponent>(obj);
+        }
+
+        
         protected string Send(string text, LogFormat worning = LogFormat.None) =>
             Messager.Send(this, m_Debug, text, worning);
+
+        
+        // CALLBACK //
+        private void OnConfigured()
+        {
+            Send($"Configuration successfully completed!");
+            IsConfigured = true;
+            Configured?.Invoke();
+        }
+        
+        private void OnInitialized()
+        {
+            Send($"Initialization successfully completed!");
+            IsInitialized = true;
+            Initialized?.Invoke();
+        }
+
+        private void OnDisposed()
+        {
+            Send($"Dispose process successfully completed!");
+            IsInitialized = false;
+            Disposed?.Invoke();
+        }
+
+
+        // UNITY //
+        private void OnEnable() =>
+            Init();
+
+        private void OnDisable() =>
+            Dispose();
+
+
 
         /*
         public event Action<IEventArgs> PlayButtonClicked;
@@ -167,24 +211,20 @@ namespace APP.Scene
 
     public interface ISceneConfig
     {
-        IScene Instance { get; }
-        SceneIndex Index { get; }
         IScreen[] Screens { get; }
     }
 
-    public struct SceneConfig<TScene> : IConfig, ISceneConfig 
-    where TScene : IScene
+    public struct SceneConfig : IConfig, ISceneConfig
     {
-        public IScene Instance { get; private set; }
-        public SceneIndex Index { get; private set; }
-
+        public string Name { get; }
+        public IScene Scene { get; private set; }
         public IScreen[] Screens { get; private set; }
+        
 
-        public SceneConfig(TScene instance, IScreen[] screens)
+        public SceneConfig(string name, IScene scene, IScreen[] screens)
         {
-            Instance = instance;
-            Index = SceneIndex<TScene>.Index;
-
+            Name = name;
+            Scene = scene;
             Screens = screens;
         }
     }

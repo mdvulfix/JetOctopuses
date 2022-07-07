@@ -6,11 +6,41 @@ namespace APP.Vfx
     {
         public VfxControllerDefault() {}
 
-        public override void Init(){ }
-        public override void Dispose(){ }
+        public bool IsConfigured => throw new NotImplementedException();
+
+        public bool IsInitialized => throw new NotImplementedException();
+
+        public event Action Configured;
+        public event Action Initialized;
+        public event Action Disposed;
+
+        public void Configure()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Configure(IConfig config)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Configure(IConfig config, params object[] param)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Init()
+        {
+            throw new NotImplementedException();
+        }
     }
 
-    public interface IVfxController: IController
+    public interface IVfxController: IController, IConfigurable, ICacheable
     {
         
     }

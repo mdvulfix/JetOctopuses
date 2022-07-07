@@ -9,7 +9,7 @@ namespace APP.UI
     {
         [SerializeField] private PlayerAction m_PlayerAction;
 
-        protected override void Init()
+        public override void Init()
         {
             if (m_PlayerAction == PlayerAction.None)
             {

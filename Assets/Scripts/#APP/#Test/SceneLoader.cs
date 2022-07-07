@@ -1,21 +1,25 @@
 using UnityEngine;
 using SERVICE.Handler;
+using System;
 
 namespace APP.Test
 {
-    public class SceneLoader : SceneObject
+    public class SceneLoader : SceneObject, IInitializable
     {
-        
-        protected override void Init()
+        public bool IsInitialized => throw new NotImplementedException();
+
+        public event Action Initialized;
+        public event Action Disposed;
+
+        public void Dispose()
         {
-            SceneActivate();
+            throw new NotImplementedException();
         }
 
-        protected override void Dispose()
+        public void Init()
         {
-
+            throw new NotImplementedException();
         }
-
 
         private async void SceneActivate() 
         {

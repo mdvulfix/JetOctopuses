@@ -1,32 +1,23 @@
+using System;
 using UnityEngine;
 
 namespace APP
 {
-    public abstract class SceneObject : MonoBehaviour
+    public class SceneObject : MonoBehaviour, ISceneObject
     {
-        
-        
-        public SceneIndex Index {get; protected set;}
- 
-        protected abstract void Init();
-        protected abstract void Dispose();
+        public SceneIndex Index {get; set;}
 
         protected void SetName(string name)
         {
             
         }
         
-        protected void SetParent(SceneObject sObj)
+        protected void SetParent(ISceneObject sObj)
         {
 
         }
     
-        // UNITY //
-        private void OnEnable() =>
-            Init();
 
-        private void OnDisable() =>
-            Dispose();
 
     }
 

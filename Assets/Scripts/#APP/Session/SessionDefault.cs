@@ -1,21 +1,43 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
 using APP.Player;
 using APP.Scene;
 using APP.Signal;
 
 namespace APP
 {
-
+    [Serializable]
     public class SessionDefault : SessionModel<SessionDefault>, ISession
     {
-    
+        [Header("Scenes: ")]
+        [SerializeField] private SceneCore m_SceneCore;
+        [SerializeField] private SceneNet m_SceneNet;
+        [SerializeField] private SceneLogin m_SceneLogin;
+        [SerializeField] private SceneMenu m_SceneMenu;
+        [SerializeField] private SceneLevel m_SceneLevel;
+        
+        
+        private Dictionary<SceneIndex, IScene> m_Scenes;
+        private IScene m_SceneActive;
+        
+        
         // CONFIGURE //
         public override void Configure(IConfig config)
         {
-            SceneIndex<SceneCore>.SetIndex(SceneIndex.Core);
-            SceneIndex<SceneNet>.SetIndex(SceneIndex.Net);
-            SceneIndex<SceneLogin>.SetIndex(SceneIndex.Login);
-            SceneIndex<SceneMenu>.SetIndex(SceneIndex.Menu);
-            SceneIndex<SceneLevel>.SetIndex(SceneIndex.Level);
+            m_Scenes.Add(SceneIndex<SceneCore>.SetIndex(SceneIndex.Core), m_SceneCore = new SceneCore());
+            m_Scenes.Add(SceneIndex<SceneNet>.SetIndex(SceneIndex.Net), m_SceneNet = new SceneNet());
+            m_Scenes.Add(SceneIndex<SceneLogin>.SetIndex(SceneIndex.Login), m_SceneLogin = new SceneLogin());
+            m_Scenes.Add(SceneIndex<SceneMenu>.SetIndex(SceneIndex.Menu), m_SceneMenu = new SceneMenu());
+            m_Scenes.Add(SceneIndex<SceneLevel>.SetIndex(SceneIndex.Level), m_SceneLevel = new SceneLevel());
+            
+            
+            foreach (var scene in m_Scenes.Values)
+            {
+                scene.Configure();
+            }
+            
+            
 
             base.Configure(config);
         }
@@ -231,21 +253,15 @@ namespace APP
     
     }
 
-    
-
-
-
-    public class SessionConfig : Config
+    public struct SessionConfig : IConfig
     {
+        public ISession Session { get; private set;}
         public IState[] States {get; private set;}
         
-        
-        public SessionConfig(
-            ISession session,
-            IState[] states) : base(session)
+        public SessionConfig(ISession session, IState[] states)
         {
+            Session = session;
             States = states;
-
         }
     }
 

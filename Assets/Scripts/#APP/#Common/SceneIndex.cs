@@ -28,12 +28,13 @@ namespace APP
             } 
         } 
 
-        public static void SetIndex(SceneIndex index)
+        public static SceneIndex SetIndex(SceneIndex index)
         {
             if (m_SceneIndexes.ContainsKey(typeof(TScene)))
-                return;
+                return index;
             
             m_SceneIndexes.Add(typeof(TScene), index);
+            return index;
         }
             
         public static bool GetIndex(out SceneIndex sceneIndex)

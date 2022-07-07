@@ -5,7 +5,7 @@ namespace APP.Screen
 {
 
     [Serializable]
-    public abstract class ScreenModel<TScreen> : SceneObject, IConfigurable
+    public abstract class ScreenModel<TScreen> : IConfigurable, IInitializable
     where TScreen : IScreen
     {
         
@@ -14,19 +14,89 @@ namespace APP.Screen
         private ScreenConfig m_Config;
         private IScreenController m_ScreenController;
 
-        public bool IsConfigured {get; private set; }
+        public event Action Configured;
+        public event Action Initialized;
+        public event Action Disposed;
 
-        public void Configure(IConfig config)
+        public bool IsConfigured {get; private set; }
+        public bool IsInitialized {get; private set; }
+
+        
+        // CONFIGURE //
+        public virtual void Configure() =>
+            Configure(config: null);
+
+        public virtual void Configure(IConfig config) =>
+            Configure(config: config, param: null);
+
+        public virtual void Configure (IConfig config, params object[] param)
         {
+            if(CheckConfigure() == false)
+                return;
+            
+
+            if(config != null)
+            {
+                m_Config = (ScreenConfig) config;
+
+            }          
+               
             
             
+            
+            if(param.Length > 0)
+            {
+                foreach (var obj in param)
+                {   
+                    if(obj is object)
+                    Send("Param is not used", LogFormat.Worning);
+                }
+            }          
+                
+            
+            m_CacheHandler = new CacheHandlerDefault<TScene>();
+            m_CacheHandler.Configure(new CacheHandlerConfig(Scene));
+
+        
+            m_ScreenController = new ScreenControllerDefault();
+            
+            OnConfigured();
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        public virtual void Configure(IConfig config)
+        {
+            if(IsConfigured == true)
+                return;
+
             m_Config = (ScreenConfig) config;
 
+
+            
+            OnConfigured();
         }
 
-        protected override void Init() { }
-        protected override void Dispose() { }
+        public virtual void Init() 
+        { 
 
+            
+            OnInitialized();
+        }
+        
+        public virtual void Dispose()
+        { 
+
+            
+            OnDisposed();
+        }
 
         
         /*
@@ -87,16 +157,21 @@ namespace APP.Screen
         }
 
 
-    
-    
+
+
+        
+        
+
     }
 
-    public class ScreenConfig : Config
+    public struct ScreenConfig : IConfig
     {
+        public IScreen Screen { get;  private set; }
         public IButton[] Buttons { get; private set; }
 
-        public ScreenConfig(IScreen screen, IButton[] buttons): base(screen)
+        public ScreenConfig(IScreen screen, IButton[] buttons)
         {
+            Screen = screen;
             Buttons = buttons;
         }
     }
@@ -106,7 +181,7 @@ namespace APP.Screen
     public class ScreenSplash : ScreenModel<ScreenSplash>, IScreen
     {
 
-        protected override void Init()
+        public override void Init()
         {
             var buttons = new IButton[]
             {

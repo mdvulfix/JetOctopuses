@@ -16,27 +16,48 @@ namespace APP.Scene
         private IScene m_SceneActive;
 
         public bool IsConfigured { get; private set; }
+        public bool IsInitialized {get; protected set; }
 
 
 
         public Action<IScene> SceneActivated;
 
-        public SceneControllerDefault() { }
+        public event Action Configured;
+        public event Action Initialized;
+        public event Action Disposed;
+        
+        public SceneControllerDefault() => Configure();
+        public SceneControllerDefault(IConfig config) => Configure(config);
 
-        public SceneControllerDefault(IConfig config) =>
-            Configure(config);
+        // CONFIGURE //
+        public virtual void Configure() =>
+            Configure(config: null);
 
+        public virtual void Configure(IConfig config) =>
+            Configure(config: config, param: null);
 
-        public void Configure(IConfig config)
-        {           
-            m_Config = (SceneControllerConfig)config;
-
-
-
-            IsConfigured = true;
+        public virtual void Configure (IConfig config, params object[] param)
+        {
+            if(config != null)
+            {
+                m_Config = (SceneControllerConfig)config;
+            }          
+               
+            if(param.Length > 0)
+            {
+                foreach (var obj in param)
+                {   
+                    if(obj is object)
+                    Send("Param is not used", LogFormat.Worning);
+                }
+            }          
+                
+            OnConfigured();
         }
-
-        public override void Init()
+        
+        
+        
+        public void Init()
         {
             if(IsConfigured == false)
             {
@@ -45,15 +66,19 @@ namespace APP.Scene
             }
             
             
-            IsInitialized = true;
+            OnInitialized();
         }
 
-        public override void Dispose()
+        public void Dispose()
         {
 
 
-            IsInitialized = false;
+            OnDisposed();
         }
+
+
+
+
 
         public async Task Activate<TScene>() 
         where TScene : SceneObject, IScene
@@ -83,30 +108,48 @@ namespace APP.Scene
 
         private bool AwaitSceneActivation<TScene>(SceneIndex? index, out TScene scene) where TScene : SceneObject, IScene
         {
-            scene = null;
-            if (CacheHandler.Contains<TScene>())
+            scene = default(TScene);
+            if (СacheProvider<TScene>.Contains())
             {
-                scene = m_CacheHandler.Get();
+                scene = СacheProvider<TScene>.Get();
                 return true;
             }
 
             return false;
         }
 
+        // CALLBACK //
+        private void OnConfigured()
+        {
+            Send($"Configuration successfully completed!");
+            IsConfigured = true;
+            Configured?.Invoke();
+        }
+        
+        private void OnInitialized()
+        {
+            Send($"Initialization successfully completed!");
+            IsInitialized = true;
+            Initialized?.Invoke();
+        }
+
+        private void OnDisposed()
+        {
+            Send($"Dispose process successfully completed!");
+            IsInitialized = false;
+            Disposed?.Invoke();
+        }
+
+
 
     }
 
     public struct SceneControllerConfig : IConfig
     {
-        public Cache<IScene> Cache { get; }
-
-        public SceneControllerConfig(Cache<IScene> cache)
-        {
-            Cache = cache;
-        }
+        
     }
 
-    public interface ISceneController : IController, IConfigurable
+    public interface ISceneController : IController, IConfigurable, IInitializable
     {
         Task Activate<TScene>()
             where TScene : SceneObject, IScene;

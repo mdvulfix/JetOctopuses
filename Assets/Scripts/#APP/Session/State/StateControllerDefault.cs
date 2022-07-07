@@ -4,94 +4,121 @@ namespace APP
 {
     public class StateControllerDefault : Controller, IStateController
     {
-        
         private StateControllerConfig m_Config;
-        
-        private Register<IState> m_Register;
+
         private IState m_StateActive;
-        
-        
-        public StateControllerDefault() { }
 
-        public StateControllerDefault(IConfig config) =>
-            Configure(config);
+        public StateControllerDefault() => Configure();
+        public StateControllerDefault(IConfig config) => Configure(config);
 
-        public bool IsConfigured {get; private set; }
+        public bool IsConfigured { get; private set; }
+        public bool IsInitialized { get; private set; }
 
-        
-        
+        public event Action Configured;
+        public event Action Initialized;
+        public event Action Disposed;
         public event Action<IState> StateChanged;
 
-        public void Configure(IConfig config)
+
+        // CONFIGURE //
+        public virtual void Configure() =>
+            Configure(config: null);
+
+        public virtual void Configure(IConfig config) =>
+            Configure(config: config, param: null);
+
+        public virtual void Configure (IConfig config, params object[] param)
         {
-            m_Config = (StateControllerConfig)config;
-            m_Register = new Register<IState>();
-            
-            foreach (var state in m_Config.States)
+            if(config != null)
             {
-                m_Register.Set(state);
-            }
+                m_Config = (StateControllerConfig) config;
 
-            IsConfigured = true;
-
+            }          
+               
+            if(param.Length > 0)
+            {
+                foreach (var obj in param)
+                {   
+                    if(obj is object)
+                    Send("Param is not used", LogFormat.Worning);
+                }
+            }          
+                
+            OnConfigured();
         }
 
-        public override void Init()
+
+        public void Init()
         {
-            if(IsConfigured == false)
+            if (IsConfigured == false)
             {
                 Send("Instance was not configured. Initialization was failed!", LogFormat.Worning);
                 return;
             }
-            
-            IsInitialized = true;
-        }
-        
-        public override void Dispose()
-        {
-            
-            IsInitialized = false;
+
+            OnInitialized();
         }
 
-        public TState Execute<TState>() 
+        public void Dispose()
+        {
+
+            OnDisposed();
+        }
+
+        public void Execute<TState>()
         where TState : class, IState
         {
-            if(m_StateActive != null)
+            if (m_StateActive != null)
                 m_StateActive.Exit();
-            
-            if(m_Register.Get<TState>(out var state))
+
+            if (СacheProvider<TState>.Contains())
             {
-                m_StateActive = state;
+                m_StateActive = СacheProvider<TState>.Get();
                 m_StateActive.Enter();
                 m_StateActive.Run();
-                return state;
+                StateChanged?.Invoke(m_StateActive);
+                return;
             }
-            
+
             Send($"{typeof(TState).Name} was not registered!", LogFormat.Worning);
-            return null;
+
         }
 
-
-    }
-
-
-    public class StateControllerConfig: Config
-    {
-        public IState[] States { get; private set; }
-
-        public StateControllerConfig(Instance info, IState[] states): base(info)
+        // CALLBACK //
+        private void OnConfigured()
         {
-            States = states;
+            Send($"Configuration successfully completed!");
+            IsConfigured = true;
+            Configured?.Invoke();
         }
+
+        private void OnInitialized()
+        {
+            Send($"Initialization successfully completed!");
+            IsInitialized = true;
+            Initialized?.Invoke();
+        }
+
+        private void OnDisposed()
+        {
+            Send($"Dispose process successfully completed!");
+            IsInitialized = false;
+            Disposed?.Invoke();
+        }
+
     }
 
+    public struct StateControllerConfig : IConfig
+    {
 
+    }
 
-    public interface IStateController: IController, IConfigurable
+    public interface IStateController : IController, IConfigurable, IInitializable
     {
         event Action<IState> StateChanged;
 
-        TState Execute<TState>() where TState: class, IState;
+        void Execute<TState>() 
+        where TState : class, IState;
     }
 
 }

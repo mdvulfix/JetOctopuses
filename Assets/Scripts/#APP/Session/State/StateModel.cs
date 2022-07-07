@@ -5,7 +5,8 @@ using APP.Signal;
 
 namespace APP
 {
-    public abstract class StateModel<TState> where TState: class, IState
+    public abstract class StateModel<TState>
+    where TState: class, IState
     {
         private bool m_Debug = true;
 
@@ -16,8 +17,25 @@ namespace APP
 
         
         private ISignal[] m_Signals;
-        
-        
+
+        public bool IsInitialized => throw new NotImplementedException();
+
+        public event Action<IScene> SceneRequied;
+        public event Action<IState> StateRequied;
+        public event Action Initialized;
+        public event Action Disposed;
+
+
+        public virtual void Init()
+        {
+
+        }
+
+        public virtual void Dispose()
+        {
+
+        }
+
         public virtual Task Enter()
         {
             Send("Enter state.");
@@ -60,6 +78,7 @@ namespace APP
         {
             signal.Call();
         }
+
 
     }
 
