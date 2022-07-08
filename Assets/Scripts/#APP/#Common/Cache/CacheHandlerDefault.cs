@@ -12,6 +12,9 @@ namespace APP
 
         private static ICache m_Cache = new CacheDefault();
         
+        public CacheHandlerDefault() => Configure();
+        public CacheHandlerDefault(IConfig config) => Configure(config);
+         
         public bool IsConfigured {get; private set;}
         public bool IsInitialized {get; private set;}
 
@@ -24,16 +27,26 @@ namespace APP
         public event Action<ICacheable> DeleteFromCacheRequired;
         
 
-        public CacheHandlerDefault() { }
-        public CacheHandlerDefault(IConfig config) =>
-            Configure(config);
-        
-        public void Configure(IConfig config)
+        public void Configure(IConfig config = null, params object[] param)
         {
-            m_Config = (CacheHandlerConfig)config;
-            
-            m_Cacheable = m_Config.Instance;
+            if(config != null)
+            {
+                m_Config = (CacheHandlerConfig)config;
+                m_Cacheable = m_Config.Instance;
+            }          
+               
+            if(param != null && param.Length > 0)
+            {
+                foreach (var obj in param)
+                {   
+                    if(obj is object)
+                    Send("Param is not used", LogFormat.Worning);
+                }
+            }          
+               
             m_Cache.Configure(new CacheConfig(this));
+            
+            OnConfigured();
         }
         
         public void Init()
@@ -92,7 +105,6 @@ namespace APP
             IsInitialized = false;
             Disposed?.Invoke();
         }
-
 
 
     }

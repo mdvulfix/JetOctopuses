@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using APP.Screen;
 
+
 namespace APP.Scene
 {
-    [Serializable]
     public class SceneLevel : SceneModel<SceneLevel>, IScene
     {
         [SerializeField] private ScreenLoading m_Loading;
@@ -12,18 +13,18 @@ namespace APP.Scene
 
         private readonly string m_Name = "Scene: Level";
 
-        public SceneLevel() => 
-            Configure();
+        public SceneLevel() => Configure();
+        public SceneLevel(IConfig config) => Configure(config);
 
-        public override void Configure()
+        public void Configure()
         {
-            var screens = new IScreen[2] 
-            {
-                m_Loading = SetComponent<ScreenLoading>("Screen: Loading"),
-                m_Level_1 = SetComponent<ScreenLevel>("Screen: Level")
-            };
+            SceneIndex<SceneLevel>.SetIndex(SceneIndex.Level);
+
+            var screens = new List<IScreen>();
+            screens.Add(m_Loading = new ScreenLoading());
+            screens.Add(m_Level_1 = new ScreenLevel());
             
-            var config =  new SceneConfig(m_Name, this, screens);            
+            var config =  new SceneConfig(m_Name, this, screens.ToArray());            
             base.Configure(config);
         }
     }

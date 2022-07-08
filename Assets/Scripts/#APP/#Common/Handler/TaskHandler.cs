@@ -60,7 +60,7 @@ namespace SERVICE.Handler
         }       
 
         private static string Send(string text, LogFormat warning = LogFormat.None) =>
-            Messager.Send("TaskHandler", m_Debug, text, warning);
+            Messager.Send(m_Debug, "TaskHandler", text, warning);
 
     
     

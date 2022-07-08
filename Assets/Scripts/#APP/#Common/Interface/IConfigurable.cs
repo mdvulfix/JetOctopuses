@@ -8,11 +8,7 @@ namespace APP
 
         bool IsConfigured {get; } 
         
-        void Configure();
-        void Configure(IConfig config);
-        void Configure(IConfig config, params object[] param);
-
-        bool CheckConfigure();
+        void Configure(IConfig config = null, params object[] param);
 
     }
 

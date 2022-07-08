@@ -34,7 +34,7 @@ namespace APP
         {
             await SceneActivate();
             
-            var scene = Set<SceneCore>("Scene: Core");
+            //var scene = Set<SceneCore>("Scene: Core");
             //var sceneInfo = new Instance(scene);
             
             
@@ -63,6 +63,7 @@ namespace APP
         }
     }
 
+    /*
     public class NetBuildScheme: SceneBuildScheme<SceneNet>, IBuildScheme
     {
         public NetBuildScheme() { }
@@ -111,7 +112,7 @@ namespace APP
         }
     }
 
-
+    */
     public class ScreenFactory : IFactory
     {
         public ScreenFactory()

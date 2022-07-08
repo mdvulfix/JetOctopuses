@@ -1,5 +1,4 @@
 using System;
-using SERVICE.Handler;
 
 namespace APP
 {
@@ -19,6 +18,6 @@ namespace APP
 
 
         private static string Send(string text, LogFormat worning = LogFormat.None) =>
-            Messager.Send("SceneIndexException", m_Debug, text, worning);
+            Messager.Send(m_Debug, "SceneIndexException", text, worning);
     }
 }

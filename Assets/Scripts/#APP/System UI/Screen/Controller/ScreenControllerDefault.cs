@@ -19,7 +19,7 @@ namespace APP.Screen
         public ScreenControllerDefault(IConfig config) =>
             Configure(config);
 
-        public void Configure(IConfig config)
+        public void Configure(IConfig config, params object[] param)
         {
             if (IsConfigured == true)
                 return;
@@ -120,6 +120,7 @@ namespace APP.Screen
             IsInitialized = false;
             Disposed?.Invoke();
         }
+
 
     }
 

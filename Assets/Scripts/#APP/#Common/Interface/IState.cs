@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace APP
 {
-    public interface IState: ICacheable
+    public interface IState: IConfigurable, ICacheable
     {
         
         event Action<IScene> SceneRequied;

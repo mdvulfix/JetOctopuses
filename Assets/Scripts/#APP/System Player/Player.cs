@@ -38,7 +38,17 @@ namespace APP.Player
         public bool IsConfigured => throw new NotImplementedException();
         public bool IsInitialized => throw new NotImplementedException();
 
+        public void Configure()
+        {
+
+        }
+
         public void Configure(IConfig config)
+        {
+
+        }
+
+        public void Configure(IConfig config, params object[] param)
         {
 
         }
@@ -55,6 +65,8 @@ namespace APP.Player
         {
             throw new NotImplementedException();
         }
+
+
     }
 
 

@@ -7,39 +7,48 @@ namespace APP
     public abstract class SessionModel<TSession>: SceneObject, IConfigurable, IInitializable, ISubscriber
     where TSession : SceneObject, ISession
     {
-        private SessionConfig m_Config;
+        private bool m_Debug = true;
 
+        private SessionConfig m_Config;
+        private ISession m_Session;
         
         private ISceneController m_SceneController;
         private IStateController m_StateController;
-        private bool m_Debug;
-
+    
+        public bool IsConfigured {get; private set; }
+        public bool IsInitialized {get; private set; }
+        
+        public string Label {get; private set;}
+        public ISession Session {get; private set;}
+        public SceneObject SceneObject {get; private set;}
+        
+        public IScene[] Scenes {get; private set; }
+        public IState[] States {get; private set; }
+        
         public event Action Configured;
         public event Action Initialized;
         public event Action Disposed;
 
-        public bool IsConfigured {get; private set; }
-        public bool IsInitialized {get; private set; }
+
 
         public IState StateActive { get; private set; }
 
-    
         // CONFIGURE //
-        public virtual void Configure() =>
-            Configure(config: null);
-
-        public virtual void Configure(IConfig config) =>
-            Configure(config: config, param: null);
-
-        public virtual void Configure (IConfig config, params object[] param)
+        public void Configure (IConfig config, params object[] param)
         {
             if(config != null)
             {
                 m_Config = (SessionConfig)config;
+
+                Label = m_Config.Label;
+                Session = m_Config.Session;
+                
+                Scenes = m_Config.Scenes;
+                States = m_Config.States;
             
             }          
                
-            if(param.Length > 0)
+            if(param != null && param.Length > 0)
             {
                 foreach (var obj in param)
                 {   
@@ -48,6 +57,13 @@ namespace APP
                 }
             }          
                 
+            
+            foreach (var scene in Scenes)
+                scene.Configure();
+
+            foreach (var state in States)
+                state.Configure();
+            
             m_SceneController = new SceneControllerDefault(new SceneControllerConfig());
             m_StateController = new StateControllerDefault(new StateControllerConfig());
             
@@ -55,23 +71,40 @@ namespace APP
             OnConfigured();
         }
 
-
-    
         // INIT //
         public virtual void Init()
         {
             Subscribe();
             
+            
+            foreach (var scene in Scenes)
+                scene.Init();
+
+            foreach (var state in States)
+                state.Init();
+            
+            
             m_StateController.Init();
             m_SceneController.Init();
+
+            OnInitialized();
         }
     
         public virtual void Dispose()
         {
+            
+            foreach (var scene in Scenes)
+                scene.Dispose();
+
+            foreach (var state in States)
+                state.Dispose();
+            
+            
             m_SceneController.Dispose();
             m_StateController.Dispose();
 
             Unsubscribe();
+            OnDisposed();
         }
 
         // SUBSCRUBE //
@@ -97,7 +130,7 @@ namespace APP
 
         // HELPER //
         protected string Send(string text, LogFormat worning = LogFormat.None) =>
-            Messager.Send(this, m_Debug, text, worning);
+            Messager.Send(m_Debug, this, text, worning);
 
         // CALLBACK //
         private void OnConfigured()
@@ -106,6 +139,8 @@ namespace APP
             IsConfigured = true;
             Configured?.Invoke();
         }
+        
+        
         
         private void OnInitialized()
         {
@@ -137,15 +172,6 @@ namespace APP
             //StateActive = state;
             //StateUpdate(StateActive);
         }
-        
-
-        // UNITY //
-        private void OnEnable() =>
-            Init();
-
-        private void OnDisable() =>
-            Dispose();
-
         
     }
 

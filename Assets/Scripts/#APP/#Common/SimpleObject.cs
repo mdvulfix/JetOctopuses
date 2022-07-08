@@ -6,191 +6,70 @@ using UnityEngine;
 
 
 [Serializable]
-public abstract class SimpleObject
+public abstract class SimpleObject<T> 
 {
+    private IConfigurator m_Configurator;
+    private IInitializator m_Initializator;
 
-    private Configurator m_Configurator;
-    private Initializator m_Initializator;
-
+    
     public bool Debug { get; private set; } = true;
 
 
-    // CONFIGURE //
+    /*
     public virtual void Configure() =>
-        Configure(config: null);
+        Configure<TConfig>(T instance, TConfig config, params object[] param)
+    
+    public virtual void Configure(T instance) =>
+        Configure(instance: instance, config: null);
 
-    public virtual void Configure(IConfig config) =>
-        Configure(config: config, param: null);
-
-    public virtual void Configure (IConfig config, params object[] param)
+    public virtual void Configure(T instance, IConfig config) =>
+        Configure(instance: instance, config: config, param: null);
+    */
+    
+    public virtual void Configure<TConfig>(T instance, TConfig config, params object[] param)
     {
-        if(config != null)
-        {
-            m_Config = (SceneControllerConfig)config;
-        }          
-            
-        if(param.Length > 0)
-        {
-            foreach (var obj in param)
-            {   
-                if(obj is object)
-                Send("Param is not used", LogFormat.Worning);
-            }
-        }          
-            
-        OnConfigured();
-    }
+        m_Configurator = new Configurator();
+        //m_Configurator.Configure(() => Set(instance, config, param));
 
-
+        m_Initializator = new Initializator(m_Configurator);
     
-    public virtual void Init() 
+    }
+    
+    public virtual void Init() {}
+    
+    public virtual void Dispose() {}
+
+    public virtual void Subscribe() 
     { 
+        m_Configurator.Message += OnGetMessage;
+        m_Initializator.Message += OnGetMessage;
 
-        
-        OnInitialized();
     }
     
-    public virtual void Dispose()
+    public virtual void Unsubscribe()
     { 
-
+        m_Configurator.Message -= OnGetMessage;
+        m_Initializator.Message -= OnGetMessage;
         
-        OnDisposed();
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
 
+    public abstract void Set<TConfig>(T instance, TConfig config, params object[] param);
+
     
+    private void OnEnable() =>
+        m_Initializator.Init(() => Init());
+
+    private void OnDisable() =>
+        m_Initializator.Dispose(() => Dispose());
+    
+    private void OnGetMessage(Message message) =>
+        Send(new Message(this, message.Text, message.LogFormat));
+
     protected string Send(Message message) =>
-        Messager.Send(this, Debug, message);
-
-
-}
-
-
-
-
-public class Configurator<TConfig> 
-where TConfig: IConfig
-{
-    public Configurator()
-    {
-
-    }
-
-    public bool IsConfigured {get; private set; }
-
-    public TConfig Config {get; private set; }
-
-    public event Action Configured;
-
-    public virtual void Configure (IConfig config, params object[] param)
-    {
-        if(config != null)
-        {
-            Config = (TConfig)config;
-        }          
-            
-        if(param.Length > 0)
-        {
-            foreach (var obj in param)
-            {   
-                if(obj is object)
-                Send("Param is not used", LogFormat.Worning);
-            }
-        }          
-            
-        OnConfigured();
-    }
-
-
-    private bool Check()
-    {
-        return true;
-    }
-
-    // CALLBACK //
-    private void OnConfigured()
-    {
-        Send($"Configuration successfully completed!");
-        IsConfigured = true;
-        Configured?.Invoke();
-    }
+        Messager.Send(Debug, message);
 
 }
-
-public class Initializator
-{
-    private bool m_IsConfigurable;
-    private bool m_IsConfigured;
-    private bool m_IsInitialized;
-
-    public Initializator() {}
-    public Initializator(bool isConfigurable, ref bool isConfigured)
-    {
-        m_IsConfigurable = isConfigurable;
-        m_IsConfigured = isConfigured;
-    }
-
-    public bool IsInitialized { get => m_IsInitialized; }
-
-    public event Action Initialized;
-    public event Action Disposed;
-    public event Action ConfigureRequired;
-    public event Action<Message> Message;
-
-    
-    public void Init(Action action) 
-    { 
-        if(Check() == false)
-            return;
-        
-        action.Invoke();
-       
-        m_IsInitialized = true;
-        Send("Initialization successfully completed!");
-        Initialized?.Invoke();
-    }
-    
-    public void Dispose(Action action)
-    { 
-        action.Invoke();
-        
-        m_IsInitialized = false;
-        Send("Dispose process successfully completed!");
-        Disposed?.Invoke();
-    }
-    
-    
-    private bool Check()
-    {
-        if(m_IsConfigurable == true && m_IsConfigured == false)
-        {
-            Send("Instance was not configured. Initialization was failed!", LogFormat.Worning);
-            ConfigureRequired?.Invoke();
-            return false;
-        }
-
-        if(m_IsInitialized == true)
-        {
-            Send("Instance was already initialized. Current initialization was aborted!", LogFormat.Worning);
-            return false;
-        }
-                
-        return true;
-    }
-
-    private void Send(string text, LogFormat logFormat = LogFormat.None) =>
-        Message?.Invoke(new Message(text, logFormat));
-}
-
 
 
 

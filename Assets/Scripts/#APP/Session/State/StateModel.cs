@@ -5,7 +5,7 @@ using APP.Signal;
 
 namespace APP
 {
-    public abstract class StateModel<TState>
+    public abstract class StateModel<TState>: IConfigurable, IInitializable
     where TState: class, IState
     {
         private bool m_Debug = true;
@@ -18,14 +18,22 @@ namespace APP
         
         private ISignal[] m_Signals;
 
-        public bool IsInitialized => throw new NotImplementedException();
+        public bool IsInitialized { get; private set; }
+        public bool IsConfigured { get; private set; }
 
-        public event Action<IScene> SceneRequied;
-        public event Action<IState> StateRequied;
+        public event Action Configured;
         public event Action Initialized;
         public event Action Disposed;
+ 
+        public event Action<IScene> SceneRequied;
+        public event Action<IState> StateRequied;
 
+        
+        public virtual void Configure(IConfig config = null, params object[] param)
+        {
 
+        }
+        
         public virtual void Init()
         {
 
@@ -61,7 +69,7 @@ namespace APP
         }
 
         protected string Send(string text, LogFormat worning = LogFormat.None) =>
-            Messager.Send(this, m_Debug, text, worning);
+            Messager.Send(m_Debug, this, text, worning);
 
         
         public void OnSceneActivate(IScene scene)
@@ -84,6 +92,17 @@ namespace APP
 
     public class StateLoad : StateModel<StateLoad>, IState 
     { 
+        public StateLoad() => Configure();
+        public StateLoad(IConfig config) => Configure(config);
+
+        public void Configure()
+        {
+            var config =  new StateConfig(this);            
+            base.Configure(config);
+        }
+        
+        
+        
         public async override Task Enter()
         {
             Send("System enter loading...");
@@ -113,7 +132,26 @@ namespace APP
             //return null;
         }
     }
-    
+
+    public class StateConfig: IConfig
+    {
+        public string Label { get; private set; }
+        public IState State {get; private set; }
+
+        
+        public StateConfig(IState state)
+        {
+            Label = "State: ...";
+            State = state;
+        }
+        
+        public StateConfig(string label, IState state)
+        {
+            Label = label;
+            State = state;
+        }
+    }
+
     public class StateLogin : StateModel<StateLogin>, IState { }
     public class StateMenu : StateModel<StateMenu>, IState { }
     public class StateLevel : StateModel<StateLevel>, IState { }

@@ -22,6 +22,12 @@ namespace APP.UI
         public event Action Disposed;
         public event Action<ISignal> ButtonClicked;
 
+        
+        public void Configure()
+        {
+
+        }
+
         public void Configure(IConfig config)
         {
             m_Config = (ButtonConfig) config;
@@ -29,6 +35,12 @@ namespace APP.UI
             
             OnConfigured();
         }
+
+        public void Configure(IConfig config, params object[] param)
+        {
+
+        }
+
 
         public virtual void Init()
         {
@@ -91,6 +103,7 @@ namespace APP.UI
             IsInitialized = false;
             Disposed?.Invoke();
         }
+
 
     }
 

@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 using UScene = UnityEngine.SceneManagement.Scene;
 using SERVICE.Handler;
 using APP.Screen;
@@ -30,20 +27,14 @@ namespace APP.Scene
         public SceneControllerDefault(IConfig config) => Configure(config);
 
         // CONFIGURE //
-        public virtual void Configure() =>
-            Configure(config: null);
-
-        public virtual void Configure(IConfig config) =>
-            Configure(config: config, param: null);
-
-        public virtual void Configure (IConfig config, params object[] param)
+        public virtual void Configure (IConfig config = null, params object[] param)
         {
             if(config != null)
             {
                 m_Config = (SceneControllerConfig)config;
             }          
                
-            if(param.Length > 0)
+            if(param != null && param.Length > 0)
             {
                 foreach (var obj in param)
                 {   

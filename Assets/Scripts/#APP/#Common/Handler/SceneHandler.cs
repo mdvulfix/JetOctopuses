@@ -126,7 +126,7 @@ namespace SERVICE.Handler
             SceneManager.GetSceneByBuildIndex(index);
         
         private static string Send(string text, LogFormat worning = LogFormat.None) =>
-            Messager.Send("USceneHandler", m_Debug, text, worning);
+            Messager.Send(m_Debug, "USceneHandler", text, worning);
 
     }
 }

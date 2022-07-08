@@ -35,7 +35,7 @@ namespace APP
 
             }          
                
-            if(param.Length > 0)
+            if(param != null && param.Length > 0)
             {
                 foreach (var obj in param)
                 {   

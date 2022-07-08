@@ -21,19 +21,15 @@ namespace APP.Screen
         public bool IsConfigured {get; private set; }
         public bool IsInitialized {get; private set; }
 
+        public string Name {get; private set;}
+        public IScreen Scene {get; private set;}
+        public SceneObject SceneObject {get; private set;}
+
         
         // CONFIGURE //
-        public virtual void Configure() =>
-            Configure(config: null);
-
-        public virtual void Configure(IConfig config) =>
-            Configure(config: config, param: null);
-
-        public virtual void Configure (IConfig config, params object[] param)
+        public virtual void Configure (IConfig config = null, params object[] param)
         {
-            if(CheckConfigure() == false)
-                return;
-            
+          
 
             if(config != null)
             {
@@ -44,7 +40,7 @@ namespace APP.Screen
             
             
             
-            if(param.Length > 0)
+            if(param != null && param.Length > 0)
             {
                 foreach (var obj in param)
                 {   
@@ -54,35 +50,15 @@ namespace APP.Screen
             }          
                 
             
-            m_CacheHandler = new CacheHandlerDefault<TScene>();
-            m_CacheHandler.Configure(new CacheHandlerConfig(Scene));
+            //m_CacheHandler = new CacheHandlerDefault<TScene>();
+            //m_CacheHandler.Configure(new CacheHandlerConfig(Scene));
 
         
             m_ScreenController = new ScreenControllerDefault();
             
             OnConfigured();
         }
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        public virtual void Configure(IConfig config)
-        {
-            if(IsConfigured == true)
-                return;
 
-            m_Config = (ScreenConfig) config;
-
-
-            
-            OnConfigured();
-        }
 
         public virtual void Init() 
         { 
@@ -97,6 +73,9 @@ namespace APP.Screen
             
             OnDisposed();
         }
+
+
+
 
         
         /*
@@ -149,7 +128,7 @@ namespace APP.Screen
 
 
         public void Activate(bool Activate = true) =>
-            gameObject.SetActive(Activate);
+            SceneObject.gameObject.SetActive(Activate);
 
         public void Animate(bool Activate = true)
         {
@@ -157,7 +136,31 @@ namespace APP.Screen
         }
 
 
+        // CALLBACK //
+        private void OnConfigured()
+        {
+            Send($"Configuration successfully completed!");
+            IsConfigured = true;
+            Configured?.Invoke();
+        }
+        
+        private void OnInitialized()
+        {
+            Send($"Initialization successfully completed!");
+            IsInitialized = true;
+            Initialized?.Invoke();
+        }
 
+        private void OnDisposed()
+        {
+            Send($"Dispose process successfully completed!");
+            IsInitialized = false;
+            Disposed?.Invoke();
+        }
+        
+        
+        protected string Send(string text, LogFormat worning = LogFormat.None) =>
+            Messager.Send(m_Debug, this, text, worning);
 
         
         

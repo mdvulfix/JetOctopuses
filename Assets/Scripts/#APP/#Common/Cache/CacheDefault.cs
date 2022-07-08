@@ -6,42 +6,49 @@ namespace APP
 {
     public class CacheDefault: ICache
     {        
-        private bool m_Debug = true;
+        private bool m_Debug = false;
         
         private CacheConfig m_Config;
         private ICacheHandler m_Handler;
 
         protected readonly Dictionary<Type, ICacheable> m_Cache = new Dictionary<Type, ICacheable>(50);
+        
+        public CacheDefault() => Configure();
+        public CacheDefault(IConfig config) => Configure(config);
+        
+        public bool IsConfigured {get; private set;}
+        public bool IsInitialized {get; private set;}
 
         public event Action Configured;
         public event Action Initialized;
         public event Action Disposed;
-        
-
-        public bool IsConfigured {get; private set;}
-        public bool IsInitialized {get; private set;}
-
-        
-
-        public CacheDefault() { }
-        public CacheDefault(IConfig config) =>
-            Configure(config);
 
         
         // CONFIGURE //
-        public void Configure(IConfig config)
+        public void Configure(IConfig config = null, params object[] param)
         {
-            if(IsConfigured)
+            if(IsConfigured == true)
                 return;
             
-            m_Config = (CacheConfig)config;
-            
-            m_Handler = m_Config.Handler;;
-            
-
+            if(config != null)
+            {
+                m_Config = (CacheConfig)config;
+                m_Handler = m_Config.Handler;;
+            }          
+               
+            if(param != null && param.Length > 0)
+            {
+                foreach (var obj in param)
+                {   
+                    if(obj is object)
+                    Send("Param is not used", LogFormat.Worning);
+                }
+            }          
+               
             OnConfigured();
         }
-        
+
+
         public void Init()
         {   
             
@@ -134,7 +141,7 @@ namespace APP
         
         // HELPERS //
         private string Send(string text, LogFormat worning = LogFormat.None) =>
-            Messager.Send(this, m_Debug, text, worning);
+            Messager.Send(m_Debug, this, text, worning);
 
 
         // CALLBACK //           
@@ -158,6 +165,8 @@ namespace APP
             IsInitialized = false;
             Disposed?.Invoke();
         }
+
+
     }
 
     public struct CacheConfig : IConfig

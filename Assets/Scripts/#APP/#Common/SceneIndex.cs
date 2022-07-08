@@ -57,7 +57,7 @@ namespace APP
             m_SceneIndexes.Keys;
         
         public static string Send(string text, LogFormat worning = LogFormat.None) =>
-            Messager.Send("SceneIndex", m_Debug, text, worning);
+            Messager.Send(m_Debug, "SceneIndex", text, worning);
 
     }
 

@@ -20,13 +20,15 @@ namespace APP.Scene
 
         private IScreenController m_ScreenController;
         private IScreen[] m_Screens;
-        
+
 
         public bool IsConfigured {get; private set;}
         public bool IsInitialized {get; private set;}
 
-        public string Name {get; private set;}
+        public string Label {get; private set;}
         public IScene Scene {get; private set;}
+        public IScreen[] Screens {get; private set;}
+        
         public SceneObject SceneObject {get; private set;}
 
         public event Action Configured;
@@ -36,26 +38,20 @@ namespace APP.Scene
         public event Action<IActionInfo> ScreenActivated;
 
         // CONFIGURE //
-        public virtual void Configure() =>
-            Configure(config: null);
-
-        public virtual void Configure(IConfig config) =>
-            Configure(config: config, param: null);
-
-        public virtual void Configure (IConfig config, params object[] param)
+        public virtual void Configure (IConfig config = null, params object[] param)
         {
             if(config != null)
             {
                 m_Config = (SceneConfig) config;
-
-                Name = m_Config.Name;
+                
+                Label = m_Config.Label;
                 Scene = m_Config.Scene;
+                
+                Screens = m_Config.Screens;
+
             }          
                
-            
-            
-            
-            if(param.Length > 0)
+            if(param != null && param.Length > 0)
             {
                 foreach (var obj in param)
                 {   
@@ -64,6 +60,10 @@ namespace APP.Scene
                 }
             }          
                 
+
+            foreach (var screen in Screens)
+                screen.Configure();
+
             
             m_CacheHandler = new CacheHandlerDefault<TScene>();
             m_CacheHandler.Configure(new CacheHandlerConfig(Scene));
@@ -74,6 +74,7 @@ namespace APP.Scene
             OnConfigured();
         }
         
+        
         // INIT //
         public virtual void Init ()
         {
@@ -83,7 +84,11 @@ namespace APP.Scene
                 return;
             }
                 
-            m_SceneObject = SetComponent<SceneObject>(Name);
+            m_SceneObject = SetComponent<SceneObject>(Label);
+            m_SceneObject.Index = SceneIndex<TScene>.Index;
+            
+            foreach (var screen in Screens)
+                screen.Init();
             
             m_CacheHandler.Init();
             m_ScreenController.Init();
@@ -93,22 +98,27 @@ namespace APP.Scene
 
         public virtual void Dispose ()
         {          
+            
+            foreach (var screen in Screens)
+                screen.Dispose();
+
             m_ScreenController.Dispose();
             m_CacheHandler.Dispose();
+
+
 
             OnDisposed();
         }
 
-        
+
         public void Activate<TScreen>()
-            where TScreen: SceneObject, IScreen
+        where TScreen: IScreen
         {
             //var animate = true;
             //m_ScreenController.Activate<TScreen>(animate);
             Send("Activating screen...");
         }
         
-
         protected TComponent SetComponent<TComponent>() 
         where TComponent: Component, ISceneObject
         {
@@ -123,8 +133,11 @@ namespace APP.Scene
         }
 
         
-        protected string Send(string text, LogFormat worning = LogFormat.None) =>
-            Messager.Send(this, m_Debug, text, worning);
+        protected string Send(string text, LogFormat logFormat = LogFormat.None) =>
+            Messager.Send(m_Debug, this, text, logFormat);
+
+        
+
 
         
         // CALLBACK //
@@ -216,14 +229,22 @@ namespace APP.Scene
 
     public struct SceneConfig : IConfig, ISceneConfig
     {
-        public string Name { get; }
+        public string Label { get; }
         public IScene Scene { get; private set; }
         public IScreen[] Screens { get; private set; }
         
 
-        public SceneConfig(string name, IScene scene, IScreen[] screens)
+        public SceneConfig(IScene scene, IScreen[] screens)
         {
-            Name = name;
+            Label = "Scene: ";
+            Scene = scene;
+            Screens = screens;
+        }
+        
+        
+        public SceneConfig(string label, IScene scene, IScreen[] screens)
+        {
+            Label = label;
             Scene = scene;
             Screens = screens;
         }

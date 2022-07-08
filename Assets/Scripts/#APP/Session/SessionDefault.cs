@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using APP.Player;
+
 using APP.Scene;
-using APP.Signal;
+
 
 namespace APP
 {
@@ -17,49 +17,47 @@ namespace APP
         [SerializeField] private SceneMenu m_SceneMenu;
         [SerializeField] private SceneLevel m_SceneLevel;
         
+        [Header("States: ")]
+        [SerializeField] private StateLoad m_StateLoad;
+        [SerializeField] private StateLogin m_StateLogin;
+        [SerializeField] private StateMenu m_StateMenu;
+        [SerializeField] private StateLevel m_StateLevel;
+        [SerializeField] private StateResult m_StateResult;        
+        [SerializeField] private StateUnload m_StateUnload; 
         
-        private Dictionary<SceneIndex, IScene> m_Scenes;
+        
         private IScene m_SceneActive;
         
         
         // CONFIGURE //
-        public override void Configure(IConfig config)
+        public void Configure()
         {
-            m_Scenes.Add(SceneIndex<SceneCore>.SetIndex(SceneIndex.Core), m_SceneCore = new SceneCore());
-            m_Scenes.Add(SceneIndex<SceneNet>.SetIndex(SceneIndex.Net), m_SceneNet = new SceneNet());
-            m_Scenes.Add(SceneIndex<SceneLogin>.SetIndex(SceneIndex.Login), m_SceneLogin = new SceneLogin());
-            m_Scenes.Add(SceneIndex<SceneMenu>.SetIndex(SceneIndex.Menu), m_SceneMenu = new SceneMenu());
-            m_Scenes.Add(SceneIndex<SceneLevel>.SetIndex(SceneIndex.Level), m_SceneLevel = new SceneLevel());
+            Send("Start configuration ...");
             
+            var scenes =  new List<IScene>();
+            scenes.Add(m_SceneCore = new SceneCore());
+            scenes.Add(m_SceneNet = new SceneNet());
+            scenes.Add(m_SceneLogin = new SceneLogin());
+            scenes.Add(m_SceneMenu = new SceneMenu());
+            scenes.Add(m_SceneLevel = new SceneLevel());
             
-            foreach (var scene in m_Scenes.Values)
-            {
-                scene.Configure();
-            }
-            
-            
+            var states = new List<IState>();
+            states.Add(m_StateLoad = new StateLoad());
+            states.Add(m_StateLogin = new StateLogin());
+            states.Add(m_StateMenu = new StateMenu());
+            states.Add(m_StateLevel = new StateLevel());
+            states.Add(m_StateResult = new StateResult());
+            states.Add(m_StateUnload = new StateUnload());
 
+            var config =  new SessionConfig(this, scenes.ToArray(), states.ToArray());            
             base.Configure(config);
         }
-
+        
+        
         // INIT //
         public override void Init()
         {                        
-            var states = new IState[6]
-            {
-                new StateLoad(),
-                new StateLogin(),
-                new StateMenu(),
-                new StateLevel(),
-                new StateResult(),
-                new StateUnload(),
-            };
-            
-            var config = new SessionConfig(this, states);
-            
-            
-            
-            Configure(config);
+            Send("Start initialization...");
             base.Init();
 
             Send("System enter loading...");
@@ -73,6 +71,8 @@ namespace APP
 
             base.Dispose();
         }
+
+
 
         /*
         // STATE MANAGE //
@@ -242,7 +242,15 @@ namespace APP
         }
 
         */
+        // UNITY //
+        private void Awake() =>
+            Configure();
 
+        private void OnEnable() =>
+            Init();
+
+        private void OnDisable() =>
+            Dispose();
     
         public enum Result
         {
@@ -255,14 +263,25 @@ namespace APP
 
     public struct SessionConfig : IConfig
     {
+        public string Label { get; }
         public ISession Session { get; private set;}
+        public IScene[] Scenes { get; }
         public IState[] States {get; private set;}
         
-        public SessionConfig(ISession session, IState[] states)
+        public SessionConfig(ISession session, IScene[] scenes, IState[] states)
         {
+            Label = "Session";
             Session = session;
+            Scenes = scenes;
+            States = states;
+        }
+        
+        public SessionConfig(string label, ISession session, IScene[] scenes, IState[] states)
+        {
+            Label = label;
+            Session = session;
+            Scenes = scenes;
             States = states;
         }
     }
-
 }

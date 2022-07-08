@@ -12,6 +12,5 @@ namespace APP
         void Init();
         void Dispose();
 
-        bool CheckInitialize();
     }
 }
