@@ -59,35 +59,55 @@ namespace SERVICE.Handler
             }
         }       
 
-        private static string Send(string text, LogFormat warning = LogFormat.None) =>
+        private static Message Send(string text, LogFormat warning = LogFormat.None) =>
             Messager.Send(m_Debug, "TaskHandler", text, warning);
 
     
     
     }
 
-    public struct TaskResult<TTaskInfo> where TTaskInfo: ITaskInfo
+    public struct TaskResult: ITaskResult
     {
-        public TaskResult(bool status, TTaskInfo info)
+        public TaskResult(bool status, Message message)
         {
             Status = status;
+            Message = message;
+        }
+
+        public bool Status {get; private set;}
+        public Message Message { get; private set; }
+    }
+
+
+    public struct TaskResult<TTaskInfo> where TTaskInfo: ITaskInfo
+    {
+        public TaskResult(bool status, Message message, TTaskInfo info = default(TTaskInfo))
+        {
+            Status = status;
+            Message = message;
             Info = info;
         }
 
         public bool Status {get; private set;}
+        public Message Message { get; private set; }
         public TTaskInfo Info {get; private set;}
 
-        
-        
     }
 
 
-    
-    
     public class TaskInfo: ITaskInfo
     {
-
         
+    }
+
+}
+
+namespace APP
+{
+    public interface ITaskResult
+    {
+        bool Status { get; }
+        Message Message { get; }
     }
 
     public interface ITaskInfo
@@ -95,5 +115,4 @@ namespace SERVICE.Handler
 
         
     }
-
 }

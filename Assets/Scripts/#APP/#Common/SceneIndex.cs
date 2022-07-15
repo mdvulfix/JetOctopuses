@@ -56,7 +56,7 @@ namespace APP
         public static IEnumerable<Type> GetSceneTypeArray() =>
             m_SceneIndexes.Keys;
         
-        public static string Send(string text, LogFormat worning = LogFormat.None) =>
+        public static Message Send(string text, LogFormat worning = LogFormat.None) =>
             Messager.Send(m_Debug, "SceneIndex", text, worning);
 
     }

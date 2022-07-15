@@ -12,7 +12,7 @@ namespace SERVICE.Handler
         private static bool m_Debug = true;
 
         // SCENE TASK //
-        public static async Task Load(SceneIndex? sceneIndex)
+        public static async Task USceneLoad(SceneIndex? sceneIndex)
         {
             if(GetUSceneLoaded(sceneIndex, out var uScene))
             {
@@ -29,7 +29,7 @@ namespace SERVICE.Handler
             Send($"UScene {sceneIndex} was successfully loaded...");
         }
 
-        public static async Task Activate(SceneIndex? sceneIndex)
+        public static async Task USceneActivate(SceneIndex? sceneIndex)
         {
             if(GetUSceneLoaded(sceneIndex, out var uScene))
             {
@@ -46,8 +46,8 @@ namespace SERVICE.Handler
             else
             {
                 Send($"UScene {sceneIndex} not found. Activation failed!", LogFormat.Worning);
-                await Load(sceneIndex);
-                await Activate(sceneIndex);
+                await USceneLoad(sceneIndex);
+                await USceneActivate(sceneIndex);
             }
         }
 
@@ -68,6 +68,7 @@ namespace SERVICE.Handler
         public static GameObject SetGameObject(string name = "Unnamed", GameObject parent = null)
         {
             var obj = new GameObject(name);
+            obj.SetActive(false);
         
             if (parent != null)
                 obj.transform.SetParent(parent.transform);
@@ -125,7 +126,7 @@ namespace SERVICE.Handler
         private static UScene GetUScene(int index) =>
             SceneManager.GetSceneByBuildIndex(index);
         
-        private static string Send(string text, LogFormat worning = LogFormat.None) =>
+        private static Message Send(string text, LogFormat worning = LogFormat.None) =>
             Messager.Send(m_Debug, "USceneHandler", text, worning);
 
     }

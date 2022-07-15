@@ -67,9 +67,10 @@ public class SignalMenuLevel:
 
 namespace APP
 {
-    public interface ISignal
+    public interface ISignal : IConfigurable, ICacheable
     {
-        void Call ();
+        void Execute();
+        void Call();
 
     }
 }

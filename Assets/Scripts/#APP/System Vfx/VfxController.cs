@@ -24,7 +24,7 @@ namespace APP.Vfx
             throw new NotImplementedException();
         }
 
-        public void Configure(IConfig config, params object[] param)
+        public IMessage Configure(IConfig config, params object[] param)
         {
             throw new NotImplementedException();
         }
@@ -40,7 +40,7 @@ namespace APP.Vfx
         }
     }
 
-    public interface IVfxController: IController, IConfigurable, ICacheable
+    public interface IVfxController: IController, IConfigurable
     {
         
     }

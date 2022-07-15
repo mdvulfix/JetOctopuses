@@ -11,20 +11,19 @@ namespace APP.Scene
         [SerializeField] private ScreenLoading m_Loading;
         [SerializeField] private ScreenLevel m_Level_1;
 
-        private readonly string m_Name = "Scene: Level";
+        private readonly string m_Label = "Scene: Level";
+        private readonly SceneIndex m_SceneIndex = SceneIndex.Level;
 
         public SceneLevel() => Configure();
         public SceneLevel(IConfig config) => Configure(config);
 
         public void Configure()
         {
-            SceneIndex<SceneLevel>.SetIndex(SceneIndex.Level);
-
             var screens = new List<IScreen>();
-            screens.Add(m_Loading = new ScreenLoading());
-            screens.Add(m_Level_1 = new ScreenLevel());
+            screens.Add(m_Loading = new ScreenLoading(this));
+            screens.Add(m_Level_1 = new ScreenLevel(this));
             
-            var config =  new SceneConfig(m_Name, this, screens.ToArray());            
+            var config =  new SceneConfig(this, m_SceneIndex, screens.ToArray(), m_Loading, m_Loading, m_Label);           
             base.Configure(config);
         }
     }

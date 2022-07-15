@@ -7,126 +7,164 @@ namespace APP.Screen
     public class ScreenControllerDefault : Controller, IScreenController
     {
         private IScreen m_ScreenActive;
-
+        private ScreenControllerConfig m_Config;
+       
         public bool IsConfigured { get; private set; }
         public bool IsInitialized { get; protected set; }
 
+        public IScreen[] Screens { get; protected set; }
+        
         public event Action Configured;
         public event Action Initialized;
         public event Action Disposed;
 
         public ScreenControllerDefault() { }
-        public ScreenControllerDefault(IConfig config) =>
-            Configure(config);
+        public ScreenControllerDefault(IConfig config) => Configure(config);
 
-        public void Configure(IConfig config, params object[] param)
+        public IMessage Configure(IConfig config, params object[] param)
         {
             if (IsConfigured == true)
-                return;
+                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
+            
+            if(config != null)
+            {
+                m_Config = (ScreenControllerConfig) config;
+                Screens = m_Config.Screens;
 
-            OnConfigured();
+            }          
+               
+            if(param != null && param.Length > 0)
+            {
+                foreach (var obj in param)
+                {   
+                    if(obj is object)
+                    Send("Param is not used", LogFormat.Worning);
+                }
+            }          
+                
+            foreach (var screen in Screens)
+                if (screen.IsConfigured == false)
+                    screen.Configure();
+            
+            Send("All screens configured!");
+            
+            IsConfigured = true;
+            Configured?.Invoke();
+            
+            return Send("Configuration completed!");
         }
 
-        public void Init() 
+        public IMessage Init() 
+        { 
+            if (IsConfigured == false)
+                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
+
+            if (IsInitialized == true)
+                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
+
+
+            foreach (var screen in Screens)
+                screen.Init();
+
+            Send("All screens initialized!");
+            
+            IsInitialized = true;
+            Initialized?.Invoke();
+            return Send("Initialization completed!");
+        }
+
+        public IMessage Dispose() 
         { 
             
+            foreach (var screen in Screens)
+                screen.Dispose();
             
-            OnInitialized(); 
+            IsInitialized = false;
+            Disposed?.Invoke();
+            return Send("Dispose completed!");
         }
 
-        public void Dispose() 
-        { 
-            
-            
-            OnDisposed(); 
-        }
-
-        public async Task Activate<TScreen>(bool animate)
-        where TScreen : SceneObject, IScreen
+        
+        public async Task<TaskResult> ScreenLoad(IScreen screen)
         {
+            if (screen == null)
+                return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
 
-            if (m_ScreenActive != null && m_ScreenActive.GetType() == typeof(TScreen))
-                return;
+            var result = screen.Load();
+            if(result.Status == true)
+            {
 
-            TScreen screen = null;
-            await TaskHandler.Run(() => AwaitScreenActivation<TScreen>(out screen), "Waiting for screen activation...");
 
+            }
+
+            
+            await Task.Delay(1);
+        }
+            
+
+        
+        public async Task<TaskResult> ScreenActivate(IScreen screen, bool screenActivate, bool screenAnimate)
+        {
             if (screen == null)
             {
                 Send($"{screen.GetType().Name} not found!", LogFormat.Worning);
                 return;
             }
+            
+            if (m_ScreenActive != null && m_ScreenActive.GetType() == screen.GetType())
+                return;
 
             if (m_ScreenActive != null)
-                m_ScreenActive.Activate(false);
+            {
+                var activeScreenActivate = false;
+                var activeScreenAnimate = false;
+                m_ScreenActive.Activate(activeScreenActivate, activeScreenAnimate);
+            }
 
-            screen.Activate(true);
             m_ScreenActive = screen;
-
-            //Send($"{sceneIndex} activated...");
-
-            /*
-            if (m_CachHandler.Get<TScreen>(out var screen))
-            {
-
-                screen.gameObject.SetActive(true);
-
-                if (animate)
-                    Animate();
-            }
-            */
-
-            //await Task.Delay(1);
-
+            m_ScreenActive.Activate(screenActivate, screenAnimate);
+            
+            //await TaskHandler.Run(() => 
+            //    AwaitScreenActivation(screen, screenActivate, screenAnimate), "Waiting for screen activation...");
+            await Task.Delay(1);
         }
 
-        private bool AwaitScreenActivation<TScreen>(out TScreen screen)
-        where TScreen : SceneObject, IScreen
+        private bool AwaitScreenActivation(IScreen screen, bool screenActivate, bool screenAnimate)
         {
-            screen = default(TScreen);
-
-            if (СacheProvider<TScreen>.Contains())
+            if(screen == null)
+                return false;
+            
+            if (m_ScreenActive != null)
             {
-                screen = СacheProvider<TScreen>.Get();
-                return true;
+                var activeScreenActivate = false;
+                var activeScreenAnimate = false;
+                m_ScreenActive.Activate(activeScreenActivate, activeScreenAnimate);
             }
-
-            return false;
-        }
-
-        public void Animate(bool animate = true)
-        {
-
+                
+            m_ScreenActive = screen;
+            m_ScreenActive.Activate(screenActivate, screenAnimate);
+            
+            return true;
         }
 
         // CALLBACK //
-        private void OnConfigured()
+
+    }
+
+    public struct ScreenControllerConfig: IConfig
+    {
+        public ScreenControllerConfig(IScreen[] screens)
         {
-            Send($"Configuration successfully completed!");
-            IsConfigured = true;
-            Configured?.Invoke();
+            Screens = screens;
         }
 
-        private void OnInitialized()
-        {
-            Send($"Initialization successfully completed!");
-            IsInitialized = true;
-            Initialized?.Invoke();
-        }
-
-        private void OnDisposed()
-        {
-            Send($"Dispose process successfully completed!");
-            IsInitialized = false;
-            Disposed?.Invoke();
-        }
-
-
+        public IScreen[] Screens {get; private set; }
     }
 
     public interface IScreenController : IController, IConfigurable, IInitializable
     {
-        Task Activate<TScreen>(bool animate)
-        where TScreen : SceneObject, IScreen;
+        
+        Task<ITaskResult> ScreenLoad(IScreen screen);
+        Task<ITaskResult> ScreenActivate(IScreen screen, bool screenActivate, bool screenAnimate);
     }
 }

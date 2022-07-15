@@ -11,7 +11,7 @@ namespace APP
     public abstract class SceneBuildScheme<TScene> : SceneBuildScheme where TScene: IScene
     {   
         protected async Task SceneActivate() =>
-            await SceneHandler.Activate(SceneIndex<TScene>.Index);
+            await SceneHandler.USceneActivate(SceneIndex<TScene>.Index);
     }
 
     public abstract class SceneBuildScheme

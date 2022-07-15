@@ -38,19 +38,9 @@ namespace APP.Player
         public bool IsConfigured => throw new NotImplementedException();
         public bool IsInitialized => throw new NotImplementedException();
 
-        public void Configure()
+        public IMessage Configure(IConfig config, params object[] param)
         {
-
-        }
-
-        public void Configure(IConfig config)
-        {
-
-        }
-
-        public void Configure(IConfig config, params object[] param)
-        {
-
+            return new Message();
         }
 
         public override void Move() { }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace APP
 {
@@ -7,12 +8,16 @@ namespace APP
         private StateControllerConfig m_Config;
 
         private IState m_StateActive;
+        private IState m_StateLoad;
+        private IState m_StateUnload;
 
-        public StateControllerDefault() => Configure();
+        public StateControllerDefault() { }
         public StateControllerDefault(IConfig config) => Configure(config);
 
         public bool IsConfigured { get; private set; }
         public bool IsInitialized { get; private set; }
+        
+        public IState[] States { get; private set; }
 
         public event Action Configured;
         public event Action Initialized;
@@ -21,18 +26,16 @@ namespace APP
 
 
         // CONFIGURE //
-        public virtual void Configure() =>
-            Configure(config: null);
-
-        public virtual void Configure(IConfig config) =>
-            Configure(config: config, param: null);
-
-        public virtual void Configure (IConfig config, params object[] param)
+        public virtual IMessage Configure (IConfig config, params object[] param)
         {
+            if (IsConfigured == true)
+                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
+            
             if(config != null)
             {
                 m_Config = (StateControllerConfig) config;
 
+                States = m_Config.States;
             }          
                
             if(param != null && param.Length > 0)
@@ -44,26 +47,60 @@ namespace APP
                 }
             }          
                 
-            OnConfigured();
+            foreach (var state in States)
+                if(state.IsConfigured == false)
+                    state.Configure();
+
+            Send("All states configured!");
+            
+            IsConfigured = true;
+            Configured?.Invoke();
+            
+            return Send("Configuration completed!");
         }
 
-
-        public void Init()
+        public virtual IMessage Init()
         {
             if (IsConfigured == false)
-            {
-                Send("Instance was not configured. Initialization was failed!", LogFormat.Worning);
-                return;
-            }
+                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
 
-            OnInitialized();
+            if (IsInitialized == true)
+                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
+
+            Subscribe();
+
+
+            foreach (var state in States)
+                state.Init();
+
+            Execute<StateLoad>();
+
+            Send("All states initialized!");
+
+            IsInitialized = true;
+            Initialized?.Invoke();
+            return Send("Initialization completed!");
         }
 
-        public void Dispose()
+        public virtual IMessage Dispose()
         {
+            Execute<StateUnload>();
+            
+            foreach (var state in States)
+                state.Dispose();
 
-            OnDisposed();
+            Send("All states disposed!");
+            
+            Unsubscribe();
+            
+            IsInitialized = false;
+            Disposed?.Invoke();
+            return Send("Dispose completed!");
         }
+
+        public virtual void Subscribe() { }
+        public virtual void Unsubscribe() { }
+
 
         public void Execute<TState>()
         where TState : class, IState
@@ -83,37 +120,19 @@ namespace APP
             Send($"{typeof(TState).Name} was not registered!", LogFormat.Worning);
 
         }
-
-        // CALLBACK //
-        private void OnConfigured()
-        {
-            Send($"Configuration successfully completed!");
-            IsConfigured = true;
-            Configured?.Invoke();
-        }
-
-        private void OnInitialized()
-        {
-            Send($"Initialization successfully completed!");
-            IsInitialized = true;
-            Initialized?.Invoke();
-        }
-
-        private void OnDisposed()
-        {
-            Send($"Dispose process successfully completed!");
-            IsInitialized = false;
-            Disposed?.Invoke();
-        }
-
     }
 
     public struct StateControllerConfig : IConfig
     {
+        public StateControllerConfig(IState[] states)
+        {
+            States = states;
+        }
 
+        public IState[] States { get; private set; }
     }
 
-    public interface IStateController : IController, IConfigurable, IInitializable
+    public interface IStateController : IController, IConfigurable, IInitializable, ISubscriber, IMessager
     {
         event Action<IState> StateChanged;
 

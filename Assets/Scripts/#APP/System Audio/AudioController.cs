@@ -14,17 +14,8 @@ namespace APP.Audio
         public event Action Initialized;
         public event Action Disposed;
 
-        public void Configure()
-        {
-            throw new NotImplementedException();
-        }
 
-        public void Configure(IConfig config)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Configure(IConfig config, params object[] param)
+        public IMessage Configure(IConfig config, params object[] param)
         {
             throw new NotImplementedException();
         }
@@ -40,7 +31,7 @@ namespace APP.Audio
         }
     }
 
-    public interface IAudioController: IController, IConfigurable, ICacheable
+    public interface IAudioController: IController, IConfigurable
     {
         
     }

@@ -80,7 +80,7 @@ public class Configurator : IConfigurator
     }
     */
 
-    private static string Send(Message message) =>
+    private static Message Send(Message message) =>
         Messager.Send(true, message);
 }
 

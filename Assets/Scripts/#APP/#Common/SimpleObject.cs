@@ -6,7 +6,7 @@ using UnityEngine;
 
 
 [Serializable]
-public abstract class SimpleObject<T> 
+public abstract class SimpleObject
 {
     private IConfigurator m_Configurator;
     private IInitializator m_Initializator;
@@ -26,7 +26,7 @@ public abstract class SimpleObject<T>
         Configure(instance: instance, config: config, param: null);
     */
     
-    public virtual void Configure<TConfig>(T instance, TConfig config, params object[] param)
+    public virtual void Configure<TConfig>(TConfig config, params object[] param)
     {
         m_Configurator = new Configurator();
         //m_Configurator.Configure(() => Set(instance, config, param));
@@ -54,7 +54,7 @@ public abstract class SimpleObject<T>
     }
 
 
-    public abstract void Set<TConfig>(T instance, TConfig config, params object[] param);
+    public abstract void Set<TConfig>(TConfig config, params object[] param);
 
     
     private void OnEnable() =>
@@ -66,7 +66,7 @@ public abstract class SimpleObject<T>
     private void OnGetMessage(Message message) =>
         Send(new Message(this, message.Text, message.LogFormat));
 
-    protected string Send(Message message) =>
+    protected Message Send(Message message) =>
         Messager.Send(Debug, message);
 
 }

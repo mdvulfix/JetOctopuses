@@ -10,19 +10,18 @@ namespace APP.Scene
     {
         [SerializeField] private ScreenLoading m_Loading;
         
-        private readonly string m_Name = "Scene: Net";
+        private readonly string m_Label = "Scene: Net";
+        private readonly SceneIndex m_SceneIndex = SceneIndex.Core;
 
         public SceneNet() => Configure();
         public SceneNet(IConfig config) => Configure(config);
 
         public void Configure()
         {
-            SceneIndex<SceneNet>.SetIndex(SceneIndex.Net);
-
             var screens = new List<IScreen>();
-            screens.Add(m_Loading = new ScreenLoading());
+            screens.Add(m_Loading = new ScreenLoading(this));
               
-            var config =  new SceneConfig(m_Name, this, screens.ToArray());            
+            var config =  new SceneConfig(this, m_SceneIndex, screens.ToArray(), m_Loading, m_Loading, m_Label);           
             base.Configure(config);
         }
     }

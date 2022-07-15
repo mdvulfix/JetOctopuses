@@ -11,21 +11,14 @@ namespace APP.Test
         public event Action Initialized;
         public event Action Disposed;
 
-        public void Dispose()
+        public IMessage Dispose()
         {
             throw new NotImplementedException();
         }
 
-        public void Init()
+        public IMessage Init()
         {
             throw new NotImplementedException();
         }
-
-        private async void SceneActivate() 
-        {
-            await SceneHandler.Activate(SceneIndex.Net);  
-        }
-
-
     }
 }

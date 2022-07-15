@@ -4,7 +4,8 @@ using UnityEngine.UI;
 
 namespace APP.UI
 {
-    public abstract class ButtonModel<TButton> : Button, IConfigurable, IInitializable, ISubscriber
+    public abstract class ButtonModel<TButton> :
+        IConfigurable, IInitializable, ISubscriber, IMessager
     where TButton : class, IButton
     {
         [SerializeField] private Button m_Button;
@@ -21,100 +22,125 @@ namespace APP.UI
         public event Action Initialized;
         public event Action Disposed;
         public event Action<ISignal> ButtonClicked;
+        public event Action<IMessage> Message;
 
-        
-        public void Configure()
+        public virtual IMessage Configure(IConfig config, params object[] param)
         {
+            if (IsConfigured == true)
+                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
 
-        }
+            if(config != null)
+            {
+                m_Config = (ButtonConfig)config;
 
-        public void Configure(IConfig config)
-        {
-            m_Config = (ButtonConfig) config;
+            }          
+               
+            if(param != null && param.Length > 0)
+            {
+                foreach (var obj in param)
+                {   
+                    if(obj is object)
+                    Send("Param is not used", LogFormat.Worning);
+                }
+            }          
+               
+            IsConfigured = true;
+            Configured?.Invoke();
             
-            
-            OnConfigured();
-        }
-
-        public void Configure(IConfig config, params object[] param)
-        {
-
-        }
+            return Send("Configuration completed!");
+        }   
 
 
-        public virtual void Init()
+        public virtual IMessage Init()
         {
             if (IsConfigured == false)
-            {
-                Send("Configuration has not been done. Initialization aborted!", LogFormat.Worning);
-                return;
-            }
+                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
+
+            if (IsInitialized == true)
+                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
+
+            Subscribe();
+
+
+
+
 
             //m_Signal = new SignalAction();
             //m_Signal.Configure(new SignalConfig<TActionInfo>(m_Signal, m_ActionInfo));
             //m_Signal.Init();
 
-            Subscribe();
-            OnInitialized();
+            IsInitialized = true;
+            Initialized?.Invoke();
+            return Send("Initialization completed!");
         }
 
-        public virtual void Dispose()
+        public virtual IMessage Dispose()
         {
-            
-            OnDisposed();
-            Unsubscribe();
-
             //m_Signal.Dispose();
-        }
 
-        protected string Send(string text, LogFormat worning = LogFormat.None) =>
-            Messager.Send(this, m_Debug, text, worning);
+            Unsubscribe();
+            
+            IsInitialized = false;
+            Disposed?.Invoke();
+            return Send("Dispose completed!");
+        }
 
         public void Subscribe() =>
-            onClick.AddListener(() => ButtonClick());
+            m_Button.onClick.AddListener(() => ButtonClick());
 
         public void Unsubscribe() =>
-            onClick.RemoveListener(() => ButtonClick());
+            m_Button.onClick.RemoveListener(() => ButtonClick());
 
         private void ButtonClick()
         {
             //m_Signal.Call();
             //ButtonClicked?.Invoke(m_Signal);
         }
-
-        // CALLBACK //
-        private void OnConfigured()
-        {
-            Send($"Configuration successfully completed!");
-            IsConfigured = true;
-            Configured?.Invoke();
-        }
         
-        private void OnInitialized()
-        {
-            Send($"Initialization successfully completed!");
-            IsInitialized = true;
-            Initialized?.Invoke();
-        }
+        
+        public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
+            Send(new Message(this, text, logFormat));
 
-        private void OnDisposed()
+        public IMessage Send(IMessage message, SendFormat sendFrom = SendFormat.Self)
         {
-            Send($"Dispose process successfully completed!");
-            IsInitialized = false;
-            Disposed?.Invoke();
+            Message?.Invoke(message);
+            
+            switch (sendFrom)
+            {               
+                case SendFormat.Sender:
+                    return Messager.Send(m_Debug, this, $"message from: {message.Text}" , message.LogFormat);
+
+                default:
+                    return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
+            }
         }
+        // CALLBACK //
+        private void OnMessage(IMessage message) =>
+            Send(message);
 
 
     }
 
     public struct ButtonConfig : IConfig
     {
+        
         public ButtonConfig(IButton button)
         {
+            Label = "Button: ...";
+            Button = button;
+        }
+        
+        public ButtonConfig(string label, IButton button)
+        {
+            Label = label;
             Button = button;
         }
 
-        public IButton Button { get; }
+
+        public string Label { get; private set; }
+        public IButton Button { get; private set; }
+        
+
     }
 
     public struct ButtonClickedEventArgs : IEventArgs

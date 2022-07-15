@@ -8,7 +8,7 @@ namespace APP
 
         bool IsConfigured {get; } 
         
-        void Configure(IConfig config = null, params object[] param);
+        IMessage Configure(IConfig config = null, params object[] param);
 
     }
 

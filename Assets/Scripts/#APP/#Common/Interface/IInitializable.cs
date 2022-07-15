@@ -9,8 +9,7 @@ namespace APP
         
         bool IsInitialized {get; }
     
-        void Init();
-        void Dispose();
-
+        IMessage Init();
+        IMessage Dispose();
     }
 }

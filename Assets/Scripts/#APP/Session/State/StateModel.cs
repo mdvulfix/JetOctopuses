@@ -1,48 +1,107 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using APP.Scene;
 using APP.Signal;
 
 namespace APP
 {
-    public abstract class StateModel<TState>: IConfigurable, IInitializable
+    public abstract class StateModel<TState>: IConfigurable, IInitializable, ICacheable, IMessager, ISubscriber
     where TState: class, IState
     {
         private bool m_Debug = true;
 
-        private TState m_State;
+        private StateConfig m_Config;
+        private ICacheHandler m_CacheHandler;
+
         
         private IState m_StateActive;
         private IScene m_SceneActive;
 
         
         private ISignal[] m_Signals;
+        
 
         public bool IsInitialized { get; private set; }
         public bool IsConfigured { get; private set; }
 
+        public IState State {get; private set; }
+
         public event Action Configured;
         public event Action Initialized;
         public event Action Disposed;
+        public event Action<IMessage> Message;
  
         public event Action<IScene> SceneRequied;
         public event Action<IState> StateRequied;
 
+        public event Action<ICacheable> RecordToCahceRequired;
+        public event Action<ICacheable> DeleteFromCahceRequired;
         
-        public virtual void Configure(IConfig config = null, params object[] param)
-        {
 
+        public virtual IMessage Configure(IConfig config = null, params object[] param)
+        {
+            if (IsConfigured == true)
+                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
+
+
+            if(config != null)
+            {
+                m_Config = (StateConfig) config;
+                State = m_Config.State;
+            }          
+               
+            if(param != null && param.Length > 0)
+            {
+                foreach (var obj in param)
+                {   
+                    if(obj is object)
+                    Send("Param is not used", LogFormat.Worning);
+                }
+            }          
+                            
+            m_CacheHandler = new CacheHandler<IState>();
+            Send(m_CacheHandler.Configure(new CacheHandlerConfig(State)), SendFormat.Sender);
+            
+            
+            
+            IsConfigured = true;
+            Configured?.Invoke();
+            
+            return Send("Configuration completed!");
         }
         
-        public virtual void Init()
+        public virtual IMessage Init()
         {
+            if (IsConfigured == false)
+                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
 
+            if (IsInitialized == true)
+                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
+
+            Subscribe();
+
+
+            IsInitialized = true;
+            Initialized?.Invoke();
+            return Send("Initialization completed!");
         }
 
-        public virtual void Dispose()
+        public virtual IMessage Dispose()
         {
 
+            Unsubscribe();
+            
+            IsInitialized = false;
+            Disposed?.Invoke();
+            return Send("Dispose completed!");
         }
+
+
+        public virtual void Subscribe() { }
+        public virtual void Unsubscribe() { }
+
+
 
         public virtual Task Enter()
         {
@@ -68,10 +127,27 @@ namespace APP
             return null;
         }
 
-        protected string Send(string text, LogFormat worning = LogFormat.None) =>
-            Messager.Send(m_Debug, this, text, worning);
+        public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
+            Send(new Message(this, text, logFormat));
 
+        public IMessage Send(IMessage message, SendFormat sendFrom = SendFormat.Self)
+        {
+            Message?.Invoke(message);
+            
+            switch (sendFrom)
+            {               
+                case SendFormat.Sender:
+                    return Messager.Send(m_Debug, this, $"message from: {message.Text}" , message.LogFormat);
+
+                default:
+                    return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
+            }
+        }
         
+        // CALLBACK //
+        private void OnMessage(IMessage message) =>
+            Send(message);
+
         public void OnSceneActivate(IScene scene)
         { 
 
@@ -92,13 +168,22 @@ namespace APP
 
     public class StateLoad : StateModel<StateLoad>, IState 
     { 
+        private SignalSceneActivate m_SceneMenuActivate;
+        private SignalStateSet m_StateMenuSet;
+        
         public StateLoad() => Configure();
         public StateLoad(IConfig config) => Configure(config);
 
         public void Configure()
         {
-            var config =  new StateConfig(this);            
+
+            var signals = new List<ISignal>();
+            signals.Add(m_SceneMenuActivate = new SignalSceneActivate(СacheProvider<SceneMenu>.Get()));
+            signals.Add(m_StateMenuSet = new SignalStateSet(СacheProvider<StateMenu>.Get()));
+            
+            var config =  new StateConfig(this, signals.ToArray());            
             base.Configure(config);
+
         }
         
         
@@ -120,8 +205,7 @@ namespace APP
             
             //await Builder.Execute(new CoreBuildScheme());
 
-            //SceneNeed?.Invoke(SceneIndex<SceneCore>.Index);
-            
+            m_SceneMenuActivate.Call();
             //return null;
         }
 
@@ -137,18 +221,13 @@ namespace APP
     {
         public string Label { get; private set; }
         public IState State {get; private set; }
-
+        public ISignal[] Signals {get; private set; }
         
-        public StateConfig(IState state)
-        {
-            Label = "State: ...";
-            State = state;
-        }
-        
-        public StateConfig(string label, IState state)
+        public StateConfig(IState state, ISignal[] signals, string label = "State: ...")
         {
             Label = label;
             State = state;
+            Signals = signals;
         }
     }
 
@@ -214,7 +293,20 @@ namespace APP
 
     }
 
+}
 
-
+namespace APP
+{
+    public interface IState: IConfigurable, ICacheable
+    {
+        
+        event Action<IScene> SceneRequied;
+        event Action<IState> StateRequied;
+        
+        Task Enter();
+        Task Fail();
+        Task Run();
+        Task Exit();
+    }
 
 }

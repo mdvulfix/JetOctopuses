@@ -9,19 +9,15 @@ namespace APP.UI
     {
         [SerializeField] private PlayerAction m_PlayerAction;
 
-        public override void Init()
-        {
-            if (m_PlayerAction == PlayerAction.None)
-            {
-                Send("Player action not assigned!", LogFormat.Worning);
-                return;
-            }
+        private readonly string m_Label = "Button: Sign In";
+        
+        public ButtonSignIn() => Configure();
+        public ButtonSignIn(IConfig config) => Configure(config);
 
-
-            var config = new ButtonConfig(this);
-
+        public void Configure()
+        {             
+            var config =  new ButtonConfig(m_Label, this);            
             base.Configure(config);
-            base.Init();
         }
     }
 

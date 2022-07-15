@@ -1,20 +1,26 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace APP
 {
     public static class Messager
     {       
-        public static string Send(bool debug, Message message) =>
-            Send(debug, message.Sender, message.Text, message.LogFormat);
+        public static event Action<IMessage> MessageHasBeenSend;
         
-         
-        public static string Send(bool debug, object sender, string text, LogFormat worning = LogFormat.None)
+        public static Message Send(bool debug, Message message)
+        {
+            MessageHasBeenSend?.Invoke(message);
+            Send(debug, message.Sender, message.Text, message.LogFormat);
+            return message;
+        }
+            
+        public static Message Send(bool debug, object sender, string text, LogFormat logFormat = LogFormat.None)
         {
             var message = $"{sender.GetType().Name}: {text}";
 
             if (debug)
             {
-                switch (worning)
+                switch (logFormat)
                 {
                     case LogFormat.Worning:
                         Debug.LogWarning(message);
@@ -29,12 +35,13 @@ namespace APP
                         break;
                 }
             }
-            return message;
+
+            return new Message(sender, message, logFormat);
         }
     }
 
     
-    public struct Message
+    public struct Message: IMessage
     {
         public Message(string text)
         {
@@ -48,6 +55,7 @@ namespace APP
             Sender = null;
             Text = text;
             LogFormat = logFormat;
+
         }
         
         public Message(object sender, string text)
@@ -66,10 +74,11 @@ namespace APP
 
         public object Sender {get; private set; }
         public string Text {get; private set; }
-        public LogFormat LogFormat {get; private set; }
+        public LogFormat LogFormat {get; private set; }   
+    
     }
-    
-    
+
+
     public enum LogFormat
     {
         None,
@@ -77,5 +86,17 @@ namespace APP
         Error
     }
 
+    public enum SendFormat
+    {
+        None,
+        Self,
+        Sender
+    }
 
+    public interface IMessage
+    {
+        object Sender { get; }
+        string Text { get; }
+        LogFormat LogFormat { get; } 
+    }
 }

@@ -10,23 +10,20 @@ namespace APP.Scene
     {
         [SerializeField] private ScreenLoading m_Loading;
         [SerializeField] private ScreenMain m_Main;
-        [SerializeField] private ScreenScore m_Score;
 
-        private readonly string m_Name = "Scene: Menu";
+        private readonly string m_Label = "Scene: Menu";
+        private readonly SceneIndex m_SceneIndex = SceneIndex.Menu;
 
         public SceneMenu() => Configure();
         public SceneMenu(IConfig config) => Configure(config);
 
         public void Configure()
         {
-            SceneIndex<SceneLogin>.SetIndex(SceneIndex.Login);
-
             var screens = new List<IScreen>();
-            screens.Add(m_Loading = new ScreenLoading());
-            screens.Add(m_Main = new ScreenMain());
-            screens.Add(m_Score = new ScreenScore());
+            screens.Add(m_Loading = new ScreenLoading(this));
+            screens.Add(m_Main = new ScreenMain(this));
               
-            var config =  new SceneConfig(m_Name, this, screens.ToArray());            
+            var config =  new SceneConfig(this, m_SceneIndex, screens.ToArray(), m_Loading, m_Loading, m_Label);             
             base.Configure(config);
         }
     }

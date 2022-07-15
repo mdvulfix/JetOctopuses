@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace APP.Screen
 {
@@ -9,22 +10,19 @@ namespace APP.Screen
         //[SerializeField] private ButtonLevelResume m_Resume;
         //[SerializeField] private ButtonLevelExit m_Exit;
 
-        public override void Init()
+        private readonly string m_Label = "Screen: Level";
+
+        public ScreenLevel(IScene scene) => Configure(scene);
+        public ScreenLevel(IConfig config) => Configure(config);
+
+        public void Configure(IScene scene)
         {
-            var buttons = new IButton[]
-            {
-                //m_Pause,
-                //m_Resume,
-                //m_Exit
-            };
-
-
-            var screenConfig = new ScreenConfig(this, buttons);
-            
-            base.Configure(screenConfig);
-            base.Init();
+            var buttons = new List<IButton>();
+            //screens.Add(m_Loading = new ScreenLoading());
+              
+            var config =  new ScreenConfig(this, scene, buttons.ToArray(), m_Label);            
+            base.Configure(config);
         }
-
     }
 
 }

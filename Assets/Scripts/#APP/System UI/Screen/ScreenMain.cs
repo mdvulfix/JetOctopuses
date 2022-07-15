@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace APP.Screen
 {
@@ -9,19 +10,18 @@ namespace APP.Screen
         //[SerializeField] private ButtonMenuOptions m_Options;
         //[SerializeField] private ButtonMenuExit m_Exit;
 
-        public override void Init()
-        {
-            var buttons = new IButton[]
-            {
-                //m_Play,
-                //m_Options,
-                //m_Exit,
-            };
+        private readonly string m_Label = "Screen: Main";
 
-            var config = new ScreenConfig(this, buttons);
-            
+        public ScreenMain(IScene scene) => Configure(scene);
+        public ScreenMain(IConfig config) => Configure(config);
+
+        public void Configure(IScene scene)
+        {
+            var buttons = new List<IButton>();
+
+              
+            var config =  new ScreenConfig(this, scene, buttons.ToArray(), m_Label);            
             base.Configure(config);
-            base.Init();
         }
     }
 
