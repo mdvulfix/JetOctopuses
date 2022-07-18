@@ -85,52 +85,48 @@ namespace APP.Screen
         }
 
         
-        public async Task<TaskResult> ScreenLoad(IScreen screen)
+        public async Task<ITaskResult> ScreenLoad(IScreen screen)
         {
             if (screen == null)
                 return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
 
-            var result = screen.Load();
-            if(result.Status == true)
-            {
-
-
-            }
-
-            
-            await Task.Delay(1);
+            var result = default(ITaskResult);
+            await TaskHandler.Run(() => AwaitScreenLoad(screen, out result), "Waiting for screen loading...");
+            return result;
         }
             
 
         
-        public async Task<TaskResult> ScreenActivate(IScreen screen, bool screenActivate, bool screenAnimate)
+        public async Task<ITaskResult> ScreenActivate(IScreen screen, bool screenActivate, bool screenAnimate)
         {
             if (screen == null)
-            {
-                Send($"{screen.GetType().Name} not found!", LogFormat.Worning);
-                return;
-            }
+                return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
+
             
             if (m_ScreenActive != null && m_ScreenActive.GetType() == screen.GetType())
-                return;
+                return new TaskResult(true, Send($"{screen.GetType().Name} is already active."));
 
-            if (m_ScreenActive != null)
-            {
-                var activeScreenActivate = false;
-                var activeScreenAnimate = false;
-                m_ScreenActive.Activate(activeScreenActivate, activeScreenAnimate);
-            }
-
-            m_ScreenActive = screen;
-            m_ScreenActive.Activate(screenActivate, screenAnimate);
             
-            //await TaskHandler.Run(() => 
-            //    AwaitScreenActivation(screen, screenActivate, screenAnimate), "Waiting for screen activation...");
-            await Task.Delay(1);
+            var result = default(ITaskResult);
+            await TaskHandler.Run(() => AwaitScreenActivation(screen, screenActivate, screenAnimate, out result), "Waiting for screen activation...");
+            return result;
+
         }
 
-        private bool AwaitScreenActivation(IScreen screen, bool screenActivate, bool screenAnimate)
+        private bool AwaitScreenLoad(IScreen screen, out ITaskResult result)
         {
+            result = default(ITaskResult);
+            if(screen == null)
+                return false;
+            
+            result = screen.Load().Result;
+            return result.Status;
+        }
+
+        private bool AwaitScreenActivation(IScreen screen, bool screenActivate, bool screenAnimate, out ITaskResult result)
+        {
+            result = default(ITaskResult);
+            
             if(screen == null)
                 return false;
             
@@ -142,9 +138,9 @@ namespace APP.Screen
             }
                 
             m_ScreenActive = screen;
-            m_ScreenActive.Activate(screenActivate, screenAnimate);
+            result = m_ScreenActive.Activate(screenActivate, screenAnimate).Result;
             
-            return true;
+            return result.Status;
         }
 
         // CALLBACK //

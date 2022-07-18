@@ -12,13 +12,11 @@ namespace SERVICE.Handler
         private static bool m_Debug = true;
 
         // SCENE TASK //
-        public static async Task USceneLoad(SceneIndex? sceneIndex)
+        public static async Task<ITaskResult> USceneLoad(SceneIndex? sceneIndex)
         {
             if(GetUSceneLoaded(sceneIndex, out var uScene))
-            {
-                Send($"UScene {sceneIndex} was already loaded...");
-                return;
-            }
+                return new TaskResult (true, Send($"UScene {sceneIndex} was already loaded..."));
+
 
             var index = (int) sceneIndex;            
             var operation = SceneManager.LoadSceneAsync(index, LoadSceneMode.Additive);
@@ -26,10 +24,10 @@ namespace SERVICE.Handler
             await TaskHandler.Run(() => 
                 AwaitLoadingOperationComplete(operation),$"Await UScene {sceneIndex} loading operation complete...");
             
-            Send($"UScene {sceneIndex} was successfully loaded...");
+            return new TaskResult (true, Send($"UScene {sceneIndex} was successfully loaded..."));
         }
 
-        public static async Task USceneActivate(SceneIndex? sceneIndex)
+        public static async Task<ITaskResult> USceneActivate(SceneIndex? sceneIndex)
         {
             if(GetUSceneLoaded(sceneIndex, out var uScene))
             {
@@ -40,27 +38,34 @@ namespace SERVICE.Handler
                 }
 
                 SceneManager.SetActiveScene(uScene);
-                Send($"UScene {sceneIndex} was successfully activated...");
-                return;
+                return new TaskResult (true, Send($"UScene {sceneIndex} was successfully activated..."));
             }
-            else
-            {
-                Send($"UScene {sceneIndex} not found. Activation failed!", LogFormat.Worning);
-                await USceneLoad(sceneIndex);
-                await USceneActivate(sceneIndex);
-            }
+
+            Send($"UScene {sceneIndex} not found. Activation failed!", LogFormat.Worning);
+            
+            var uSceneLoadTAskResult = await USceneLoad(sceneIndex);
+            if(uSceneLoadTAskResult.Status == false)
+                return new TaskResult (false, Send($"UScene {sceneIndex} can not be loaded!", LogFormat.Worning));
+                
+
+            var uSceneActivateTaskResult = await USceneActivate(sceneIndex);
+            if(uSceneActivateTaskResult.Status == false)
+                return new TaskResult (false, Send($"UScene {sceneIndex} can not be activated!", LogFormat.Worning));
+
+            return new TaskResult (true, Send($"UScene {sceneIndex} was successfully activated..."));
+
         }
 
-        public static async Task USceneUnload(SceneIndex? sceneIndex)
+        public static async Task<ITaskResult> USceneUnload(SceneIndex? sceneIndex)
         {
             await Task.Delay(1);
-            Send($"UScene {sceneIndex} was unloaded... Not implemented!", LogFormat.Worning);
+            return new TaskResult (true, Send($"UScene {sceneIndex} was unloaded... Not implemented!", LogFormat.Worning));
         }
 
-        public static async Task USceneReload(SceneIndex? sceneIndex)
+        public static async Task<ITaskResult> USceneReload(SceneIndex? sceneIndex)
         {
             await Task.Delay(1);
-            Send($"UScene {sceneIndex} was eloaded... Not implemented!", LogFormat.Worning);
+            return new TaskResult (true, Send($"UScene {sceneIndex} was eloaded... Not implemented!", LogFormat.Worning));
         }
         
 

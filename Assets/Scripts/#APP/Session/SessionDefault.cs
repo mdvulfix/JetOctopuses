@@ -34,7 +34,7 @@ namespace APP
             Send("Start configuration ...");
             
             var scenes =  new List<IScene>();
-            //scenes.Add(m_SceneCore = new SceneCore());
+            scenes.Add(m_SceneCore = new SceneCore());
             scenes.Add(m_SceneLogin = new SceneLogin());
             //scenes.Add(m_SceneMenu = new SceneMenu());
             //scenes.Add(m_SceneLevel = new SceneLevel());
@@ -47,7 +47,7 @@ namespace APP
             //states.Add(m_StateResult = new StateResult());
             //states.Add(m_StateUnload = new StateUnload());
             
-            var config =  new SessionConfig(this, scenes.ToArray(), m_SceneLogin, m_SceneMenu, m_SceneLevel, states.ToArray());            
+            var config =  new SessionConfig(this, scenes.ToArray(), m_SceneCore, m_SceneLogin, states.ToArray());            
             return base.Configure(config);
         }
         
@@ -264,27 +264,24 @@ namespace APP
         public string Label { get; private set;}
         public ISession Session { get; private set;}
         public IScene[] Scenes { get; private set;}
-        public IScene SceneLogin { get; private set;}
-        public IScene SceneMenu { get; private set;}
-        public IScene SceneLevel { get; internal set; }
+        public IScene SceneLoading { get; private set;}
+        public IScene SceneStart { get; private set;}
         public IState[] States {get; private set;}
         
 
         public SessionConfig(
             ISession session,
             IScene[] scenes,
-            IScene sceneLogin,
-            IScene sceneMenu,
-            IScene sceneLevel,
+            IScene sceneLoading,
+            IScene sceneStart,
             IState[] states,
             string label = "Session")
         {
             Label = label;
             Session = session;
             Scenes = scenes;
-            SceneLogin = sceneLogin;
-            SceneMenu = sceneMenu;
-            SceneLevel = sceneLevel;
+            SceneLoading = sceneLoading;
+            SceneStart = sceneStart;
             States = states;
         }
     }

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace APP.Scene
 {
-    public abstract class SceneModel<TScene>: 
+    public abstract class SceneModel<TScene>:
         IConfigurable, IInitializable, ICacheable, ISubscriber, IMessager
     where TScene : IScene
     {
@@ -18,30 +18,33 @@ namespace APP.Scene
         private ICacheHandler m_CacheHandler;
 
         private IScreenController m_ScreenController;
-        
+
         private IScreen[] m_Screens;
-       
+
         public bool IsConfigured { get; private set; }
         public bool IsInitialized { get; private set; }
+        public bool IsLoaded { get; private set; }
+        public bool IsActivated { get; private set; }
 
         public string Label { get; private set; }
         public IScene Scene { get; private set; }
         public SceneIndex Index { get; private set; }
+        
         public IScreen ScreenLoading { get; private set; }
         public IScreen ScreenStart { get; private set; }
-        
+
         public ISceneObject SceneObject { get; private set; }
-        public bool IsLoaded { get; private set; }
 
         public event Action Configured;
         public event Action Initialized;
         public event Action Disposed;
+        public event Action Loaded;
+        public event Action Activated;
+
         public event Action<IMessage> Message;
 
         public event Action<ICacheable> RecordToCahceRequired;
         public event Action<ICacheable> DeleteFromCahceRequired;
-
-        public event Action<IScreen> ScreenActivated;
 
         // CONFIGURE //
         public virtual IMessage Configure(IConfig config = null, params object[] param)
@@ -56,11 +59,11 @@ namespace APP.Scene
                 Label = m_Config.Label;
                 Scene = m_Config.Scene;
                 Index = SceneIndex<TScene>.SetIndex(m_Config.SceneIndex);
-            
+
                 m_Screens = m_Config.Screens;
                 ScreenLoading = m_Config.ScreenLoading;
                 ScreenStart = m_Config.ScreenStart;
-            
+
             }
 
             if (param != null && param.Length > 0)
@@ -78,9 +81,6 @@ namespace APP.Scene
             m_ScreenController = new ScreenControllerDefault();
             Send(m_ScreenController.Configure(new ScreenControllerConfig(m_Config.Screens)), SendFormat.Sender);
 
-
-            
-
             IsConfigured = true;
             Configured?.Invoke();
 
@@ -97,13 +97,12 @@ namespace APP.Scene
                 return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
 
             Subscribe();
-            
 
             Send(m_CacheHandler.Init(), SendFormat.Sender);
             Send(m_ScreenController.Init(), SendFormat.Sender);
 
             RecordToCache();
-            
+
             IsInitialized = true;
             Initialized?.Invoke();
             return Send("Initialization completed!");
@@ -112,11 +111,10 @@ namespace APP.Scene
         public virtual IMessage Dispose()
         {
             DeleteFromCache();
-            
+
             Send(m_ScreenController.Dispose(), SendFormat.Sender);
             Send(m_CacheHandler.Dispose(), SendFormat.Sender);
 
-            
             Unsubscribe();
 
             IsInitialized = false;
@@ -135,61 +133,113 @@ namespace APP.Scene
             m_CacheHandler.Message -= OnMessage;
         }
 
-        public async Task<TaskResult> Load()
+        public async Task<ITaskResult> Load()
         {
             if (IsLoaded == true)
                 return new TaskResult(true, Send("The instance was already loaded. The current loading has been aborted!", LogFormat.Worning));
-            
-            if(SceneObject == null)
-                SceneObject = SetComponent<SceneObject>(Label, Scene.SceneObject);
 
+            var uSceneLoadingTaskResult = await SceneHandler.USceneLoad(Index);
+            if(uSceneLoadingTaskResult.Status == false)
+                return new TaskResult(false, uSceneLoadingTaskResult.Message);
+            
+            
+            var uSceneActivateTaskResult = await SceneHandler.USceneActivate(Index);
+            if(uSceneActivateTaskResult.Status == false)
+                return new TaskResult(false, uSceneActivateTaskResult.Message);
+            
+            
+            // Loading scene objects  ...
+            await TaskHandler.Run(() => AwaitSceneLoading(), "Waiting for screen loading...");
+
+            
+            // Loading screens...
             foreach (var screen in m_Screens)
-                await m_ScreenController.ScreenLoad(screen);
-            
-            var screenLoadingActivate = true;
-            var screenLoadingAnimate= true;
-            var result = await m_ScreenController.ScreenActivate(ScreenLoading, screenLoadingActivate, screenLoadingAnimate);
-
-
+            {
+                var screenLoadTaskResult = await m_ScreenController.ScreenLoad(screen);
+                if (screenLoadTaskResult.Status == false)
+                    return new TaskResult(false, screenLoadTaskResult.Message);
+            }
 
             IsLoaded = true;
+            Loaded?.Invoke();
             return new TaskResult(true, Send($"All screens were loaded. {ScreenLoading} was activated."));
         }
 
-        public async Task<TaskResult> Activate<TScreen>(bool screenActivate = true, bool screenAnimate = true)
+        public async Task<ITaskResult> Activate<TScreen>(bool screenActivate = true, bool screenAnimate = true)
         where TScreen : IScreen
         {
             foreach (var screen in m_Screens)
             {
-                if(screen.GetType() == typeof(TScreen))
+                if (screen.GetType() == typeof(TScreen))
                 {
-                    await Activate(screen, screenActivate, screenAnimate);
-                    return new TaskResult(true, Send($"{screen} was activated."));
+                    // Activate loading screen...
+                    var screenActivateTaskResult = await m_ScreenController.ScreenActivate(ScreenLoading, screenActivate, screenAnimate);
+                    if (screenActivateTaskResult.Status == false)
+                        return new TaskResult(false, screenActivateTaskResult.Message);
                 }
             }
 
             return new TaskResult(false, Send($"{typeof(TScreen)} was not found. Activation has been failed!", LogFormat.Worning));
         }
 
-        public async Task<TaskResult> Activate(IScreen screen, bool screenActivate = true, bool screenAnimate = true)
+        public async Task<ITaskResult> Activate(IScreen screen, bool screenActivate = true, bool screenAnimate = true)
         {
-            if(SceneObject == null)
-                await Load();
+            if (IsLoaded == false)
+            {
+                var sceneLoadTaskResult = await Load();
+                if (sceneLoadTaskResult.Status == false)
+                    return new TaskResult(false, sceneLoadTaskResult.Message);
+            }
 
+            if (IsActivated == true)
+                return new TaskResult(true, Send("The scene was already activated. The current loading has been activated!", LogFormat.Worning));
             
+            
+            var uSceneActivateTaskResult = await SceneHandler.USceneActivate(Index);
+            if(uSceneActivateTaskResult.Status == false)
+                return new TaskResult(false, uSceneActivateTaskResult.Message);
+            
+            // Activate  UScene...
+            var sceneActivate = true;
+            await TaskHandler.Run(() => AwaitSceneActivation(sceneActivate), "Waiting for screen deactivation...");
+
+            // Activate loading screen...
             var screenLoadingActivate = true;
-            var screenLoadingAnimate= true;
-            await m_ScreenController.ScreenActivate(ScreenLoading, screenLoadingActivate, screenLoadingAnimate);
+            var screenLoadingAnimate = true;
+            var screenLoadingActivateTaskResult = await m_ScreenController.ScreenActivate(ScreenLoading, screenLoadingActivate, screenLoadingAnimate);
+            
+            if (screenLoadingActivateTaskResult.Status == false)
+                return new TaskResult(false, screenLoadingActivateTaskResult.Message);
+
             await Task.Delay(100);
-            
 
+            // Activate target screen...
+            var screenTargetActivateTaskResult = await m_ScreenController.ScreenActivate(screen, screenActivate, screenAnimate);
+            if (screenTargetActivateTaskResult.Status == false)
+                return new TaskResult(false, screenTargetActivateTaskResult.Message);
 
-            
-            await Task.Delay(100);
-            await m_ScreenController.ScreenActivate(screen, screenActivate, screenAnimate);
-        } 
-            
+            return new TaskResult(true, Send($"{screen.GetType().Name} was activated."));
+        }
 
+        // AWAIT //
+        private bool AwaitSceneLoading()
+        {
+        
+            if (SceneObject == null)
+                SceneObject = SetComponent<SceneObject>(Label, Scene.SceneObject);
+
+            return true;
+        }
+
+        private bool AwaitSceneActivation(bool activate)
+        {
+            if (SceneObject != null)
+                SceneObject.gameObject.SetActive(activate);
+            else
+                throw new Exception();
+
+            return true;
+        }
 
         protected TComponent SetComponent<TComponent>(string name = null, ISceneObject parent = null)
         where TComponent : Component, ISceneObject
@@ -204,7 +254,6 @@ namespace APP.Scene
                 return SceneHandler.SetComponent<TComponent>(obj);
             }
         }
-
 
         // MESSAGE //
         public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
@@ -223,7 +272,7 @@ namespace APP.Scene
                     return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
             }
         }
-        
+
         // CACHE //
         private void RecordToCache() =>
             RecordToCahceRequired?.Invoke(Scene);
@@ -231,13 +280,11 @@ namespace APP.Scene
         private void DeleteFromCache() =>
             DeleteFromCahceRequired?.Invoke(Scene);
 
-        
         // CALLBACK //
         private void OnMessage(IMessage message) =>
             Send(message);
 
     }
-
 
     public struct SceneConfig : IConfig
     {
@@ -279,29 +326,29 @@ namespace APP.Scene
 
 }
 
-
 namespace APP
 {
     public interface IScene : IConfigurable, IInitializable, ICacheable
     {
+
+        bool IsLoaded { get; }
+        bool IsActivated { get; }
+
         SceneIndex Index { get; }
 
         ISceneObject SceneObject { get; }
-        
+
         IScreen ScreenLoading { get; }
         IScreen ScreenStart { get; }
-        
-        Task Activate();
-        
-        Task Activate(IScreen screen, bool screenActivate = true, bool screenAnimate = true);
-        
-        Task Activate<TScreen>(bool screenActivate = true, bool screenAnimate = true) 
-        where TScreen: IScreen;
+
+        Task<ITaskResult> Load();
+        Task<ITaskResult> Activate(IScreen screen, bool screenActivate = true, bool screenAnimate = true);
+        Task<ITaskResult> Activate<TScreen>(bool screenActivate = true, bool screenAnimate = true)
+        where TScreen : IScreen;
 
     }
 
 }
-
 
 /*
         public event Action<IEventArgs> PlayButtonClicked;

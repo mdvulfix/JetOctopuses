@@ -16,7 +16,7 @@ namespace SERVICE.Handler
         {
             var tokenSource = new TokenSource();
             var token = tokenSource.Token;
-            
+                        
             try
             {
                 await TaskExecuteAsync(action, token, message, delay);
@@ -59,7 +59,7 @@ namespace SERVICE.Handler
             }
         }       
 
-        private static Message Send(string text, LogFormat warning = LogFormat.None) =>
+        private static IMessage Send(string text, LogFormat warning = LogFormat.None) =>
             Messager.Send(m_Debug, "TaskHandler", text, warning);
 
     
@@ -68,20 +68,20 @@ namespace SERVICE.Handler
 
     public struct TaskResult: ITaskResult
     {
-        public TaskResult(bool status, Message message)
+        public TaskResult(bool status, IMessage message)
         {
             Status = status;
             Message = message;
         }
 
         public bool Status {get; private set;}
-        public Message Message { get; private set; }
+        public IMessage Message { get; private set; }
     }
 
 
     public struct TaskResult<TTaskInfo> where TTaskInfo: ITaskInfo
     {
-        public TaskResult(bool status, Message message, TTaskInfo info = default(TTaskInfo))
+        public TaskResult(bool status, IMessage message, TTaskInfo info = default(TTaskInfo))
         {
             Status = status;
             Message = message;
@@ -89,7 +89,7 @@ namespace SERVICE.Handler
         }
 
         public bool Status {get; private set;}
-        public Message Message { get; private set; }
+        public IMessage Message { get; private set; }
         public TTaskInfo Info {get; private set;}
 
     }
@@ -107,7 +107,7 @@ namespace APP
     public interface ITaskResult
     {
         bool Status { get; }
-        Message Message { get; }
+        IMessage Message { get; }
     }
 
     public interface ITaskInfo

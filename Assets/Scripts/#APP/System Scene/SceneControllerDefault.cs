@@ -12,20 +12,17 @@ namespace APP.Scene
 
         private SceneControllerConfig m_Config;
         
-        private IScene m_SceneActive;
-
         private ISignal m_SignalSceneActivate;
         
         
         public bool IsConfigured { get; private set; }
         public bool IsInitialized {get; protected set; }
 
-        public IScene[] Scenes {get; protected set; }
-        
         public event Action Configured;
         public event Action Initialized;
         public event Action Disposed;
 
+        public event Action<IScene> SceneLoaded;
         public event Action<IScene> SceneActivated;
         
         public SceneControllerDefault() { }
@@ -42,7 +39,6 @@ namespace APP.Scene
             {
                 m_Config = (SceneControllerConfig)config;
 
-                Scenes = m_Config.Scenes;
             }          
                
             if(param != null && param.Length > 0)
@@ -54,15 +50,7 @@ namespace APP.Scene
                 }
             }          
                 
-            foreach (var scene in Scenes)
-                if(scene.IsConfigured == false)
-                    scene.Configure();
-                    
-            Send("All scenes configured!");
-
-
-            
-            
+                   
             IsConfigured = true;
             Configured?.Invoke();
             
@@ -79,12 +67,7 @@ namespace APP.Scene
                 return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
             
 
-            foreach (var scene in Scenes)
-                scene.Init();
-
-            Send("All scenes initialized!");
-
-            
+           
             IsInitialized = true;
             Initialized?.Invoke();
             return Send("Initialization completed!");
@@ -92,10 +75,6 @@ namespace APP.Scene
 
         public virtual IMessage Dispose()
         {
-            foreach (var scene in Scenes)
-                scene.Dispose();
-
-            Send("All scenes disposed!");
 
             IsInitialized = false;
             Disposed?.Invoke();
@@ -113,47 +92,47 @@ namespace APP.Scene
             SignalProvider.SignalCalled -= OnSignalCalled;
         }
     
-        public async Task SceneActivate(IScene scene, IScreen screen, bool screenActivate, bool screenAnimate)
+
+        public async Task<ITaskResult> SceneLoad(IScene scene)
         {
             if (scene == null)
-            {
-                Send($"{scene.GetType().Name} not found!", LogFormat.Worning);
-                return;
-            }
-            
-            if (m_SceneActive != null && m_SceneActive.GetType() == scene.GetType())
-            {
-                Send($"{scene.GetType().Name} is already active!");
-                return;
-            }
-            
-            await SceneHandler.USceneActivate(scene.Index);
-            
-            m_SceneActive = scene;
-            await m_SceneActive.Activate(screen, screenActivate, screenAnimate);
+                return new TaskResult(false, Send($"{scene.GetType().Name} not found!", LogFormat.Worning));
 
-            //TScene scene = null;
-            //await TaskHandler.Run(() => AwaitSceneActivation<TScene>(sceneIndex, out scene), "Waiting for scene activation...");
-
-
+            if (scene.IsLoaded == true)
+                return new TaskResult(true, Send($"{scene.GetType().Name} is already loaded!"));
 
             
-            //m_SceneActive.Activate<ScreenLoading>();
 
+            
+
+            
+            var sceneLoadingTaskResult = await scene.Load();
+            if(sceneLoadingTaskResult.Status == false)
+                return new TaskResult(false, sceneLoadingTaskResult.Message);
+
+            
+            SceneLoaded?.Invoke(scene);
+            return new TaskResult(true, Send($"{scene.GetType().Name} was loaded!"));
         }
 
-
-
-        private bool AwaitSceneActivation<TScene>(SceneIndex? index, out TScene scene) where TScene : SceneObject, IScene
+        public async Task<ITaskResult> SceneActivate(IScene scene, IScreen screen, bool screenActivate, bool screenAnimate)
         {
-            scene = default(TScene);
-            if (СacheProvider<TScene>.Contains())
-            {
-                scene = СacheProvider<TScene>.Get();
-                return true;
-            }
+            if (scene == null)
+                return new TaskResult(false, Send($"{scene.GetType().Name} not found!", LogFormat.Worning));
 
-            return false;
+            if (scene.IsActivated == true)
+                return new TaskResult(true, Send($"{scene.GetType().Name} is already activated!"));
+            
+            var uSceneActivationTaskResult = await SceneHandler.USceneActivate(scene.Index);
+            if(uSceneActivationTaskResult.Status == false)
+                return new TaskResult(false, uSceneActivationTaskResult.Message);
+            
+            var sceneActivationTaskResult = await scene.Activate(screen, screenActivate, screenAnimate);
+            if(sceneActivationTaskResult.Status == false)
+                return new TaskResult(false, sceneActivationTaskResult.Message);
+
+            SceneActivated?.Invoke(scene);
+            return new TaskResult(true, Send($"{scene.GetType().Name} was activated!"));
         }
 
 
@@ -182,11 +161,9 @@ namespace APP.Scene
 
     public struct SceneControllerConfig : IConfig
     {
-        public IScene[] Scenes {get; private set; }
-
         public SceneControllerConfig(IScene[] scenes)
         {
-            Scenes = scenes;
+
         }
     }
 
@@ -197,6 +174,7 @@ namespace APP
 {
     public interface ISceneController : IController, IConfigurable, IInitializable, ISubscriber, IMessager
     {
-        Task SceneActivate(IScene scene, IScreen screen, bool screenActivate, bool screenAnimate);
+        Task<ITaskResult> SceneLoad(IScene scene);
+        Task<ITaskResult> SceneActivate(IScene scene, IScreen screen, bool screenActivate, bool screenAnimate);
     }
 }

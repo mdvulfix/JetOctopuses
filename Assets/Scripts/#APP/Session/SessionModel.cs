@@ -14,9 +14,9 @@ namespace APP
         private SessionConfig m_Config;
         private ISession m_Session;
 
-        private IScene m_SceneLogin;
-        private IScene m_SceneMenu;
-        private IScene m_SceneLevel;
+        
+        private IScene m_SceneLoading;
+        private IScene m_SceneStart;
         private ISceneController m_SceneController;
         
         private IStateController m_StateController;
@@ -54,9 +54,9 @@ namespace APP
 
                 SceneObject = this;
                 
-                m_SceneLogin = m_Config.SceneLogin;
-                m_SceneMenu = m_Config.SceneMenu;
-                m_SceneLevel = m_Config.SceneLevel;
+                m_SceneLoading = m_Config.SceneLoading;
+                m_SceneStart = m_Config.SceneStart;
+
                 
                 m_SceneController = new SceneControllerDefault();
                 Send(m_SceneController.Configure(new SceneControllerConfig(m_Config.Scenes)), SendFormat.Sender);
@@ -180,7 +180,8 @@ namespace APP
 
         private async void SceneActivate()
         {
-            await SceneActivate(m_SceneLogin, m_SceneLogin.ScreenStart);
+            await SceneActivate(m_SceneLoading, m_SceneLoading.ScreenStart);
+            await SceneActivate(m_SceneStart, m_SceneStart.ScreenStart);
         }
 
     }

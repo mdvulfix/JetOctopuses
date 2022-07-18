@@ -9,6 +9,7 @@ namespace APP.Scene
     public class SceneCore : SceneModel<SceneCore>, IScene
     {
         [SerializeField] private ScreenLoading m_Loading;
+        [SerializeField] private ScreenLogin m_Splash;
         
         private readonly string m_Label = "Scene: Core";
         private readonly SceneIndex m_SceneIndex = SceneIndex.Core;

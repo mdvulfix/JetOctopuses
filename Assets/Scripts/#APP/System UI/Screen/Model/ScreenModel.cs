@@ -110,10 +110,9 @@ namespace APP.Screen
             if (IsLoaded == true)
                 return new TaskResult(true, Send("The instance was already loaded. The current loading has been aborted!", LogFormat.Worning));
             
-            if(SceneObject == null)
-                SceneObject = SetComponent<SceneObject>(Label, Scene.SceneObject);
 
             await TaskHandler.Run(() => AwaitScreenLoading(), "Waiting for screen loading...");
+            
             IsLoaded = true;
             return new TaskResult(true, Send("The instance was loaded."));
             
@@ -148,12 +147,15 @@ namespace APP.Screen
         // AWAIT //
         private bool AwaitScreenLoading()
         {
+            if(SceneObject == null)
+                SceneObject = SetComponent<SceneObject>(Label, Scene.SceneObject);
+
             return true;
         }
 
         private bool AwaitScreenActivation(bool activate)
         {
-            SceneObject.gameObject.SetActive(true); 
+            SceneObject.gameObject.SetActive(activate); 
             return true;              
         }
 
