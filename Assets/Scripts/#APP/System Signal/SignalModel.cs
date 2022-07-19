@@ -17,7 +17,7 @@ namespace APP.Signal
     
     
     
-    public abstract class SignalModel<TSignal>: IConfigurable, IInitializable, ICacheable, ISubscriber, IMessager
+    public abstract class SignalModel<TSignal>: IConfigurable, ICacheable, ISubscriber, IMessager
     where TSignal: ISignal
     {
         private bool m_Debug = true;
@@ -36,64 +36,80 @@ namespace APP.Signal
 
         public event Action<IMessage> Message;
         
-        public event Action<ICacheable> RecordToCahceRequired;
-        public event Action<ICacheable> DeleteFromCahceRequired;
+        public event Action RecordRequired;
+        public event Action DeleteRequired;
 
-        public virtual IMessage Configure(IConfig config = null, params object[] param)
+        
+        // CONFIGURE //
+        public virtual void Configure(params object[] param)
         {
             if (IsConfigured == true)
-                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
-
-
-            if(config != null)
             {
-                m_Config = (SignalConfig) config;
-                Signal = m_Config.Signal;
-            }          
-               
-            if(param != null && param.Length > 0)
+                Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Worning);
+                return;
+            }
+                
+            if (param != null && param.Length > 0)
             {
                 foreach (var obj in param)
-                {   
-                    if(obj is object)
-                        Send("Param is not used", LogFormat.Worning);
+                {
+                    if (obj is IConfig)
+                    {
+                        m_Config = (SignalConfig) obj;
+                        Signal = m_Config.Signal;
+                        
+                        Send($"{obj.GetName()} was setup.");
+                    }
                 }
-            }          
-                            
+            }
+            else
+            {
+                Send("Params are empty. Config setup aborted!", LogFormat.Worning);
+            }
+            
+      
             m_CacheHandler = new CacheHandler<ISignal>();
-            Send(m_CacheHandler.Configure(new CacheHandlerConfig(Signal)), SendFormat.Sender);
+            
             
             
             IsConfigured = true;
             Configured?.Invoke();
-            
-            return Send("Configuration completed!");
+
+            Send("Configuration completed!");   
         }
         
-        public virtual IMessage Init()
+        public virtual void Init()
         {
             if (IsConfigured == false)
-                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
-
+            {
+                Send($"{this.GetName()} is not configured. Initialization was aborted!", LogFormat.Worning);
+                return;
+            }
+                
             if (IsInitialized == true)
-                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
+            {
+                Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Worning);
+                return;
+            }
 
             Subscribe();
 
+            m_CacheHandler.Configure(new CacheHandlerConfig(Signal));
+            m_CacheHandler.Init();
 
             IsInitialized = true;
             Initialized?.Invoke();
-            return Send("Initialization completed!");
+            Send("Initialization completed!");
         }
 
-        public virtual IMessage Dispose()
+        public virtual void Dispose()
         {
 
             Unsubscribe();
             
             IsInitialized = false;
             Disposed?.Invoke();
-            return Send("Dispose completed!");
+            Send("Dispose completed!");
         }
 
 
@@ -108,27 +124,19 @@ namespace APP.Signal
             SignalProvider.Call(Signal);
         }
 
-
+        // MESSAGE //
         public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
             Send(new Message(this, text, logFormat));
 
-        public IMessage Send(IMessage message, SendFormat sendFrom = SendFormat.Self)
+        public IMessage Send(IMessage message)
         {
             Message?.Invoke(message);
-            
-            switch (sendFrom)
-            {               
-                case SendFormat.Sender:
-                    return Messager.Send(m_Debug, this, $"message from: {message.Text}" , message.LogFormat);
-
-                default:
-                    return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
-            }
+            return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
         }
         
         // CALLBACK //
-        private void OnMessage(IMessage message) =>
-            Send(message);
+        public void OnMessage(IMessage message) =>
+            Send($"{message.Sender}: {message.Text}", message.LogFormat);
 
     }
 

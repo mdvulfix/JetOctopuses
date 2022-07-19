@@ -12,19 +12,17 @@ namespace APP.Screen
         [SerializeField] private ButtonSignIn m_SignIn;
         [SerializeField] private ButtonSignUp m_SignUp;
 
-        private readonly string m_Label = "Screen: Login";
-
-        public ScreenLogin(IScene scene) => Configure(scene);
-        public ScreenLogin(IConfig config) => Configure(config);
-
-        public void Configure(IScene scene)
+        public ScreenLogin(params object[] param) 
+        => Configure(param);
+        
+        public ScreenLogin(IScene scene, string label = "Screen: Login")
         {
             var buttons = new List<IButton>();
             buttons.Add(m_SignIn = new ButtonSignIn());
             buttons.Add(m_SignUp = new ButtonSignUp());
               
-            var config =  new ScreenConfig(this, scene, buttons.ToArray(), m_Label);            
-            base.Configure(config);
+            var screenConfig =  new ScreenConfig(this, scene, buttons.ToArray(), label);            
+            Configure(screenConfig);
         }
     }
 }

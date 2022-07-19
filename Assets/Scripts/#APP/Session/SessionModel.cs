@@ -1,12 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using APP.Scene;
-using APP.Signal;
 
 namespace APP
 {
-    public abstract class SessionModel<TSession>:
-        SceneObject, IConfigurable, IInitializable, ISubscriber, IMessager
+    public abstract class SessionModel<TSession>: SceneObject, IConfigurable, ISubscriber, IMessager
     where TSession : SceneObject, ISession
     {
         private bool m_Debug = true;
@@ -14,12 +13,12 @@ namespace APP
         private SessionConfig m_Config;
         private ISession m_Session;
 
-        
         private IScene m_SceneLoading;
         private IScene m_SceneStart;
         private ISceneController m_SceneController;
         
         private IStateController m_StateController;
+        private IState[] m_States;
 
         public bool IsConfigured { get; private set; }
         public bool IsInitialized { get; private set; }
@@ -39,79 +38,106 @@ namespace APP
         
             
         // CONFIGURE //
-        public virtual IMessage Configure(IConfig config, params object[] param)
+        public virtual void Configure(params object[] param)
         {
             if (IsConfigured == true)
-                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
-
-            
-            if (config != null)
             {
-                m_Config = (SessionConfig) config;
-
-                Label = m_Config.Label;
-                Session = m_Config.Session;
-
-                SceneObject = this;
-                
-                m_SceneLoading = m_Config.SceneLoading;
-                m_SceneStart = m_Config.SceneStart;
-
-                
-                m_SceneController = new SceneControllerDefault();
-                Send(m_SceneController.Configure(new SceneControllerConfig(m_Config.Scenes)), SendFormat.Sender);
-
-
-                //m_StateController = new StateControllerDefault();
-                //Send(m_StateController.Configure(new StateControllerConfig(m_Config.States)), SendFormat.Sender);
+                Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Worning);
+                return;
             }
-
+                
             if (param != null && param.Length > 0)
             {
                 foreach (var obj in param)
                 {
-                    if (obj is object)
-                        Send("Param is not used", LogFormat.Worning);
+                    if (obj is IConfig)
+                    {
+                        m_Config = (SessionConfig) obj;
+
+                        Label = m_Config.Label;
+                        Session = m_Config.Session;
+                        m_States = m_Config.States;
+
+                        SceneObject = this;
+                        
+                        m_SceneLoading = m_Config.SceneLoading;
+                        m_SceneStart = m_Config.SceneStart;
+
+                        Send($"{obj.GetName()} setup.");
+                    }
                 }
             }
+            else
+            {
+                Send("Params are empty. Config setup aborted!", LogFormat.Worning);
+            }
+            
+            m_SceneController = new SceneControllerDefault();
+
 
             IsConfigured = true;
             Configured?.Invoke();
 
-            return Send("Configuration completed!");
+            Send("Configuration completed!");
         }
 
-        // INIT //
-        public virtual IMessage Init()
+        public virtual void Init()
         {
             if (IsConfigured == false)
-                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
-
+            {
+                Send($"{this.GetName()} is not configured. Initialization was aborted!", LogFormat.Worning);
+                return;
+            }
+                
             if (IsInitialized == true)
-                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
+            {
+                Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Worning);
+                return;
+            }
 
             Subscribe();
 
-            //Send(m_StateController.Init(), SendFormat.Sender);
-            Send(m_SceneController.Init(), SendFormat.Sender);
+            m_SceneController.Configure(new SceneControllerConfig());
+            m_SceneController.Init();
 
-        
+            m_StateController.Configure(new StateControllerConfig());
+            m_StateController.Init();
+            
+            foreach (var state in m_States)
+                state.Configure();
+
+            Send("All states configured!");
+
+            foreach (var state in m_States)
+                state.Init();
+
+            Send("All states initialized!");
+
+            //Execute<StateLoad>();
+
+
             IsInitialized = true;
             Initialized?.Invoke();
-            return Send("Initialization completed!");
+            Send("Initialization completed!");
         }
 
-        public virtual IMessage Dispose()
+        public virtual void Dispose()
         {
+            //Execute<StateUnload>();
+            
+            foreach (var state in m_States)
+                state.Dispose();
 
-            Send(m_SceneController.Dispose(), SendFormat.Sender);
-            //Send(m_StateController.Dispose(), SendFormat.Sender);
+            Send("All states disposed!");
+            
+            m_SceneController.Dispose();
+            m_StateController.Dispose();
 
             Unsubscribe();
 
             IsInitialized = false;
             Disposed?.Invoke();
-            return Send("Dispose completed!");
+            Send("Dispose completed!");
         }
 
         // SUBSCRUBE //
@@ -141,26 +167,20 @@ namespace APP
             //StateActive = m_StateController.Execute<TState>();
             OnStateChanged(StateActive);
         }
-
+        
+        // MESSAGE //
         public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
             Send(new Message(this, text, logFormat));
 
-        public IMessage Send(IMessage message, SendFormat sendFrom = SendFormat.Self)
+        public IMessage Send(IMessage message)
         {
             Message?.Invoke(message);
-
-            switch (sendFrom)
-            {
-                case SendFormat.Sender:
-                    return Messager.Send(m_Debug, this, $"message from: {message.Text}", message.LogFormat);
-
-                default:
-                    return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
-            }
+            return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
         }
+        
         // CALLBACK //
-        private void OnMessage(IMessage message) =>
-            Send(message);
+        public void OnMessage(IMessage message) =>
+            Send($"{message.Sender}: {message.Text}", message.LogFormat);
 
         private void OnStateChanged(IState state)
         {
@@ -184,15 +204,17 @@ namespace APP
             await SceneActivate(m_SceneStart, m_SceneStart.ScreenStart);
         }
 
-    }
 
+    // UNITY //
+    private void Awake() =>
+        Configure();
 
-    public interface ISession: IConfigurable, IInitializable
-    {
-        
-        ISceneObject SceneObject { get; }
+    private void OnEnable() =>
+        Init();
 
-        IState StateActive { get; }
+    private void OnDisable() =>
+        Dispose();
+
     }
 
      /*
@@ -221,5 +243,17 @@ namespace APP
         }
 
         */
+
+}
+
+namespace APP
+{
+    public interface ISession: IConfigurable
+    {
+        ISceneObject SceneObject { get; }
+
+        IState StateActive { get; }
+    }
+
 
 }

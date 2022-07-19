@@ -4,13 +4,12 @@ using UnityEngine.UI;
 
 namespace APP.UI
 {
-    public abstract class ButtonModel<TButton> :
-        IConfigurable, IInitializable, ISubscriber, IMessager
+    public abstract class ButtonModel<TButton> : IConfigurable, ISubscriber, IMessager
     where TButton : class, IButton
     {
         [SerializeField] private Button m_Button;
 
-        private bool m_Debug = true;
+        private bool m_Debug = false;
         
         private ButtonConfig m_Config;
         
@@ -24,40 +23,50 @@ namespace APP.UI
         public event Action<ISignal> ButtonClicked;
         public event Action<IMessage> Message;
 
-        public virtual IMessage Configure(IConfig config, params object[] param)
+        // CONFIGURE //
+        public virtual void Configure(params object[] param)
         {
             if (IsConfigured == true)
-                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
-
-            if(config != null)
             {
-                m_Config = (ButtonConfig)config;
-
-            }          
-               
-            if(param != null && param.Length > 0)
+                Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Worning);
+                return;
+            }
+                
+            if (param != null && param.Length > 0)
             {
                 foreach (var obj in param)
-                {   
-                    if(obj is object)
-                    Send("Param is not used", LogFormat.Worning);
+                {
+                    if (obj is IConfig)
+                    {
+                        m_Config = (ButtonConfig) obj;
+                        Send($"{obj.GetName()} setup.");
+                    }
                 }
-            }          
-               
+            }
+            else
+            {
+                Send("Params are empty. Config setup aborted!", LogFormat.Worning);
+            }
+            
             IsConfigured = true;
             Configured?.Invoke();
-            
-            return Send("Configuration completed!");
+
+            Send("Configuration completed!");
         }   
 
-
-        public virtual IMessage Init()
+        public virtual void Init()
         {
             if (IsConfigured == false)
-                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
-
+            {
+                Send($"{this.GetName()} is not configured. Initialization was aborted!", LogFormat.Worning);
+                return;
+            }
+                
             if (IsInitialized == true)
-                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
+            {
+                Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Worning);
+                return;
+            }
 
             Subscribe();
 
@@ -71,10 +80,10 @@ namespace APP.UI
 
             IsInitialized = true;
             Initialized?.Invoke();
-            return Send("Initialization completed!");
+            Send("Initialization completed!");
         }
 
-        public virtual IMessage Dispose()
+        public virtual void Dispose()
         {
             //m_Signal.Dispose();
 
@@ -82,7 +91,7 @@ namespace APP.UI
             
             IsInitialized = false;
             Disposed?.Invoke();
-            return Send("Dispose completed!");
+            Send("Dispose completed!");
         }
 
         public void Subscribe() =>
@@ -97,26 +106,19 @@ namespace APP.UI
             //ButtonClicked?.Invoke(m_Signal);
         }
         
-        
+        // MESSAGE //
         public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
             Send(new Message(this, text, logFormat));
 
-        public IMessage Send(IMessage message, SendFormat sendFrom = SendFormat.Self)
+        public IMessage Send(IMessage message)
         {
             Message?.Invoke(message);
-            
-            switch (sendFrom)
-            {               
-                case SendFormat.Sender:
-                    return Messager.Send(m_Debug, this, $"message from: {message.Text}" , message.LogFormat);
-
-                default:
-                    return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
-            }
+            return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
         }
+        
         // CALLBACK //
-        private void OnMessage(IMessage message) =>
-            Send(message);
+        public void OnMessage(IMessage message) =>
+            Send($"{message.Sender}: {message.Text}", message.LogFormat);
 
 
     }
@@ -155,6 +157,15 @@ namespace APP.UI
             Button = button;
         }
         */
+    }
+
+}
+
+namespace APP
+{
+    public interface IButton : IConfigurable
+    {
+        event Action<ISignal> ButtonClicked;
     }
 
 }

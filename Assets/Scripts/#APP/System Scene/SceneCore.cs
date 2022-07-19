@@ -19,6 +19,7 @@ namespace APP.Scene
 
         public void Configure()
         {
+                    
             var screens = new List<IScreen>();
             screens.Add(m_Loading = new ScreenLoading(this));
               

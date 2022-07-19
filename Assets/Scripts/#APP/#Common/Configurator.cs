@@ -1,99 +1,112 @@
 using System;
-using APP;
 
-public class Configurator : IConfigurator
+namespace APP
 {
-    private bool m_IsConfigured;
-
-    public Configurator() { }
-
-    public bool IsConfigured { get => m_IsConfigured; }
-
-    public IConfig Config { get; private set; }
-
-    public event Action Configured;
-    public event Action<Message> Message;
-
-
-
-    // CONFIGURE //
-    public virtual void Configure<T, TConfig>(T instance, TConfig config, params object[] param)
-    where TConfig: IConfig
+    public class Configurator : IConfigurator, IMessager
     {
-        if (Check() == false)
-            return;
+        private bool m_Debug = false;
 
-        if (config != null)
+        public bool IsConfigured { get; private set; }
+        public bool IsInitialized { get; private set; }
+
+        public IConfig Config { get; private set; }
+
+        public event Action Configured;
+        public event Action Initialized;
+        public event Action Disposed;
+
+        public event Action<IMessage> Message;
+
+        // CONFIGURE //
+        public void Configure(Action program, IConfig config = null, params object[] param)
         {
-            Config = (IConfig)config;
-            
-
-
-        
-        
-        }
-
-        if (param.Length > 0)
-        {
-            foreach (var obj in param)
+            if (IsConfigured == true)
             {
-                if (obj is object)
-                    Send(new Message("Param is not used", LogFormat.Worning));
+                Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
+                return;
             }
+
+            if (config != null)
+            {
+                Config = (IConfig) config;
+
+            }
+
+            if (param.Length > 0)
+            {
+                foreach (var obj in param)
+                {
+                    if (obj is object)
+                        Send(new Message("Param is not used", LogFormat.Worning));
+                }
+            }
+
+            IsConfigured = true;
+            Configured?.Invoke();
+
+            Send("Configuration completed!");
         }
 
-        m_IsConfigured = true;
-        Send(new Message("Configuration successfully completed!"));
-        Configured?.Invoke();
-    }
-
-
-
-    private static bool Check(IConfigurable configurable)
-    {
-        if (configurable.IsConfigured == true)
+        public void Init(Action program)
         {
-            Send(new Message(configurable, "The instance was already configured. The current setup has been aborted!", LogFormat.Worning));
-            return false;
+            if (IsConfigured == false)
+            {
+                Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
+                return;
+            }
+
+            if (IsInitialized == true)
+            {
+                Send("The instance was already initialized. Current initialization has been aborted!", LogFormat.Worning);
+                return;
+            }
+
+            program.Invoke();
+
+            IsInitialized = true;
+            Send("Initialization successfully completed!");
+            Initialized?.Invoke();
         }
 
-        return true;
-    }
-
-    private bool Check()
-    {
-        if (m_IsConfigured == true)
+        public void Dispose(Action program)
         {
-            Send(new Message("The instance was already configured. The current setup has been aborted!", LogFormat.Worning));
-            return false;
+            program.Invoke();
+
+            IsInitialized = false;
+            Send("Dispose successfully completed!");
+            Disposed?.Invoke();
         }
 
-        return true;
+        // MESSAGE //
+        public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
+            Send(new Message(this, text, logFormat));
+
+        public IMessage Send(IMessage message)
+        {
+            Message?.Invoke(message);
+            return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
+        }
+
+        // CALLBACK //
+        public void OnMessage(IMessage message) =>
+            Send($"{message.Sender}: {message.Text}", message.LogFormat);
+
     }
 
-
-    /*
-    private static void Send(object sender, string text, LogFormat logFormat = LogFormat.None)
+    public interface IConfigurator : IMessager
     {
-        Messager.Send(true, new Message(sender, text, logFormat));
-        //Message?.Invoke(new Message(text, logFormat));
+        bool IsConfigured { get; }
+        bool IsInitialized { get; }
+
+        IConfig Config { get; }
+
+        event Action Configured;
+        event Action Initialized;
+        event Action Disposed;
+
+        void Configure(Action program, IConfig config = null, params object[] param);
+        void Init(Action program);
+        void Dispose(Action program);
+
     }
-    */
-
-    private static Message Send(Message message) =>
-        Messager.Send(true, message);
-}
-
-
-public interface IConfigurator
-{
-    bool IsConfigured { get; }
-    IConfig Config { get; }
-
-    event Action Configured;
-    event Action<Message> Message;
-
-    void Configure<T, TConfig>(T instance, TConfig config, params object[] param)
-    where TConfig: IConfig;
-
 }

@@ -29,7 +29,7 @@ namespace APP
         
         
         // CONFIGURE //
-        public IMessage Configure()
+        public override void Configure(params object[] param)
         {
             Send("Start configuration ...");
             
@@ -47,31 +47,11 @@ namespace APP
             //states.Add(m_StateResult = new StateResult());
             //states.Add(m_StateUnload = new StateUnload());
             
-            var config =  new SessionConfig(this, scenes.ToArray(), m_SceneCore, m_SceneLogin, states.ToArray());            
-            return base.Configure(config);
+            var sessionConfig =  new SessionConfig(this, scenes.ToArray(), m_SceneCore, m_SceneLogin, states.ToArray());            
+            base.Configure(sessionConfig);
         }
         
         
-        // INIT //
-        public override IMessage Init()
-        {                        
-            Send("Start initialization...");
-            return base.Init();
-
-            //Send("System enter loading...");
-            //StateExecute<StateLoad>();
-        }
-
-        public override IMessage Dispose()
-        {
-            //Send("System exit...");
-            //StateExecute<StateUnload>();
-
-            return base.Dispose();
-        }
-
-
-
         /*
         // STATE MANAGE //
         protected override async void StateUpdate(IState state)
@@ -240,16 +220,7 @@ namespace APP
         }
 
         */
-        // UNITY //
-        private void Awake() =>
-            Configure();
 
-        private void OnEnable() =>
-            Init();
-
-        private void OnDisable() =>
-            Dispose();
-    
         public enum Result
         {
             None,

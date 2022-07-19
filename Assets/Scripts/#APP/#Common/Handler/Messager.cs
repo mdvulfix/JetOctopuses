@@ -4,19 +4,16 @@ using UnityEngine;
 namespace APP
 {
     public static class Messager
-    {       
-        public static event Action<IMessage> MessageHasBeenSend;
-        
+    {          
         public static Message Send(bool debug, Message message)
         {
-            MessageHasBeenSend?.Invoke(message);
             Send(debug, message.Sender, message.Text, message.LogFormat);
             return message;
         }
             
         public static Message Send(bool debug, object sender, string text, LogFormat logFormat = LogFormat.None)
         {
-            var message = $"{sender.GetType().Name}: {text}";
+            var message = $"{sender.GetName()}: {text}";
 
             if (debug)
             {
@@ -78,25 +75,38 @@ namespace APP
     
     }
 
-
     public enum LogFormat
     {
         None,
         Worning,
         Error
     }
+}
 
-    public enum SendFormat
-    {
-        None,
-        Self,
-        Sender
-    }
 
+namespace APP
+{
+    
     public interface IMessage
     {
         object Sender { get; }
         string Text { get; }
         LogFormat LogFormat { get; } 
+    }
+    
+    
+    public interface IMessager
+    {
+        event Action<IMessage> Message;
+        
+        // SEND //
+        IMessage Send(string text, LogFormat logFormat = LogFormat.None);
+        IMessage Send(IMessage message);
+
+        // CALLBACK //
+        void OnMessage(IMessage message);
+
+
+
     }
 }

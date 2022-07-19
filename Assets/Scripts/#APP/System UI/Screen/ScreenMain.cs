@@ -10,18 +10,16 @@ namespace APP.Screen
         //[SerializeField] private ButtonMenuOptions m_Options;
         //[SerializeField] private ButtonMenuExit m_Exit;
 
-        private readonly string m_Label = "Screen: Main";
-
-        public ScreenMain(IScene scene) => Configure(scene);
-        public ScreenMain(IConfig config) => Configure(config);
-
-        public void Configure(IScene scene)
+        public ScreenMain(params object[] param) 
+        => Configure(param);
+        
+        public ScreenMain(IScene scene, string label = "Screen: Main")
         {
             var buttons = new List<IButton>();
 
               
-            var config =  new ScreenConfig(this, scene, buttons.ToArray(), m_Label);            
-            base.Configure(config);
+            var screenConfig =  new ScreenConfig(this, scene, buttons.ToArray(), label);            
+            Configure(screenConfig);
         }
     }
 

@@ -14,8 +14,7 @@ namespace APP.Audio
         public event Action Initialized;
         public event Action Disposed;
 
-
-        public IMessage Configure(IConfig config, params object[] param)
+        public void Configure(params object[] param)
         {
             throw new NotImplementedException();
         }

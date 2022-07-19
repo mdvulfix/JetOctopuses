@@ -34,17 +34,19 @@ namespace APP.Player
         private int m_Speed;
 
         public event Action Configured;
+        public event Action Initialized;
+        public event Action Disposed;
 
         public bool IsConfigured => throw new NotImplementedException();
         public bool IsInitialized => throw new NotImplementedException();
 
-        public IMessage Configure(IConfig config, params object[] param)
-        {
-            return new Message();
-        }
-
         public override void Move() { }
         public override void Eat() { }
+
+        public void Configure(params object[] param)
+        {
+            throw new NotImplementedException();
+        }
 
         public void Init()
         {
@@ -55,8 +57,6 @@ namespace APP.Player
         {
             throw new NotImplementedException();
         }
-
-
     }
 
 

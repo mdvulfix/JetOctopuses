@@ -6,19 +6,18 @@ namespace APP.Screen
     [Serializable]
     public class ScreenLoading : ScreenModel<ScreenLoading>, IScreen
     {
-        private readonly string m_Label = "Screen: Loading";
-
-        public ScreenLoading(IScene scene) => Configure(scene);
-        public ScreenLoading(IConfig config) => Configure(config);
-
-        public void Configure(IScene scene)
+        
+        
+        public ScreenLoading(params object[] param) 
+        => Configure(param);
+        
+        public ScreenLoading(IScene scene, string label = "Screen: Loading")
         {
             var buttons = new List<IButton>();
             //screens.Add(m_Loading = new ScreenLoading());
               
-            var config =  new ScreenConfig(this, scene, buttons.ToArray(), m_Label);            
-            base.Configure(config);
+            var screenConfig =  new ScreenConfig(this, scene, buttons.ToArray(), label);            
+            Configure(screenConfig);
         }
-
     }
 }

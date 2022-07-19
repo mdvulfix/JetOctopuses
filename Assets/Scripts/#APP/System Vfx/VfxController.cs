@@ -14,17 +14,7 @@ namespace APP.Vfx
         public event Action Initialized;
         public event Action Disposed;
 
-        public void Configure()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Configure(IConfig config)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IMessage Configure(IConfig config, params object[] param)
+        public void Configure(params object[] param)
         {
             throw new NotImplementedException();
         }

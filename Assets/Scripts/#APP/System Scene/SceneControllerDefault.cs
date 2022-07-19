@@ -25,60 +25,71 @@ namespace APP.Scene
         public event Action<IScene> SceneLoaded;
         public event Action<IScene> SceneActivated;
         
+        
+        public SceneControllerDefault(params object[] param) => Configure(param);
         public SceneControllerDefault() { }
-        public SceneControllerDefault(IConfig config) => Configure(config);
 
         // CONFIGURE //
-        public virtual IMessage Configure (IConfig config = null, params object[] param)
+        public virtual void Configure (params object[] param)
         {
             if (IsConfigured == true)
-                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
-            
-            
-            if(config != null)
             {
-                m_Config = (SceneControllerConfig)config;
-
-            }          
-               
-            if(param != null && param.Length > 0)
+                Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Worning);
+                return;
+            }
+                
+            if (param != null && param.Length > 0)
             {
                 foreach (var obj in param)
-                {   
-                    if(obj is object)
-                    Send("Param is not used", LogFormat.Worning);
+                {
+                    if (obj is IConfig)
+                    {
+                        m_Config = (SceneControllerConfig) obj;
+                        Send($"{obj.GetName()} setup.");
+                    }
                 }
-            }          
-                
-                   
+            }
+            else
+            {
+                Send("Params are empty. Config setup aborted!", LogFormat.Worning);
+            }
+            
+
             IsConfigured = true;
             Configured?.Invoke();
-            
-            return Send("Configuration completed!");
+
+            Send("Configuration completed!");
         }
         
-        // INIT //
-        public virtual IMessage Init()
+        public virtual void Init()
         {
             if (IsConfigured == false)
-                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
-
+            {
+                Send($"{this.GetName()} is not configured. Initialization was aborted!", LogFormat.Worning);
+                return;
+            }
+                
             if (IsInitialized == true)
-                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
-            
+            {
+                Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Worning);
+                return;
+            }
+                
+            Subscribe();
 
-           
             IsInitialized = true;
             Initialized?.Invoke();
-            return Send("Initialization completed!");
+            Send("Initialization completed!");
         }
 
-        public virtual IMessage Dispose()
+        public virtual void Dispose()
         {
 
+            Unsubscribe();
+            
             IsInitialized = false;
             Disposed?.Invoke();
-            return Send("Dispose completed!");
+            Send("Dispose completed!");
         }
 
         // SUBSCRIBE //
@@ -161,10 +172,7 @@ namespace APP.Scene
 
     public struct SceneControllerConfig : IConfig
     {
-        public SceneControllerConfig(IScene[] scenes)
-        {
 
-        }
     }
 
 
@@ -172,7 +180,7 @@ namespace APP.Scene
 
 namespace APP
 {
-    public interface ISceneController : IController, IConfigurable, IInitializable, ISubscriber, IMessager
+    public interface ISceneController : IController, IConfigurable, ISubscriber, IMessager
     {
         Task<ITaskResult> SceneLoad(IScene scene);
         Task<ITaskResult> SceneActivate(IScene scene, IScreen screen, bool screenActivate, bool screenAnimate);

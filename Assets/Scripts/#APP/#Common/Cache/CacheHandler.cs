@@ -10,9 +10,6 @@ namespace APP
 
         private ICache<TCacheable> m_Cache;
 
-        public CacheHandler() { }
-        public CacheHandler(IConfig config) => Configure(config);
-
         public bool IsConfigured { get; private set; }
         public bool IsInitialized { get; private set; }
 
@@ -20,91 +17,102 @@ namespace APP
         public event Action Initialized;
         public event Action Disposed;
 
-        public event Action<ICacheable> RecordToCahceRequired;
-        public event Action<ICacheable> DeleteFromCacheRequired;        
+        public event Action<ICacheable> RecordRequired;
+        public event Action<ICacheable> DeleteRequired;        
+        
+        public CacheHandler(params object[] param) => Configure(param);
+        public CacheHandler() { }
         
         // CONFIGURE //
-        public virtual IMessage Configure(IConfig config = null, params object[] param)
+        public virtual void Configure(params object[] param)
         {
             if (IsConfigured == true)
-                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
-            
-            
-            
-            if (config != null)
             {
-                m_Config = (CacheHandlerConfig) config;
-                m_Cacheable = m_Config.Cacheable;
+                Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Worning);
+                return;
             }
-
+                
             if (param != null && param.Length > 0)
             {
                 foreach (var obj in param)
                 {
-                    if (obj is object)
-                        Send("Param is not used", LogFormat.Worning);
+                    if (obj is IConfig)
+                    {
+                        m_Config = (CacheHandlerConfig) obj;
+                        m_Cacheable = m_Config.Cacheable;
+                        Send($"{obj.GetName()} setup.");
+                    }
                 }
             }
-
+            else
+            {
+                Send("Params are empty. Config setup aborted!", LogFormat.Worning);
+            }
+            
             m_Cache = new Cache<TCacheable>();
-            Send(m_Cache.Configure(new CacheConfig(this)));
-
+            
             IsConfigured = true;
             Configured?.Invoke();
-            
-            return Send("Configuration completed!");
+
+            Send("Configuration completed!");
         }
 
-        // INIT //
-        public virtual IMessage Init()
+        public virtual void Init()
         {
             if (IsConfigured == false)
-                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
-
+            {
+                Send($"{this.GetName()} is not configured. Initialization was aborted!", LogFormat.Worning);
+                return;
+            }
+                
             if (IsInitialized == true)
-                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
+            {
+                Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Worning);
+                return;
+            }
 
             Subscribe();
 
-            Send(m_Cache.Init());
+            m_Cache.Configure(new CacheConfig(this));
+            m_Cache.Init();
 
             IsInitialized = true;
             Initialized?.Invoke();
-            return Send("Initialization completed!");
+            Send("Initialization completed!");
         }
 
-        public virtual IMessage Dispose()
+        public virtual void Dispose()
         {          
             
-            Send(m_Cache.Dispose());
+            m_Cache.Dispose();
 
             Unsubscribe();
             
             IsInitialized = false;
             Disposed?.Invoke();
-            return Send("Dispose completed!");
+            Send("Dispose completed!");
         }
         
 
         // SUBSCRIBE //
         public virtual void Subscribe()
         {
-            m_Cacheable.RecordToCahceRequired += OnCacheableRecordToCahceRequired;
-            m_Cacheable.DeleteFromCahceRequired += OnCacheableDeleteFromCahceRequired;
+            m_Cacheable.RecordRequired += OnCacheableRecordToCahceRequired;
+            m_Cacheable.DeleteRequired += OnCacheableDeleteFromCahceRequired;
         }
 
         public virtual void Unsubscribe()
         {
-            m_Cacheable.RecordToCahceRequired -= OnCacheableRecordToCahceRequired;
-            m_Cacheable.DeleteFromCahceRequired -= OnCacheableDeleteFromCahceRequired;
+            m_Cacheable.RecordRequired -= OnCacheableRecordToCahceRequired;
+            m_Cacheable.DeleteRequired -= OnCacheableDeleteFromCahceRequired;
         } 
 
         // CALLBACK //
-        protected void OnCacheableRecordToCahceRequired(ICacheable cacheable) =>
-            RecordToCahceRequired?.Invoke(cacheable);
+        protected void OnCacheableRecordToCahceRequired() =>
+            RecordRequired?.Invoke(m_Cacheable);
 
-        protected void OnCacheableDeleteFromCahceRequired(ICacheable cacheable) =>
-            DeleteFromCacheRequired?.Invoke(cacheable);
+        protected void OnCacheableDeleteFromCahceRequired() =>
+            DeleteRequired?.Invoke(m_Cacheable);
             
     }
     public struct CacheHandlerConfig : IConfig
@@ -117,11 +125,11 @@ namespace APP
         }
     }
 
-    public interface ICacheHandler : IConfigurable, IInitializable, ISubscriber, IMessager
+    public interface ICacheHandler : IConfigurable, ISubscriber, IMessager
     {
 
-        event Action<ICacheable> RecordToCahceRequired;
-        event Action<ICacheable> DeleteFromCacheRequired;
+        event Action<ICacheable> RecordRequired;
+        event Action<ICacheable> DeleteRequired;
 
     }
 }

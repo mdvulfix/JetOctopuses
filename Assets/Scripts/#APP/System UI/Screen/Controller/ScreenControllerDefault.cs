@@ -11,77 +11,72 @@ namespace APP.Screen
        
         public bool IsConfigured { get; private set; }
         public bool IsInitialized { get; protected set; }
-
-        public IScreen[] Screens { get; protected set; }
         
         public event Action Configured;
         public event Action Initialized;
         public event Action Disposed;
 
+        public ScreenControllerDefault(params object[] param) => Configure(param);
         public ScreenControllerDefault() { }
-        public ScreenControllerDefault(IConfig config) => Configure(config);
 
-        public IMessage Configure(IConfig config, params object[] param)
-        {
+        
+        // CONFIGURE //
+        public void Configure(params object[] param)
+        {      
             if (IsConfigured == true)
-                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
-            
-            if(config != null)
             {
-                m_Config = (ScreenControllerConfig) config;
-                Screens = m_Config.Screens;
-
-            }          
-               
-            if(param != null && param.Length > 0)
+                Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Worning);
+                return;
+            }
+                
+            if (param != null && param.Length > 0)
             {
                 foreach (var obj in param)
-                {   
-                    if(obj is object)
-                    Send("Param is not used", LogFormat.Worning);
+                {
+                    if (obj is IConfig)
+                    {
+                        m_Config = (ScreenControllerConfig) obj;
+                        Send($"{obj.GetName()} setup.");
+                    }
                 }
-            }          
-                
-            foreach (var screen in Screens)
-                if (screen.IsConfigured == false)
-                    screen.Configure();
+            }
+            else
+            {
+                Send("Params are empty. Config setup aborted!", LogFormat.Worning);
+            }
             
-            Send("All screens configured!");
-            
+
             IsConfigured = true;
             Configured?.Invoke();
-            
-            return Send("Configuration completed!");
+
+            Send("Configuration completed!");
         }
 
-        public IMessage Init() 
+        public void Init() 
         { 
             if (IsConfigured == false)
-                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
-
+            {
+                Send($"{this.GetName()} is not configured. Initialization was aborted!", LogFormat.Worning);
+                return;
+            }
+                
             if (IsInitialized == true)
-                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
-
-
-            foreach (var screen in Screens)
-                screen.Init();
-
-            Send("All screens initialized!");
+            {
+                Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Worning);
+                return;
+            }
             
             IsInitialized = true;
             Initialized?.Invoke();
-            return Send("Initialization completed!");
+            Send("Initialization completed!");
         }
 
-        public IMessage Dispose() 
+        public void Dispose() 
         { 
-            
-            foreach (var screen in Screens)
-                screen.Dispose();
             
             IsInitialized = false;
             Disposed?.Invoke();
-            return Send("Dispose completed!");
+            Send("Dispose completed!");
         }
 
         
@@ -157,7 +152,7 @@ namespace APP.Screen
         public IScreen[] Screens {get; private set; }
     }
 
-    public interface IScreenController : IController, IConfigurable, IInitializable
+    public interface IScreenController : IController, IConfigurable, IMessager
     {
         
         Task<ITaskResult> ScreenLoad(IScreen screen);

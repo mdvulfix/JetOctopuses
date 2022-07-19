@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace APP
 {
-    public abstract class CacheModel: IConfigurable, IInitializable, ISubscriber, IMessager
+    public abstract class CacheModel: IConfigurable, ISubscriber, IMessager
     {
         private bool m_Debug = false;
 
@@ -21,70 +21,81 @@ namespace APP
         public event Action<IMessage> Message;
 
         // CONFIGURE //
-        public virtual IMessage Configure(IConfig config = null, params object[] param)
+        public virtual void Configure(params object[] param)
         {
             if (IsConfigured == true)
-                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
-
-            if (config != null)
             {
-                m_Config = (CacheConfig) config;
-                m_Handler = m_Config.Handler;
+                Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Worning);
+                return;
             }
-
+                
             if (param != null && param.Length > 0)
             {
                 foreach (var obj in param)
                 {
-                    if (obj is object)
-                        Send("Param is not used", LogFormat.Worning);
+                    if (obj is IConfig)
+                    {
+                        m_Config = (CacheConfig) obj;
+                        
+                        m_Handler = m_Config.Handler;
+                        Send($"{obj.GetName()} setup.");
+                    }
                 }
             }
-
+            else
+            {
+                Send("Params are empty. Config setup aborted!", LogFormat.Worning);
+            }
+            
             IsConfigured = true;
             Configured?.Invoke();
 
-            return Send("Configuration completed!");
+            Send("Configuration completed!");
         }
 
-        // INIT //
-        public virtual IMessage Init()
+        public virtual void Init()
         {
             if (IsConfigured == false)
-                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
-
+            {
+                Send($"{this.GetName()} is not configured. Initialization was aborted!", LogFormat.Worning);
+                return;
+            }
+                
             if (IsInitialized == true)
-                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
+            {
+                Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Worning);
+                return;
+            }
 
             Subscribe();
 
             IsInitialized = true;
             Initialized?.Invoke();
-            return Send("Initialization completed!");
+            Send("Initialization completed!");
 
         }
 
-        public virtual IMessage Dispose()
+        public virtual void Dispose()
         {
 
             Unsubscribe();
 
             IsInitialized = false;
             Disposed?.Invoke();
-            return Send("Dispose completed!");
+            Send("Dispose completed!");
         }
 
         // SUBSCRUBE //
         public void Subscribe()
         {
-            m_Handler.RecordToCahceRequired += Record;
-            m_Handler.DeleteFromCacheRequired += Delete;
+            m_Handler.RecordRequired += Record;
+            m_Handler.DeleteRequired += Delete;
         }
 
         public void Unsubscribe()
         {
-            m_Handler.RecordToCahceRequired -= Record;
-            m_Handler.DeleteFromCacheRequired -= Delete;
+            m_Handler.RecordRequired -= Record;
+            m_Handler.DeleteRequired -= Delete;
         }
 
         // CONTAINS //
@@ -152,23 +163,15 @@ namespace APP
         public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
             Send(new Message(this, text, logFormat));
 
-        public IMessage Send(IMessage message, SendFormat sendFrom = SendFormat.Self)
+        public IMessage Send(IMessage message)
         {
             Message?.Invoke(message);
-
-            switch (sendFrom)
-            {
-                case SendFormat.Sender:
-                    return Messager.Send(m_Debug, this, $"message from: {message.Text}", message.LogFormat);
-
-                default:
-                    return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
-            }
+            return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
         }
-
+        
         // CALLBACK //
-        private void OnMessage(IMessage message) =>
-            Send(message);
+        public void OnMessage(IMessage message) =>
+            Send($"{message.Sender}: {message.Text}", message.LogFormat);
 
     }
 
@@ -205,7 +208,7 @@ namespace APP
     }
 
     
-    public interface ICache<TCacheable> : IConfigurable, IInitializable, ISubscriber, IMessager
+    public interface ICache<TCacheable> : IConfigurable, ISubscriber, IMessager
     where TCacheable : ICacheable
     {
         bool Contains();

@@ -6,8 +6,7 @@ using UnityEngine;
 
 namespace APP.Scene
 {
-    public abstract class SceneModel<TScene>:
-        IConfigurable, IInitializable, ICacheable, ISubscriber, IMessager
+    public abstract class SceneModel<TScene>: IConfigurable, ICacheable, ISubscriber, IMessager
     where TScene : IScene
     {
         [SerializeField]
@@ -41,96 +40,137 @@ namespace APP.Scene
         public event Action Loaded;
         public event Action Activated;
 
+        public event Action RecordRequired;
+        public event Action DeleteRequired;
+
         public event Action<IMessage> Message;
 
-        public event Action<ICacheable> RecordToCahceRequired;
-        public event Action<ICacheable> DeleteFromCahceRequired;
+
 
         // CONFIGURE //
-        public virtual IMessage Configure(IConfig config = null, params object[] param)
+        public virtual void Configure(params object[] param)
         {
+            Send("Start configuration...");
+                        
             if (IsConfigured == true)
-                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
-
-            if (config != null)
             {
-                m_Config = (SceneConfig) config;
-
-                Label = m_Config.Label;
-                Scene = m_Config.Scene;
-                Index = SceneIndex<TScene>.SetIndex(m_Config.SceneIndex);
-
-                m_Screens = m_Config.Screens;
-                ScreenLoading = m_Config.ScreenLoading;
-                ScreenStart = m_Config.ScreenStart;
-
+                Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Worning);
+                return;
             }
-
+                
             if (param != null && param.Length > 0)
             {
                 foreach (var obj in param)
                 {
-                    if (obj is object)
-                        Send("Param is not used", LogFormat.Worning);
+                    if (obj is IConfig)
+                    {
+                        m_Config = (SceneConfig) obj;
+
+                        Label = m_Config.Label;
+                        Scene = m_Config.Scene;
+                        Index = SceneIndex<TScene>.SetIndex(m_Config.SceneIndex);
+
+                        m_Screens = m_Config.Screens;
+                        ScreenLoading = m_Config.ScreenLoading;
+                        ScreenStart = m_Config.ScreenStart;
+
+                        Send($"{obj.GetName()} setup.");
+                    }
                 }
             }
+            else
+            {
+                Send("Params are empty. Config setup aborted!", LogFormat.Worning);
+            }
+            
 
             m_CacheHandler = new CacheHandler<IScene>();
-            Send(m_CacheHandler.Configure(new CacheHandlerConfig(Scene)), SendFormat.Sender);
-
             m_ScreenController = new ScreenControllerDefault();
-            Send(m_ScreenController.Configure(new ScreenControllerConfig(m_Config.Screens)), SendFormat.Sender);
-
+            
             IsConfigured = true;
             Configured?.Invoke();
 
-            return Send("Configuration completed!");
+            Send("Configuration completed!");
         }
 
-        // INIT //
-        public virtual IMessage Init()
+        public virtual void Init()
         {
+            
+            Send("Start initialization...");
+            
             if (IsConfigured == false)
-                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
-
+            {
+                Send($"{this.GetName()} is not configured. Initialization was aborted!", LogFormat.Worning);
+                return;
+            }
+                
             if (IsInitialized == true)
-                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
-
+            {
+                Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Worning);
+                return;
+            }
+                
             Subscribe();
-
-            Send(m_CacheHandler.Init(), SendFormat.Sender);
-            Send(m_ScreenController.Init(), SendFormat.Sender);
-
+            
+            m_CacheHandler.Configure(new CacheHandlerConfig(this));
+            m_CacheHandler.Init();
             RecordToCache();
+            
+            
+            m_ScreenController.Configure(new ScreenControllerConfig());
+            m_ScreenController.Init();
+
+            foreach (var screen in m_Screens)
+                screen.Configure();
+            Send("All screens configured!");
+            
+            
+            foreach (var screen in m_Screens)
+                screen.Init();
+            Send("All screens initialized!");
+                
 
             IsInitialized = true;
             Initialized?.Invoke();
-            return Send("Initialization completed!");
+            Send("Initialization completed!");
         }
 
-        public virtual IMessage Dispose()
+        public virtual void Dispose()
         {
+
+            Send("Start disposing...");
+            
+            foreach (var screen in m_Screens)
+                screen.Dispose();
+            
+            m_ScreenController.Dispose();
+            m_CacheHandler.Dispose();
+
             DeleteFromCache();
-
-            Send(m_ScreenController.Dispose(), SendFormat.Sender);
-            Send(m_CacheHandler.Dispose(), SendFormat.Sender);
-
             Unsubscribe();
 
             IsInitialized = false;
             Disposed?.Invoke();
-            return Send("Dispose completed!");
+            Send("Dispose completed!");
         }
 
         public virtual void Subscribe()
         {
             m_CacheHandler.Message += OnMessage;
+            m_ScreenController.Message += OnMessage;
+            
+            foreach (var screen in m_Screens)
+                screen.Message += OnMessage;
 
         }
 
         public virtual void Unsubscribe()
         {
             m_CacheHandler.Message -= OnMessage;
+            m_ScreenController.Message -= OnMessage;
+            
+            foreach (var screen in m_Screens)
+                screen.Message += OnMessage;
         }
 
         public async Task<ITaskResult> Load()
@@ -259,30 +299,23 @@ namespace APP.Scene
         public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
             Send(new Message(this, text, logFormat));
 
-        public IMessage Send(IMessage message, SendFormat sendFrom = SendFormat.Self)
+        public IMessage Send(IMessage message)
         {
             Message?.Invoke(message);
-
-            switch (sendFrom)
-            {
-                case SendFormat.Sender:
-                    return Messager.Send(m_Debug, this, $"message from: {message.Text}", message.LogFormat);
-
-                default:
-                    return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
-            }
+            return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
         }
+        
+        public void OnMessage(IMessage message) =>
+            Send($"{message.Sender.GetName()}: {message.Text}", message.LogFormat);
 
         // CACHE //
         private void RecordToCache() =>
-            RecordToCahceRequired?.Invoke(Scene);
+            RecordRequired?.Invoke();
 
         private void DeleteFromCache() =>
-            DeleteFromCahceRequired?.Invoke(Scene);
+            DeleteRequired?.Invoke();
 
-        // CALLBACK //
-        private void OnMessage(IMessage message) =>
-            Send(message);
+
 
     }
 
@@ -328,7 +361,7 @@ namespace APP.Scene
 
 namespace APP
 {
-    public interface IScene : IConfigurable, IInitializable, ICacheable
+    public interface IScene : IConfigurable, ICacheable
     {
 
         bool IsLoaded { get; }

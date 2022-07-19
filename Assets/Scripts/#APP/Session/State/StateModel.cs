@@ -6,7 +6,7 @@ using APP.Signal;
 
 namespace APP
 {
-    public abstract class StateModel<TState>: IConfigurable, IInitializable, ICacheable, IMessager, ISubscriber
+    public abstract class StateModel<TState>: IConfigurable, ICacheable, IMessager, ISubscriber
     where TState: class, IState
     {
         private bool m_Debug = true;
@@ -35,66 +35,75 @@ namespace APP
         public event Action<IScene> SceneRequied;
         public event Action<IState> StateRequied;
 
-        public event Action<ICacheable> RecordToCahceRequired;
-        public event Action<ICacheable> DeleteFromCahceRequired;
+        public event Action RecordRequired;
+        public event Action DeleteRequired;
         
 
-        public virtual IMessage Configure(IConfig config = null, params object[] param)
+        public virtual void Configure(params object[] param)
         {
             if (IsConfigured == true)
-                return Send("The instance was already configured. The current setup has been aborted!", LogFormat.Worning);
-
-
-            if(config != null)
             {
-                m_Config = (StateConfig) config;
-                State = m_Config.State;
-            }          
-               
-            if(param != null && param.Length > 0)
+                Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Worning);
+                return;
+            }
+                
+            if (param != null && param.Length > 0)
             {
                 foreach (var obj in param)
-                {   
-                    if(obj is object)
-                    Send("Param is not used", LogFormat.Worning);
+                {
+                    if (obj is IConfig)
+                    {
+                        m_Config = (StateConfig) obj;
+                        State = m_Config.State;
+                        
+                        Send($"{obj.GetName()} setup.");
+                    }
                 }
-            }          
-                            
+            }
+            else
+            {
+                Send("Params are empty. Config setup aborted!", LogFormat.Worning);
+            }
+            
             m_CacheHandler = new CacheHandler<IState>();
-            Send(m_CacheHandler.Configure(new CacheHandlerConfig(State)), SendFormat.Sender);
-            
-            
             
             IsConfigured = true;
             Configured?.Invoke();
-            
-            return Send("Configuration completed!");
+
+            Send("Configuration completed!");
         }
         
-        public virtual IMessage Init()
+        public virtual void Init()
         {
             if (IsConfigured == false)
-                return Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
+                Send("The instance is not configured. Initialization was aborted!", LogFormat.Worning);
 
             if (IsInitialized == true)
-                return Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
+                Send("The instance is already initialized. Current initialization was aborted!", LogFormat.Worning);
 
             Subscribe();
+
+            m_CacheHandler.Configure(new CacheHandlerConfig(State));
+            m_CacheHandler.Init();
 
 
             IsInitialized = true;
             Initialized?.Invoke();
-            return Send("Initialization completed!");
+            Send("Initialization completed!");
         }
 
-        public virtual IMessage Dispose()
+        public virtual void Dispose()
         {
+            
 
+            
+            m_CacheHandler.Dispose();
+            
             Unsubscribe();
             
             IsInitialized = false;
             Disposed?.Invoke();
-            return Send("Dispose completed!");
+            Send("Dispose completed!");
         }
 
 
@@ -127,26 +136,19 @@ namespace APP
             return null;
         }
 
+        // MESSAGE //
         public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
             Send(new Message(this, text, logFormat));
 
-        public IMessage Send(IMessage message, SendFormat sendFrom = SendFormat.Self)
+        public IMessage Send(IMessage message)
         {
             Message?.Invoke(message);
-            
-            switch (sendFrom)
-            {               
-                case SendFormat.Sender:
-                    return Messager.Send(m_Debug, this, $"message from: {message.Text}" , message.LogFormat);
-
-                default:
-                    return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
-            }
+            return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
         }
         
         // CALLBACK //
-        private void OnMessage(IMessage message) =>
-            Send(message);
+        public void OnMessage(IMessage message) =>
+            Send($"{message.Sender}: {message.Text}", message.LogFormat);
 
         public void OnSceneActivate(IScene scene)
         { 

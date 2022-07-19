@@ -165,23 +165,19 @@ namespace APP.Test
 
         public event Action<IMessage> Message;
 
+        // MESSAGE //
         public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
             Send(new Message(this, text, logFormat));
 
-        public IMessage Send(IMessage message, SendFormat sendFrom = SendFormat.Self)
+        public IMessage Send(IMessage message)
         {
             Message?.Invoke(message);
-
-            switch (sendFrom)
-            {
-                case SendFormat.Sender:
-                    return Messager.Send(
-                        m_Debug, this, $"message from: {message.Text}", message.LogFormat);
-
-                default:
-                    return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
-            }
+            return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
         }
+        
+        // CALLBACK //
+        public void OnMessage(IMessage message) =>
+            Send($"{message.Sender}: {message.Text}", message.LogFormat);
 
 
         public virtual void Awake() { }   

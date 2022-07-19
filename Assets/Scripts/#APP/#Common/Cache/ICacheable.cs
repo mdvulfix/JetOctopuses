@@ -2,10 +2,10 @@ using System;
 
 namespace APP
 {
-    public interface ICacheable: IInitializable
+    public interface ICacheable
     {
-        event Action<ICacheable> RecordToCahceRequired;
-        event Action<ICacheable> DeleteFromCahceRequired;
+        event Action RecordRequired;
+        event Action DeleteRequired;
 
 
 
