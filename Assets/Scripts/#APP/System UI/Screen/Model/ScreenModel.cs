@@ -30,6 +30,7 @@ namespace APP.Screen
         public bool IsConfigured { get; private set; }
         public bool IsInitialized { get; private set; }
         public bool IsLoaded { get; private set; }
+        public bool IsActivated { get; private set; }
 
         public string Label { get; private set; }
         public IScene Scene { get; private set; }
@@ -230,7 +231,9 @@ namespace APP
 {
     public interface IScreen : IConfigurable, ICacheable, IMessager
     {
+        
         bool IsLoaded { get; }
+        bool IsActivated { get; }
         
         ISceneObject SceneObject { get; }
         

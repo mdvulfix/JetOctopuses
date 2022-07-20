@@ -1,9 +1,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using APP.Scene;
-using System.Threading.Tasks;
+using SERVICE.Handler;
+
 
 namespace APP.Test
 {
@@ -19,8 +21,8 @@ namespace APP.Test
         private List<IScene> m_ScenesLoaded;
         private IScene SceneActive;
 
-        private ISceneController m_SceneController;
-
+        private ISceneController m_SceneController;       
+        
         private event Action<IScene> LoadRequired;
         
 
@@ -153,53 +155,16 @@ namespace APP.Test
             //base.Update();
         }
 
-    }
-
-
-
-
-
-    public class Test: MonoBehaviour, IMessager
-    {
-        private bool m_Debug = true;
-
-        public event Action<IMessage> Message;
-
-        // MESSAGE //
-        public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
-            Send(new Message(this, text, logFormat));
-
-        public IMessage Send(IMessage message)
+        public override void OnGUI()
         {
-            Message?.Invoke(message);
-            return Messager.Send(m_Debug, this, message.Text, message.LogFormat);
+            Drawer.Button(() => LoadRequired?.Invoke(m_Core), m_Core.Label, 0,25);
+            Drawer.Button(() => LoadRequired?.Invoke(m_Login), m_Login.Label, 0,150);
+            Drawer.Button(() => LoadRequired?.Invoke(m_Menu), m_Menu.Label, 0,275);
+            Drawer.Button(() => LoadRequired?.Invoke(m_Level), m_Level.Label, 0,400);
+
         }
-        
-        // CALLBACK //
-        public void OnMessage(IMessage message) =>
-            Send($"{message.Sender}: {message.Text}", message.LogFormat);
-
-
-        public virtual void Awake() { }   
-        public virtual void OnEnable() { }        
-        public virtual void OnDisable() { }   
-        public virtual void Start() { }   
-        public virtual void Update() 
-        {
-            Send("Awaiting action...");
-        }
-  
-    }
-
-}
-
-namespace APP
-{
-    public interface ITest
-    {
 
 
     }
-
 
 }
