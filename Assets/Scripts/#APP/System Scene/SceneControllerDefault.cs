@@ -126,7 +126,7 @@ namespace APP.Scene
             return new TaskResult(true, Send($"{scene.GetType().Name} was loaded!"));
         }
 
-        public async Task<ITaskResult> SceneActivate(IScene scene, IScreen screen, bool screenActivate, bool screenAnimate)
+        public async Task<ITaskResult> SceneActivate(IScene scene, IScreen screen, bool animate)
         {
             if (scene == null)
                 return new TaskResult(false, Send($"{scene.GetType().Name} not found!", LogFormat.Worning));
@@ -138,7 +138,7 @@ namespace APP.Scene
             if(uSceneActivationTaskResult.Status == false)
                 return new TaskResult(false, uSceneActivationTaskResult.Message);
             
-            var sceneActivationTaskResult = await scene.Activate(screen, screenActivate, screenAnimate);
+            var sceneActivationTaskResult = await scene.Activate(screen, animate);
             if(sceneActivationTaskResult.Status == false)
                 return new TaskResult(false, sceneActivationTaskResult.Message);
 
@@ -183,6 +183,6 @@ namespace APP
     public interface ISceneController : IController, IConfigurable, ISubscriber, IMessager
     {
         Task<ITaskResult> SceneLoad(IScene scene);
-        Task<ITaskResult> SceneActivate(IScene scene, IScreen screen, bool screenActivate, bool screenAnimate);
+        Task<ITaskResult> SceneActivate(IScene scene, IScreen screen, bool animate);
     }
 }

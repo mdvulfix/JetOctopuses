@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using SERVICE.Handler;
 
@@ -6,12 +7,19 @@ namespace APP.Screen
 {
     public class ScreenControllerDefault : Controller, IScreenController
     {
-        private IScreen m_ScreenActive;
         private ScreenControllerConfig m_Config;
        
+        private List<IScreen> m_ScreensLoaded;
+        private IScreen m_ScreenLoading;
+        private IScreen m_ScreenDefault;
+        
         public bool IsConfigured { get; private set; }
         public bool IsInitialized { get; protected set; }
-        
+
+
+
+        public IScreen ScreenActive { get; private set; }
+
         public event Action Configured;
         public event Action Initialized;
         public event Action Disposed;
@@ -36,6 +44,10 @@ namespace APP.Screen
                     if (obj is IConfig)
                     {
                         m_Config = (ScreenControllerConfig) obj;
+                        
+                        m_ScreenLoading = m_Config.ScreenLoading;
+                        m_ScreenDefault = m_Config.ScreenDefault;
+
                         Send($"{obj.GetName()} setup.");
                     }
                 }
@@ -44,7 +56,9 @@ namespace APP.Screen
             {
                 Send("Params are empty. Config setup aborted!", LogFormat.Worning);
             }
-            
+
+
+            m_ScreensLoaded = new List<IScreen>();
 
             IsConfigured = true;
             Configured?.Invoke();
@@ -85,77 +99,123 @@ namespace APP.Screen
             if (screen == null)
                 return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
 
-            var result = default(ITaskResult);
-            await TaskHandler.Run(() => AwaitScreenLoad(screen, out result), "Waiting for screen loading...");
-            return result;
+            if (screen.IsLoaded == true)
+                return new TaskResult(true, Send($"{screen.GetName()} is already loaded.", LogFormat.Worning));
+
+            var screenLoadTaskResult = await screen.Load();
+            if(screenLoadTaskResult.Status == false)
+                return new TaskResult(false, Send(screenLoadTaskResult.Message));
+                
+            m_ScreensLoaded.Add(screen);
+            return new TaskResult(true, Send($"{screen.GetName()} was loaded."));
         }
             
-
-        
-        public async Task<ITaskResult> ScreenActivate(IScreen screen, bool screenActivate, bool screenAnimate)
+        public async Task<ITaskResult> ScreenActivate(IScreen screen, bool animate)
         {
             if (screen == null)
                 return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
 
-            
-            if (m_ScreenActive != null && m_ScreenActive.GetType() == screen.GetType())
-                return new TaskResult(true, Send($"{screen.GetType().Name} is already active."));
+            if (screen.IsActivated == true)
+                return new TaskResult(true, Send($"{screen.GetName()} is already activated.", LogFormat.Worning));
 
-            
-            var result = default(ITaskResult);
-            await TaskHandler.Run(() => AwaitScreenActivation(screen, screenActivate, screenAnimate, out result), "Waiting for screen activation...");
-            return result;
+            var screenLoadingActivateTaskResult = await m_ScreenLoading.Activate(animate);
+            if (screenLoadingActivateTaskResult.Status == false)
+                return new TaskResult(false, Send(screenLoadingActivateTaskResult.Message));
 
-        }
-
-        private bool AwaitScreenLoad(IScreen screen, out ITaskResult result)
-        {
-            result = default(ITaskResult);
-            if(screen == null)
-                return false;
-            
-            result = screen.Load().Result;
-            return result.Status;
-        }
-
-        private bool AwaitScreenActivation(IScreen screen, bool screenActivate, bool screenAnimate, out ITaskResult result)
-        {
-            result = default(ITaskResult);
-            
-            if(screen == null)
-                return false;
-            
-            if (m_ScreenActive != null)
+            if (ScreenActive != null && ScreenActive != screen)
             {
-                var activeScreenActivate = false;
-                var activeScreenAnimate = false;
-                m_ScreenActive.Activate(activeScreenActivate, activeScreenAnimate);
+                var screenDeactivateTaskResult = await ScreenActive.Deactivate();
+                if (screenDeactivateTaskResult.Status == false)
+                    return new TaskResult(false, Send(screenDeactivateTaskResult.Message));
             }
-                
-            m_ScreenActive = screen;
-            result = m_ScreenActive.Activate(screenActivate, screenAnimate).Result;
             
-            return result.Status;
+            ScreenActive = m_ScreenLoading;
+
+            var screenLoadTaskResult = await screen.Activate(animate);
+            if (screenLoadTaskResult.Status == false)
+                return new TaskResult(false, Send(screenLoadTaskResult.Message));
+
+            var screenLoadingDeactivateTaskResult = await m_ScreenLoading.Deactivate();
+            if (screenLoadingDeactivateTaskResult.Status == false)
+                return new TaskResult(false, Send(screenLoadingDeactivateTaskResult.Message));
+    
+            ScreenActive = screen;
+
+
+            return new TaskResult(true, Send($"{screen.GetName()} was activated."));
         }
 
-        // CALLBACK //
+        public async Task<ITaskResult> ScreenDeactivate(IScreen screen)
+        {
+            if (screen == null)
+                return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
 
+            var screenLoadingActivateTaskResult = await m_ScreenLoading.Activate(true);
+            if (screenLoadingActivateTaskResult.Status == false)
+                return new TaskResult(false, Send(screenLoadingActivateTaskResult.Message));
+
+
+            var screenDeactivateTaskResult = await screen.Deactivate();
+            if (screenDeactivateTaskResult.Status == false)
+                return new TaskResult(false, Send(screenDeactivateTaskResult.Message));
+
+            ScreenActive = m_ScreenLoading;
+            
+            return new TaskResult(true, Send($"{screen.GetName()} was deactivated."));
+        }
+
+        public async Task<ITaskResult> ScreenUnload(IScreen screen)
+        {
+            if (screen == null)
+                return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
+
+            if(screen.IsLoaded != true)
+                return new TaskResult(false, Send($"{screen.GetName()} is already unloaded.", LogFormat.Worning));
+
+            var screenLoadingActivateTaskResult = await m_ScreenLoading.Activate(true);
+            if (screenLoadingActivateTaskResult.Status == false)
+                return new TaskResult(false, Send(screenLoadingActivateTaskResult.Message));
+
+            var screenDeactivateTaskResult = await screen.Deactivate();
+            if (screenDeactivateTaskResult.Status == false)
+                return new TaskResult(false, Send(screenDeactivateTaskResult.Message));
+ 
+            ScreenActive = m_ScreenLoading;
+
+            var screenUnloadTaskResult = await screen.Unload();
+            if(screenUnloadTaskResult.Status == false)
+                return new TaskResult(false, Send(screenUnloadTaskResult.Message));
+ 
+            m_ScreensLoaded.Remove(screen);
+            return new TaskResult(true, Send($"{screen.GetName()} was unloaded."));
+        }
     }
 
     public struct ScreenControllerConfig: IConfig
     {
-        public ScreenControllerConfig(IScreen[] screens)
+        public ScreenControllerConfig(
+            IScreen[] screens,
+            IScreen screenLoading,
+            IScreen screenDefault)
         {
             Screens = screens;
+            ScreenLoading = screenLoading;
+            ScreenDefault = screenDefault;
         }
 
         public IScreen[] Screens {get; private set; }
+        public IScreen ScreenLoading { get; private set; }
+        public IScreen ScreenDefault { get; private set; }
+
     }
 
     public interface IScreenController : IController, IConfigurable, IMessager
     {
-        
+        IScreen ScreenActive { get; }
+
         Task<ITaskResult> ScreenLoad(IScreen screen);
-        Task<ITaskResult> ScreenActivate(IScreen screen, bool screenActivate, bool screenAnimate);
+        Task<ITaskResult> ScreenActivate(IScreen screen, bool animate);
+        Task<ITaskResult> ScreenDeactivate(IScreen screen);
+        Task<ITaskResult> ScreenUnload(IScreen screen);
     }
 }

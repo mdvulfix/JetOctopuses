@@ -81,6 +81,11 @@ namespace SERVICE.Handler
             return obj;
         }
         
+        public static void RemoveGameObject(GameObject gameObject)
+        {
+            MonoBehaviour.Destroy(gameObject);
+        }
+
         public static TComponent SetComponent<TComponent>(GameObject gameObject)
         where TComponent : Component
         {

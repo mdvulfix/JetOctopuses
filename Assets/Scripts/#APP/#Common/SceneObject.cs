@@ -6,18 +6,20 @@ namespace APP
     
     public class SceneObject : MonoBehaviour, ISceneObject
     {      
-        
-        
-        
-        
-        protected void SetName(string name)
+        public void SetName(string name)
         {
-            
+            gameObject.name = name;
         }
         
-        protected void SetParent(ISceneObject sObj)
+        public void SetParent(ISceneObject sObj)
         {
+            gameObject.transform.parent = sObj.gameObject.transform;
+        }
 
+        public void Destroy()
+        {
+            Destroy(gameObject);
+            //Destroy(this);
         }
     }
 
@@ -25,9 +27,11 @@ namespace APP
 
 namespace APP
 {
-    public interface ISceneObject: IComponent
+    public interface ISceneObject : IComponent
     {
-
+        void SetName(string name);
+        void SetParent(ISceneObject sObj);
+        void Destroy();
     }
 
     public interface IComponent

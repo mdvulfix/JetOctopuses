@@ -14,14 +14,14 @@ namespace APP.Scene
         private readonly string m_Label = "Scene: Core";
         private readonly SceneIndex m_SceneIndex = SceneIndex.Core;
 
-        public SceneCore() => Configure();
+        public SceneCore() { }
         public SceneCore(IConfig config) => Configure(config);
 
         public void Configure()
         {
                     
             var screens = new List<IScreen>();
-            screens.Add(m_Loading = new ScreenLoading(this));
+            //screens.Add(m_Loading = new ScreenLoading(this));
               
             var config =  new SceneConfig(this, m_SceneIndex, screens.ToArray(), m_Loading, m_Loading, m_Label);            
             base.Configure(config);

@@ -125,7 +125,6 @@ namespace APP.Screen
             if (IsLoaded == true)
                 return new TaskResult(true, Send("The instance was already loaded. The current loading has been aborted!", LogFormat.Worning));
             
-
             await TaskHandler.Run(() => AwaitScreenLoading(), "Waiting for screen loading...");
             
             IsLoaded = true;
@@ -133,67 +132,75 @@ namespace APP.Screen
             
         }
 
-        public async Task<ITaskResult> Activate(bool activate = true, bool animate = true)
+        public async Task<ITaskResult> Activate(bool animate = true)
         {
-            if(activate == true)
-            {
-                await TaskHandler.Run(() => AwaitScreenActivation(true), "Waiting for screen activation...");
-                if(animate == true)
-                    await Animate(true);
-                else
-                    await Animate(false);
-            }
-            else
-            {
-                await Animate(false);
-                await TaskHandler.Run(() => AwaitScreenActivation(false), "Waiting for screen deactivation...");
-            }
-
+            if (IsActivated == true)
+                return new TaskResult(true, Send("The instance was already activated. The current loading has been aborted!", LogFormat.Worning));
+            
+            await TaskHandler.Run(() => AwaitScreenActivation(true), "Waiting for screen activation...");
+            await TaskHandler.Run(() => AwaitScreenAnimation(animate), "Waiting for screen animation...");
+            
+            IsActivated = true;
             return new TaskResult(true, Send("The instance was activated.")); 
         }
 
-        public async Task<ITaskResult> Animate(bool animate = true)
+        public async Task<ITaskResult> Deactivate()
         {
-            //m_Animator.PlayAnimation(animate);
-            await TaskHandler.Run(() => AwaitScreenAnimation(), "Waiting for screen animation...");
-            return new TaskResult(true, Send("The instance was animated."));
+            await TaskHandler.Run(() => AwaitScreenAnimation(false), "Waiting for screen animation finished...");
+            await TaskHandler.Run(() => AwaitScreenActivation(false), "Waiting for screen deactivation...");
+            
+            IsActivated = false;
+            return new TaskResult(true, Send("The instance was deactivated.")); 
         }
+
+        public async Task<ITaskResult> Unload()
+        {
+            await TaskHandler.Run(() => AwaitScreenUnloading(), "Waiting for screen unloaded...");
+
+            IsLoaded = false;
+            return new TaskResult(true, Send("The instance was unloaded.")); 
+        }
+
 
         // AWAIT //
         private bool AwaitScreenLoading()
         {
-            if(SceneObject == null)
-                SceneObject = SetComponent<SceneObject>(Label, Scene.SceneObject);
+            if(SceneObject != null)
+                return true;
 
+            var objParent = Scene.SceneObject.gameObject;
+            var obj = SceneHandler.SetGameObject(Label, objParent != null ? objParent : null);
+
+            SceneObject = SceneHandler.SetComponent<SceneObject>(obj);
+            return true;
+        }
+
+        private bool AwaitScreenUnloading()
+        {
+            if(SceneObject == null)
+                return true;
+            
+            var obj = SceneObject.gameObject;
+            SceneHandler.RemoveGameObject(obj);
             return true;
         }
 
         private bool AwaitScreenActivation(bool activate)
         {
-            SceneObject.gameObject.SetActive(activate); 
-            return true;              
+            if (SceneObject == null)
+                return false;
+
+            var obj = SceneObject.gameObject;
+            obj.SetActive(activate); 
+            return true;             
         }
 
-        private bool AwaitScreenAnimation()
+        private bool AwaitScreenAnimation(bool animate)
         {
             return true;
         }
 
         
-        protected TComponent SetComponent<TComponent>(string name = null, ISceneObject parent = null)
-        where TComponent : Component, ISceneObject
-        {
-            if (name == null)
-            {
-                return SceneHandler.SetComponent<TComponent>(SceneObject.gameObject);
-            }
-            else
-            {
-                var obj = SceneHandler.SetGameObject(name, parent != null ? parent.gameObject : null);
-                return SceneHandler.SetComponent<TComponent>(obj);
-            }
-        }
-
         // MESSAGE //
         public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
             Send(new Message(this, text, logFormat));
@@ -238,8 +245,9 @@ namespace APP
         ISceneObject SceneObject { get; }
         
         Task<ITaskResult> Load();
-        Task<ITaskResult> Activate(bool activate = true, bool animate = true);
-        Task<ITaskResult> Animate(bool animate = true);
+        Task<ITaskResult> Activate(bool animate = true);
+        Task<ITaskResult> Deactivate();
+        Task<ITaskResult> Unload();
     }
 }
 

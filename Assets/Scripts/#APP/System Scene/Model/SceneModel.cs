@@ -14,11 +14,12 @@ namespace APP.Scene
 
         private SceneConfig m_Config;
 
-        private ICacheHandler m_CacheHandler;
-
-        private IScreenController m_ScreenController;
-
         private IScreen[] m_Screens;
+        private IScreen m_ScreenLoading;
+        private IScreen m_ScreenDefault;
+
+        private ICacheHandler m_CacheHandler;
+        private IScreenController m_ScreenController;
 
         public bool IsConfigured { get; private set; }
         public bool IsInitialized { get; private set; }
@@ -29,8 +30,7 @@ namespace APP.Scene
         public IScene Scene { get; private set; }
         public SceneIndex Index { get; private set; }
         
-        public IScreen ScreenLoading { get; private set; }
-        public IScreen ScreenStart { get; private set; }
+
 
         public ISceneObject SceneObject { get; private set; }
 
@@ -71,8 +71,8 @@ namespace APP.Scene
                         Index = SceneIndex<TScene>.SetIndex(m_Config.SceneIndex);
 
                         m_Screens = m_Config.Screens;
-                        ScreenLoading = m_Config.ScreenLoading;
-                        ScreenStart = m_Config.ScreenStart;
+                        m_ScreenLoading = m_Config.ScreenLoading;
+                        m_ScreenDefault = m_Config.ScreenDefault;
 
                         Send($"{obj.GetName()} setup.");
                     }
@@ -117,7 +117,7 @@ namespace APP.Scene
             RecordToCache();
             
             
-            m_ScreenController.Configure(new ScreenControllerConfig());
+            m_ScreenController.Configure(new ScreenControllerConfig(m_Screens, m_ScreenLoading, m_ScreenDefault));
             m_ScreenController.Init();
 
             foreach (var screen in m_Screens)
@@ -187,11 +187,9 @@ namespace APP.Scene
             if(uSceneActivateTaskResult.Status == false)
                 return new TaskResult(false, uSceneActivateTaskResult.Message);
             
-            
             // Loading scene objects  ...
             await TaskHandler.Run(() => AwaitSceneLoading(), "Waiting for screen loading...");
 
-            
             // Loading screens...
             foreach (var screen in m_Screens)
             {
@@ -202,38 +200,13 @@ namespace APP.Scene
 
             IsLoaded = true;
             Loaded?.Invoke();
-            return new TaskResult(true, Send($"All screens were loaded. {ScreenLoading} was activated."));
+            return new TaskResult(true, Send("The instance was loaded."));
         }
 
-        public async Task<ITaskResult> Activate<TScreen>(bool screenActivate = true, bool screenAnimate = true)
-        where TScreen : IScreen
+        public async Task<ITaskResult> Activate(IScreen screen, bool animate = true)
         {
-            foreach (var screen in m_Screens)
-            {
-                if (screen.GetType() == typeof(TScreen))
-                {
-                    // Activate loading screen...
-                    var screenActivateTaskResult = await m_ScreenController.ScreenActivate(ScreenLoading, screenActivate, screenAnimate);
-                    if (screenActivateTaskResult.Status == false)
-                        return new TaskResult(false, screenActivateTaskResult.Message);
-                }
-            }
-
-            return new TaskResult(false, Send($"{typeof(TScreen)} was not found. Activation has been failed!", LogFormat.Worning));
-        }
-
-        public async Task<ITaskResult> Activate(IScreen screen, bool screenActivate = true, bool screenAnimate = true)
-        {
-            if (IsLoaded == false)
-            {
-                var sceneLoadTaskResult = await Load();
-                if (sceneLoadTaskResult.Status == false)
-                    return new TaskResult(false, sceneLoadTaskResult.Message);
-            }
-
             if (IsActivated == true)
-                return new TaskResult(true, Send("The scene was already activated. The current loading has been activated!", LogFormat.Worning));
-            
+                return new TaskResult(true, Send("The scene was already activated. The current activation has been aborted!", LogFormat.Worning));
             
             var uSceneActivateTaskResult = await SceneHandler.USceneActivate(Index);
             if(uSceneActivateTaskResult.Status == false)
@@ -241,59 +214,103 @@ namespace APP.Scene
             
             // Activate  UScene...
             var sceneActivate = true;
+            await TaskHandler.Run(() => AwaitSceneActivation(sceneActivate), "Waiting for screen activation...");
+
+            var screenLoadTaskResult = await m_ScreenController.ScreenActivate(screen, true);
+            if(screenLoadTaskResult.Status == false)
+                return new TaskResult(false, screenLoadTaskResult.Message);
+
+            IsActivated = true;
+            Activated?.Invoke();
+            return new TaskResult(true, Send("The instance was activated."));
+        }
+
+        public async Task<ITaskResult> Deactivate()
+        {
+            if (IsActivated != true)
+                return new TaskResult(true, Send("The scene was already deactivated. The current deactivation has been aborted!", LogFormat.Worning));
+            
+            foreach (var screen in m_Screens)
+            {
+                var screenDeactivateTaskResult = await m_ScreenController.ScreenDeactivate(screen);
+                if (screenDeactivateTaskResult.Status == false)
+                    return new TaskResult(false, screenDeactivateTaskResult.Message);
+            }
+            
+            // Activate  UScene...
+            var sceneActivate = false;
             await TaskHandler.Run(() => AwaitSceneActivation(sceneActivate), "Waiting for screen deactivation...");
 
-            // Activate loading screen...
-            var screenLoadingActivate = true;
-            var screenLoadingAnimate = true;
-            var screenLoadingActivateTaskResult = await m_ScreenController.ScreenActivate(ScreenLoading, screenLoadingActivate, screenLoadingAnimate);
+            IsActivated = false;
+            return new TaskResult(true, Send("The instance was deactivated."));
+        }
+
+        public async Task<ITaskResult> Unload()
+        {
+            if (IsLoaded != true)
+                return new TaskResult(true, Send("The instance was already unloaded. The current unloading has been aborted!", LogFormat.Worning));
+
+
+            // Loading screens...
+            foreach (var screen in m_Screens)
+            {
+                var screenLoadTaskResult = await m_ScreenController.ScreenUnload(screen);
+                if (screenLoadTaskResult.Status == false)
+                    return new TaskResult(false, screenLoadTaskResult.Message);
+            }
+
             
-            if (screenLoadingActivateTaskResult.Status == false)
-                return new TaskResult(false, screenLoadingActivateTaskResult.Message);
+            // Loading scene objects  ...
+            await TaskHandler.Run(() => AwaitSceneUnloading(), "Waiting for scene unloading...");
 
-            await Task.Delay(100);
+            var sceneCoreIndex = SceneIndex<SceneCore>.Index;
+            var uSceneActivateTaskResult = await SceneHandler.USceneActivate(sceneCoreIndex);
+            if(uSceneActivateTaskResult.Status == false)
+                return new TaskResult(false, uSceneActivateTaskResult.Message);
 
-            // Activate target screen...
-            var screenTargetActivateTaskResult = await m_ScreenController.ScreenActivate(screen, screenActivate, screenAnimate);
-            if (screenTargetActivateTaskResult.Status == false)
-                return new TaskResult(false, screenTargetActivateTaskResult.Message);
+            
+            var uSceneLoadingTaskResult = await SceneHandler.USceneLoad(Index);
+            if(uSceneLoadingTaskResult.Status == false)
+                return new TaskResult(false, uSceneLoadingTaskResult.Message);
 
-            return new TaskResult(true, Send($"{screen.GetType().Name} was activated."));
+            IsLoaded = true;
+            Loaded?.Invoke();
+            return new TaskResult(true, Send("The instance was loaded."));
         }
 
         // AWAIT //
         private bool AwaitSceneLoading()
         {
-        
-            if (SceneObject == null)
-                SceneObject = SetComponent<SceneObject>(Label, Scene.SceneObject);
+            if(SceneObject != null)
+                return true;
 
+            var obj = SceneHandler.SetGameObject(Label);
+            SceneObject = SceneHandler.SetComponent<SceneObject>(obj);
+   
+            return true;
+        }
+
+        private bool AwaitSceneUnloading()
+        {
+            if(SceneObject == null)
+                return true;
+            
+            var obj = SceneObject.gameObject;
+            SceneHandler.RemoveGameObject(obj);
             return true;
         }
 
         private bool AwaitSceneActivation(bool activate)
         {
-            if (SceneObject != null)
-                SceneObject.gameObject.SetActive(activate);
-            else
-                throw new Exception();
+            if (SceneObject == null)
+                return false;
 
-            return true;
+            
+            var obj = SceneObject.gameObject;
+            obj.SetActive(activate); 
+            return true;  
         }
 
-        protected TComponent SetComponent<TComponent>(string name = null, ISceneObject parent = null)
-        where TComponent : Component, ISceneObject
-        {
-            if (name == null)
-            {
-                return SceneHandler.SetComponent<TComponent>(SceneObject.gameObject);
-            }
-            else
-            {
-                var obj = SceneHandler.SetGameObject(name, parent != null ? parent.gameObject : null);
-                return SceneHandler.SetComponent<TComponent>(obj);
-            }
-        }
 
         // MESSAGE //
         public IMessage Send(string text, LogFormat logFormat = LogFormat.None) =>
@@ -326,14 +343,14 @@ namespace APP.Scene
         public SceneIndex SceneIndex { get; }
         public IScreen[] Screens { get; private set; }
         public IScreen ScreenLoading { get; }
-        public IScreen ScreenStart { get; }
+        public IScreen ScreenDefault { get; }
 
         public SceneConfig(
             IScene scene,
             SceneIndex index,
             IScreen[] screens,
             IScreen screenLoading,
-            IScreen screenStart,
+            IScreen screenDefault,
             string label = "Scene: ")
         {
             Label = label;
@@ -341,7 +358,7 @@ namespace APP.Scene
             SceneIndex = index;
             Screens = screens;
             ScreenLoading = screenLoading;
-            ScreenStart = screenStart;
+            ScreenDefault = screenDefault;
         }
 
     }
@@ -371,13 +388,8 @@ namespace APP
 
         ISceneObject SceneObject { get; }
 
-        IScreen ScreenLoading { get; }
-        IScreen ScreenStart { get; }
-
         Task<ITaskResult> Load();
-        Task<ITaskResult> Activate(IScreen screen, bool screenActivate = true, bool screenAnimate = true);
-        Task<ITaskResult> Activate<TScreen>(bool screenActivate = true, bool screenAnimate = true)
-        where TScreen : IScreen;
+        Task<ITaskResult> Activate(IScreen screen, bool animate = true);
 
     }
 

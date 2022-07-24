@@ -43,6 +43,7 @@ namespace APP.Test
             Send($"{scene.GetType().Name} was loaded");
         }
 
+        /*
         public async Task SceneActivate(IScene scene)
         {
             if(scene.IsActivated == true)
@@ -68,7 +69,7 @@ namespace APP.Test
             SceneActive = scene;
             Send($"{scene.GetType().Name} was loaded");
         }
-
+        */
         public void SceneDeactivate(IScene scene)
         {
             
@@ -87,7 +88,7 @@ namespace APP.Test
         private async void OnLoadRequired(IScene scene)
         {
             await SceneLoad(scene);
-            await SceneActivate(scene);
+            //await SceneActivate(scene);
         }
 
 

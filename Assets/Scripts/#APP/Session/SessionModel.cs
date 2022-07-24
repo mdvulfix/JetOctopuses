@@ -156,8 +156,8 @@ namespace APP
 
         //protected virtual void StateUpdate(IState state) { }
 
-        public async Task SceneActivate(IScene scene, IScreen screen, bool screenActivate = true, bool screenAnimate = true) =>
-            await m_SceneController.SceneActivate(scene, screen, screenActivate, screenAnimate);
+        public async Task SceneActivate(IScene scene, IScreen screen, bool animate = true) =>
+            await m_SceneController.SceneActivate(scene, screen, animate);
 
 
 
@@ -200,8 +200,9 @@ namespace APP
 
         private async void SceneActivate()
         {
-            await SceneActivate(m_SceneLoading, m_SceneLoading.ScreenStart);
-            await SceneActivate(m_SceneStart, m_SceneStart.ScreenStart);
+            //await SceneActivate(m_SceneLoading, m_SceneLoading.ScreenStart);
+            //await SceneActivate(m_SceneStart, m_SceneStart.ScreenStart);
+            await Task.Delay(1);
         }
 
 
