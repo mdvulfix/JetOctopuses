@@ -11,7 +11,7 @@ namespace APP
     public abstract class SceneBuildScheme<TScene> : SceneBuildScheme where TScene: IScene
     {   
         protected async Task SceneActivate() =>
-            await SceneHandler.USceneActivate(SceneIndex<TScene>.Index);
+            await USceneHandler.USceneActivate(SceneIndex<TScene>.Index);
     }
 
     public abstract class SceneBuildScheme
@@ -20,8 +20,8 @@ namespace APP
         
         protected TSystem Set<TSystem>(string name, GameObject parent = null) where TSystem : SceneObject, IConfigurable
         {
-            var obj = SceneHandler.SetGameObject(name, parent);
-            return SceneHandler.SetComponent<TSystem>(obj);
+            var obj = GameObjectHandler.CreateGameObject(name, parent);
+            return GameObjectHandler.SetComponent<TSystem>(obj);
         }
     }
 
@@ -136,8 +136,8 @@ namespace APP
     
         private TSystem Set<TSystem>(string name, GameObject parent = null) where TSystem : SceneObject, IConfigurable
         {
-            var obj = SceneHandler.SetGameObject(name, parent);
-            return SceneHandler.SetComponent<TSystem>(obj);
+            var obj = GameObjectHandler.CreateGameObject(name, parent);
+            return GameObjectHandler.SetComponent<TSystem>(obj);
         }
 
 

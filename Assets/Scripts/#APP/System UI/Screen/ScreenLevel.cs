@@ -21,9 +21,7 @@ namespace APP.Screen
             var screenConfig =  new ScreenConfig(this, scene, buttons.ToArray(), label);            
             Configure(screenConfig);
         }
-        
-        
-        
+
     }
 
 }

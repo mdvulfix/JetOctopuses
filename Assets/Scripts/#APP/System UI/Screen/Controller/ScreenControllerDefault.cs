@@ -9,6 +9,8 @@ namespace APP.Screen
     {
         private ScreenControllerConfig m_Config;
        
+        private IScreen[] m_Screens;
+        
         private List<IScreen> m_ScreensLoaded;
         private IScreen m_ScreenLoading;
         private IScreen m_ScreenDefault;
@@ -22,7 +24,7 @@ namespace APP.Screen
 
         public event Action Configured;
         public event Action Initialized;
-        public event Action Disposed;
+        public event Action Disposed;       
 
         public ScreenControllerDefault(params object[] param) => Configure(param);
         public ScreenControllerDefault() { }
@@ -45,6 +47,7 @@ namespace APP.Screen
                     {
                         m_Config = (ScreenControllerConfig) obj;
                         
+                        m_Screens = m_Config.Screens;
                         m_ScreenLoading = m_Config.ScreenLoading;
                         m_ScreenDefault = m_Config.ScreenDefault;
 
@@ -79,6 +82,29 @@ namespace APP.Screen
                 Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Worning);
                 return;
             }
+            
+            
+            foreach (var screen in m_Screens)
+            {
+                screen.Configure();
+            }
+                
+            
+            
+            Send("All screens configured!");
+            
+            
+            foreach (var screen in m_Screens)
+                screen.Init();
+            Send("All screens initialized!");
+            
+            
+            
+            
+            
+            
+            
+            
             
             IsInitialized = true;
             Initialized?.Invoke();
@@ -115,6 +141,9 @@ namespace APP.Screen
             if (screen == null)
                 return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
 
+            if (screen.IsLoaded == false)
+                return new TaskResult(false, Send($"{screen.GetName()} is not loaded.", LogFormat.Worning));
+            
             if (screen.IsActivated == true)
                 return new TaskResult(true, Send($"{screen.GetName()} is already activated.", LogFormat.Worning));
 
@@ -124,16 +153,19 @@ namespace APP.Screen
 
             if (ScreenActive != null && ScreenActive != screen)
             {
-                var screenDeactivateTaskResult = await ScreenActive.Deactivate();
-                if (screenDeactivateTaskResult.Status == false)
-                    return new TaskResult(false, Send(screenDeactivateTaskResult.Message));
+                var screenActiveDeactivateTaskResult = await ScreenActive.Deactivate();
+                if (screenActiveDeactivateTaskResult.Status == false)
+                    return new TaskResult(false, Send(screenActiveDeactivateTaskResult.Message));
             }
             
             ScreenActive = m_ScreenLoading;
+            
+            if(ScreenActive == screen)
+                return new TaskResult(true, Send($"{screen.GetName()} was activated."));
 
-            var screenLoadTaskResult = await screen.Activate(animate);
-            if (screenLoadTaskResult.Status == false)
-                return new TaskResult(false, Send(screenLoadTaskResult.Message));
+            var screenTargetActivateTaskResult = await screen.Activate(animate);
+            if (screenTargetActivateTaskResult.Status == false)
+                return new TaskResult(false, Send(screenTargetActivateTaskResult.Message));
 
             var screenLoadingDeactivateTaskResult = await m_ScreenLoading.Deactivate();
             if (screenLoadingDeactivateTaskResult.Status == false)
@@ -150,10 +182,15 @@ namespace APP.Screen
             if (screen == null)
                 return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
 
+            if (screen.IsLoaded == false)
+                return new TaskResult(false, Send($"{screen.GetName()} is not loaded.", LogFormat.Worning));
+
+            if (screen.IsActivated == false)
+                return new TaskResult(true, Send($"{screen.GetName()} is already deactivated.", LogFormat.Worning));
+
             var screenLoadingActivateTaskResult = await m_ScreenLoading.Activate(true);
             if (screenLoadingActivateTaskResult.Status == false)
                 return new TaskResult(false, Send(screenLoadingActivateTaskResult.Message));
-
 
             var screenDeactivateTaskResult = await screen.Deactivate();
             if (screenDeactivateTaskResult.Status == false)
@@ -167,24 +204,27 @@ namespace APP.Screen
         public async Task<ITaskResult> ScreenUnload(IScreen screen)
         {
             if (screen == null)
-                return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
+                return new TaskResult(false, Send($"{screen.GetName()} not found!", LogFormat.Worning));
 
-            if(screen.IsLoaded != true)
+            if(screen.IsLoaded == false)
                 return new TaskResult(false, Send($"{screen.GetName()} is already unloaded.", LogFormat.Worning));
 
-            var screenLoadingActivateTaskResult = await m_ScreenLoading.Activate(true);
-            if (screenLoadingActivateTaskResult.Status == false)
-                return new TaskResult(false, Send(screenLoadingActivateTaskResult.Message));
+            if (ScreenActive != null && ScreenActive == screen)
+            {
+                var screenLoadingActivateTaskResult = await m_ScreenLoading.Activate(true);
+                if (screenLoadingActivateTaskResult.Status == false)
+                    return new TaskResult(false, Send(screenLoadingActivateTaskResult.Message));
+                
+                var screenActiveDeactivateTaskResult = await ScreenActive.Deactivate();
+                if (screenActiveDeactivateTaskResult.Status == false)
+                    return new TaskResult(false, Send(screenActiveDeactivateTaskResult.Message));
 
-            var screenDeactivateTaskResult = await screen.Deactivate();
-            if (screenDeactivateTaskResult.Status == false)
-                return new TaskResult(false, Send(screenDeactivateTaskResult.Message));
- 
-            ScreenActive = m_ScreenLoading;
-
-            var screenUnloadTaskResult = await screen.Unload();
-            if(screenUnloadTaskResult.Status == false)
-                return new TaskResult(false, Send(screenUnloadTaskResult.Message));
+                ScreenActive = m_ScreenLoading;
+            }
+            
+            var screenTargetUnloadTaskResult = await screen.Unload();
+            if(screenTargetUnloadTaskResult.Status == false)
+                return new TaskResult(false, Send(screenTargetUnloadTaskResult.Message));
  
             m_ScreensLoaded.Remove(screen);
             return new TaskResult(true, Send($"{screen.GetName()} was unloaded."));
@@ -210,7 +250,7 @@ namespace APP.Screen
     }
 
     public interface IScreenController : IController, IConfigurable, IMessager
-    {
+    {        
         IScreen ScreenActive { get; }
 
         Task<ITaskResult> ScreenLoad(IScreen screen);

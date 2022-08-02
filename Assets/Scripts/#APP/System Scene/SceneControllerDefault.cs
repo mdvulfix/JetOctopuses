@@ -134,11 +134,11 @@ namespace APP.Scene
             if (scene.IsActivated == true)
                 return new TaskResult(true, Send($"{scene.GetType().Name} is already activated!"));
             
-            var uSceneActivationTaskResult = await SceneHandler.USceneActivate(scene.Index);
+            var uSceneActivationTaskResult = await USceneHandler.USceneActivate(scene.Index);
             if(uSceneActivationTaskResult.Status == false)
                 return new TaskResult(false, uSceneActivationTaskResult.Message);
             
-            var sceneActivationTaskResult = await scene.Activate(screen, animate);
+            var sceneActivationTaskResult = await scene.Activate(animate);
             if(sceneActivationTaskResult.Status == false)
                 return new TaskResult(false, sceneActivationTaskResult.Message);
 

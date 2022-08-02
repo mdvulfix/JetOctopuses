@@ -21,9 +21,6 @@ namespace APP.Test
 
         private List<IScreen> m_Screens;
 
-        private ISceneController m_SceneController;  
-        private IScreenController m_ScreenController;     
-        
         private event Action<IScreen> LoadRequired;
         private event Action<IScreen> UnloadRequired;
         private event Action<IScreen> ActivateRequired;
@@ -32,27 +29,27 @@ namespace APP.Test
 
         public async Task ScreenLoad(IScreen screen)
         {
-            var screenLoadTaskResult = await m_ScreenController.ScreenLoad(screen);
-            Send(screenLoadTaskResult.Message);
+            var screenTargetLoadTaskResult = await m_Scene.ScreenLoad(screen);
+            Send(screenTargetLoadTaskResult.Message);
         }
 
         public async Task ScreenActivate(IScreen screen)
         {
-            var screenLoadTaskResult = await m_ScreenController.ScreenActivate(screen, true);
-            Send(screenLoadTaskResult.Message);
+            var screenTargetActivateTaskResult = await m_Scene.ScreenActivate(screen, true);
+            Send(screenTargetActivateTaskResult.Message);
         }
 
         public async Task ScreenDeactivate(IScreen screen)
         {
-            var screenDeactivateTaskResult = await m_ScreenController.ScreenDeactivate(screen);
-            Send(screenDeactivateTaskResult.Message);
+            var screenTargetDeactivateTaskResult = await m_Scene.ScreenDeactivate(screen);
+            Send(screenTargetDeactivateTaskResult.Message);
 
         }
 
         public async Task ScreenUnload(IScreen screen)
         {
-            var screenUnloadTaskResult = await m_ScreenController.ScreenUnload(screen);
-            Send(screenUnloadTaskResult.Message);      
+            var screenTargetUnloadTaskResult = await m_Scene.ScreenUnload(screen);
+            Send(screenTargetUnloadTaskResult.Message);      
         }
 
 
@@ -82,10 +79,7 @@ namespace APP.Test
         // UNITY //
         public override void Awake() 
         {
-            m_SceneController = new SceneControllerDefault();
-
             m_Scene = new SceneCore();
-             
             m_Screens = new List<IScreen>();
              
             m_Screens.Add(m_ScreenLoading = new ScreenLoading(m_Scene));
@@ -93,18 +87,13 @@ namespace APP.Test
             m_Screens.Add(m_ScreenMain = new ScreenMain(m_Scene));
             m_Screens.Add(m_ScreenLevel = new ScreenLevel(m_Scene));
 
-            var sceneConfig =  new SceneConfig(m_Scene, SceneIndex<SceneCore>.Index, m_Screens.ToArray(), m_ScreenLoading, m_ScreenLoading, "Scene: Core");
+            var sceneConfig =  new SceneConfig(m_Scene, SceneIndex<SceneCore>.Index, m_Screens.ToArray(), m_ScreenLoading, m_ScreenLogin, "Scene: Core");
             m_Scene.Configure(sceneConfig);
 
-            m_ScreenController = new ScreenControllerDefault();
-            m_ScreenController.Configure(new ScreenControllerConfig(m_Screens.ToArray(), m_ScreenLoading, m_ScreenLogin));
         }
     
         public override void OnEnable() 
-        {
-            m_SceneController.Init();
-            m_ScreenController.Init();
-            
+        {           
             m_Scene.Init();
             foreach (var screen in m_Screens)
                 screen.Init();
@@ -121,9 +110,6 @@ namespace APP.Test
             foreach (var screen in m_Screens)
                 screen.Dispose();
             
-            m_ScreenController.Dispose();
-            m_SceneController.Dispose();
-
             LoadRequired -= OnLoadRequired;
             ActivateRequired -= OnActivateRequired;
             DeactivateRequired -= OnDeactivateRequired;
@@ -133,7 +119,9 @@ namespace APP.Test
         public override async void Start() 
         {
             await m_Scene.Load();
-            await m_Scene.Activate(m_ScreenLogin, true);
+            
+            var animate = true;
+            await m_Scene.Activate(animate);
         }
 
         public override void Update()

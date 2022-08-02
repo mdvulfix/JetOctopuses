@@ -16,6 +16,8 @@ namespace APP.Screen
 
         private ScreenConfig m_Config;
         private IScreenController m_ScreenController;
+        
+        
         private Animator m_Animator;
 
         public event Action Configured;
@@ -120,6 +122,7 @@ namespace APP.Screen
         public virtual void Subscribe() { }
         public virtual void Unsubscribe() { }
 
+        // SCREEN //
         public async Task<ITaskResult> Load()
         {
             if (IsLoaded == true)
@@ -166,22 +169,23 @@ namespace APP.Screen
         private bool AwaitScreenLoading()
         {
             if(SceneObject != null)
-                return true;
+                throw new Exception();
 
             var objParent = Scene.SceneObject.gameObject;
-            var obj = SceneHandler.SetGameObject(Label, objParent != null ? objParent : null);
+            var obj = GameObjectHandler.CreateGameObject(Label, objParent != null ? objParent : null);
 
-            SceneObject = SceneHandler.SetComponent<SceneObject>(obj);
+            SceneObject = GameObjectHandler.SetComponent<SceneObject>(obj);
             return true;
         }
 
         private bool AwaitScreenUnloading()
         {
             if(SceneObject == null)
-                return true;
+                throw new Exception();
             
             var obj = SceneObject.gameObject;
-            SceneHandler.RemoveGameObject(obj);
+            GameObjectHandler.DestroyGameObject(obj);
+            SceneObject = null;
             return true;
         }
 
@@ -243,6 +247,10 @@ namespace APP
         bool IsActivated { get; }
         
         ISceneObject SceneObject { get; }
+        
+        
+        
+        
         
         Task<ITaskResult> Load();
         Task<ITaskResult> Activate(bool animate = true);
