@@ -165,23 +165,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 114679532}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 972b3a46b69fad04ea39bc53380280c3, type: 3}
+  m_Script: {fileID: 11500000, guid: f75b503edcb3d3f44a3e3419be3a516c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Loading:
-    m_Debug: 0
-  m_Login:
-    m_Debug: 0
-    m_SignIn:
-      m_Button: {fileID: 0}
-      m_PlayerAction: 0
-    m_SignUp:
-      m_Button: {fileID: 0}
-      m_PlayerAction: 0
-  m_Main:
-    m_Debug: 0
-  m_Level:
-    m_Debug: 0
 --- !u!1 &314485921
 GameObject:
   m_ObjectHideFlags: 0

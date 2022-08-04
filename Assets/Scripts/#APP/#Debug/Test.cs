@@ -29,10 +29,7 @@ namespace APP.Test
         public virtual void OnEnable() { }        
         public virtual void OnDisable() { }   
         public virtual void Start() { }   
-        public virtual void Update() 
-        {
-            Send("Awaiting action...");
-        }
+        public virtual void Update() { }
 
         public virtual void OnGUI() { } 
   

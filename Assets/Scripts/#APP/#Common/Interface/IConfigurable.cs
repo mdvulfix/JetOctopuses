@@ -2,7 +2,7 @@ using System;
 
 namespace APP
 {
-    public interface IConfigurable
+    public interface IConfigurable: IDisposable
     {
         event Action Configured;
         event Action Initialized;
@@ -13,7 +13,6 @@ namespace APP
         
         void Configure(params object[] param);
         void Init();
-        void Dispose();
 
     }
 

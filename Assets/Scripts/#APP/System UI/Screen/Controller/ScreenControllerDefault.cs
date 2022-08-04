@@ -123,7 +123,7 @@ namespace APP.Screen
         public async Task<ITaskResult> ScreenLoad(IScreen screen)
         {
             if (screen == null)
-                return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
+                return new TaskResult(false, Send($"{screen.GetName()} not found!", LogFormat.Worning));
 
             if (screen.IsLoaded == true)
                 return new TaskResult(true, Send($"{screen.GetName()} is already loaded.", LogFormat.Worning));
@@ -139,7 +139,7 @@ namespace APP.Screen
         public async Task<ITaskResult> ScreenActivate(IScreen screen, bool animate)
         {
             if (screen == null)
-                return new TaskResult(false, Send($"{screen.GetType().Name} not found!", LogFormat.Worning));
+                return new TaskResult(false, Send($"{screen.GetName()} not found!", LogFormat.Worning));
 
             if (screen.IsLoaded == false)
                 return new TaskResult(false, Send($"{screen.GetName()} is not loaded.", LogFormat.Worning));

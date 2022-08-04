@@ -11,12 +11,16 @@ namespace APP.Scene
     {
 
         private SceneControllerConfig m_Config;
+
+        private IScene m_SceneCore;
         
         private ISignal m_SignalSceneActivate;
         
         
         public bool IsConfigured { get; private set; }
         public bool IsInitialized {get; protected set; }
+
+        public IScene SceneActive { get; private set; }
 
         public event Action Configured;
         public event Action Initialized;
@@ -25,10 +29,9 @@ namespace APP.Scene
         public event Action<IScene> SceneLoaded;
         public event Action<IScene> SceneActivated;
         
-        
-        public SceneControllerDefault(params object[] param) => Configure(param);
         public SceneControllerDefault() { }
-
+        public SceneControllerDefault(params object[] param) => Configure(param);
+        
         // CONFIGURE //
         public virtual void Configure (params object[] param)
         {
@@ -45,6 +48,9 @@ namespace APP.Scene
                     if (obj is IConfig)
                     {
                         m_Config = (SceneControllerConfig) obj;
+
+                        m_SceneCore = m_Config.SceneCore;
+
                         Send($"{obj.GetName()} setup.");
                     }
                 }
@@ -107,43 +113,54 @@ namespace APP.Scene
         public async Task<ITaskResult> SceneLoad(IScene scene)
         {
             if (scene == null)
-                return new TaskResult(false, Send($"{scene.GetType().Name} not found!", LogFormat.Worning));
+                return new TaskResult(false, Send($"{scene.GetName()} not found!", LogFormat.Worning));
 
             if (scene.IsLoaded == true)
-                return new TaskResult(true, Send($"{scene.GetType().Name} is already loaded!"));
+                return new TaskResult(true, Send($"{scene.GetName()} is already loaded!"));
 
             
-
-            
-
-            
-            var sceneLoadingTaskResult = await scene.Load();
-            if(sceneLoadingTaskResult.Status == false)
-                return new TaskResult(false, sceneLoadingTaskResult.Message);
+            var sceneTargetLoadTaskResult = await scene.Load();
+            if(sceneTargetLoadTaskResult.Status == false)
+                return new TaskResult(false, sceneTargetLoadTaskResult.Message);
 
             
             SceneLoaded?.Invoke(scene);
-            return new TaskResult(true, Send($"{scene.GetType().Name} was loaded!"));
+            return new TaskResult(true, Send($"{scene.GetName()} was loaded!"));
         }
 
-        public async Task<ITaskResult> SceneActivate(IScene scene, IScreen screen, bool animate)
+        public async Task<ITaskResult> SceneActivate(IScene scene, bool animate)
         {
             if (scene == null)
-                return new TaskResult(false, Send($"{scene.GetType().Name} not found!", LogFormat.Worning));
+                return new TaskResult(false, Send($"{scene.GetName()} not found!", LogFormat.Worning));
 
+            if (scene.IsLoaded == false)
+                return new TaskResult(false, Send($"{scene.GetName()} is not loaded.", LogFormat.Worning));
+            
             if (scene.IsActivated == true)
-                return new TaskResult(true, Send($"{scene.GetType().Name} is already activated!"));
+                return new TaskResult(true, Send($"{scene.GetName()} is already activated.", LogFormat.Worning));
             
-            var uSceneActivationTaskResult = await USceneHandler.USceneActivate(scene.Index);
-            if(uSceneActivationTaskResult.Status == false)
-                return new TaskResult(false, uSceneActivationTaskResult.Message);
-            
-            var sceneActivationTaskResult = await scene.Activate(animate);
-            if(sceneActivationTaskResult.Status == false)
-                return new TaskResult(false, sceneActivationTaskResult.Message);
+            if (SceneActive != null && SceneActive != scene)
+            {
+                var sceneActiveDeactivateTaskResult = await SceneActive.Deactivate();
+                if (sceneActiveDeactivateTaskResult.Status == false)
+                    return new TaskResult(false, Send(sceneActiveDeactivateTaskResult.Message));
+            }
 
-            SceneActivated?.Invoke(scene);
-            return new TaskResult(true, Send($"{scene.GetType().Name} was activated!"));
+                
+            if(SceneActive == scene)
+                return new TaskResult(true, Send($"{scene.GetName()} was activated."));
+
+            var sceneTargetActivateTaskResult = await scene.Activate(animate);
+            if (sceneTargetActivateTaskResult.Status == false)
+                return new TaskResult(false, Send(sceneTargetActivateTaskResult.Message));
+
+            var sceneCoreDeactivateTaskResult = await m_SceneCore.Deactivate();
+            if (sceneCoreDeactivateTaskResult.Status == false)
+                return new TaskResult(false, Send(sceneCoreDeactivateTaskResult.Message));
+    
+            SceneActive = scene;
+
+            return new TaskResult(true, Send($"{scene.GetName()} was activated."));
         }
 
 
@@ -165,14 +182,11 @@ namespace APP.Scene
             
         }
 
-
-
-
     }
 
     public struct SceneControllerConfig : IConfig
     {
-
+        public IScene SceneCore { get; internal set; }
     }
 
 
@@ -183,6 +197,6 @@ namespace APP
     public interface ISceneController : IController, IConfigurable, ISubscriber, IMessager
     {
         Task<ITaskResult> SceneLoad(IScene scene);
-        Task<ITaskResult> SceneActivate(IScene scene, IScreen screen, bool animate);
+        Task<ITaskResult> SceneActivate(IScene scene, bool animate);
     }
 }

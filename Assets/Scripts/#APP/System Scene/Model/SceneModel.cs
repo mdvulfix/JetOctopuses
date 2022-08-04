@@ -241,7 +241,7 @@ namespace APP.Scene
 
         public async Task<ITaskResult> Unload()
         {
-            if (IsLoaded != true)
+            if (IsLoaded == false)
                 return new TaskResult(true, Send("The instance was already unloaded. The current unloading has been aborted!", LogFormat.Worning));
 
 
@@ -271,6 +271,7 @@ namespace APP.Scene
             Loaded?.Invoke();
             return new TaskResult(true, Send("The instance was loaded."));
         }
+
 
         // SCREEN //
         public async Task<ITaskResult> ScreenLoad(IScreen screen) =>
@@ -397,6 +398,8 @@ namespace APP
 
         Task<ITaskResult> Load();
         Task<ITaskResult> Activate(bool animate = true);
+        Task<ITaskResult> Deactivate();
+        Task<ITaskResult> Unload();
 
     }
 

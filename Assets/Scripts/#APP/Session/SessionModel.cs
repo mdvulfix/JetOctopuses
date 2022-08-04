@@ -157,7 +157,7 @@ namespace APP
         //protected virtual void StateUpdate(IState state) { }
 
         public async Task SceneActivate(IScene scene, IScreen screen, bool animate = true) =>
-            await m_SceneController.SceneActivate(scene, screen, animate);
+            await m_SceneController.SceneActivate(scene, animate);
 
 
 
