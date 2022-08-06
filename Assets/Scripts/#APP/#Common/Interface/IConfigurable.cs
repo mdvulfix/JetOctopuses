@@ -11,7 +11,7 @@ namespace APP
         bool IsConfigured {get; } 
         bool IsInitialized {get; }
         
-        void Configure(params object[] param);
+        void Configure(params object[] args);
         void Init();
 
     }
