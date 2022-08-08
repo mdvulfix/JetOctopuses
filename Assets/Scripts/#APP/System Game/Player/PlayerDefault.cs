@@ -6,11 +6,13 @@ using APP.Behaviour;
 
 namespace APP.Player
 {
-    public class PlayerDefault : PlayerModel<PlayerDefault>
+    public class PlayerDefault : PlayerModel<PlayerDefault>, IPlayer
     {
         [SerializeField] private int m_Health;
 
     }
+
+
 
     [RequireComponent(typeof(Rigidbody2D))]
     public abstract class PlayerModel<TPlayer> : MonoBehaviour
@@ -164,6 +166,11 @@ namespace APP.Behaviour
 
 namespace APP
 {
+    public interface IPlayer
+    {
+
+    }
+    
     public interface IBehaviour
     {
         void Do();
