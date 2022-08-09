@@ -12,7 +12,17 @@ namespace APP.Camera
         private CameraConfig m_Config;
 
 
-        private Vector3 m_Position;
+        [SerializeField] private Vector3 m_Position;
+        [SerializeField] private Vector3 m_PositionOffset;
+
+        [SerializeField] private Vector3 m_MoveVelocity;
+        [SerializeField] private float m_MoveSpeed;
+        [SerializeField] private float m_MoveTime;
+
+        [SerializeField] private float m_ZoomMin;
+        [SerializeField] private float m_ZoomMax;
+        [SerializeField] private float m_ZoomSpeed;
+
         private int m_FieldOfView = 40;
         private bool m_Orthographic = true;
         private Color m_BackgroundColor = Color.blue;
@@ -32,6 +42,7 @@ namespace APP.Camera
         public event Action Disposed;
 
         public Func<Vector3> GetPositionFunc;
+        public Func<float> GetZoomFunc;
 
         public void Configure (params object[] param)
         {
@@ -64,10 +75,20 @@ namespace APP.Camera
             m_Position.z = transform.position.z;
             transform.position = m_Position;
 
+            m_MoveVelocity = Vector3.zero;
+            m_MoveSpeed = 100f;
+            m_MoveTime = 0.5f;
+
+            m_ZoomMin = 2f;
+            m_ZoomMax = 10f;
+            m_ZoomSpeed = 1f;
+
             //var objCamera = GameObjectHandler.CreateGameObject ("PlayerCamera");
             //objCamera.SetActive (true);
             //UCamera = GameObjectHandler.SetComponent<UCamera> (objCamera);
 
+            UCamera = GetComponent<UCamera>();
+            UCamera.orthographicSize = m_ZoomMin;
             //UCamera.clearFlags = CameraClearFlags.SolidColor;
             //UCamera.backgroundColor = m_BackgroundColor;
             //UCamera.orthographic = m_Orthographic;
@@ -86,7 +107,8 @@ namespace APP.Camera
 
         private void Update() 
         {
-            Move();
+            HandleMove();
+            HandleZoom();
         }
 
         public void Follow(Func<Vector3> getPositionFunc) 
@@ -94,14 +116,37 @@ namespace APP.Camera
             GetPositionFunc = getPositionFunc;
         }
 
-        public void Move() 
+        public void Zoom(Func<float> getZoomFunc) 
         {
-            m_Position = GetPositionFunc();
-            m_Position.z = transform.position.z;
-            transform.position = m_Position;
+            GetZoomFunc = getZoomFunc;
         }
 
 
+
+        public void HandleMove() 
+        {
+            var targetPosition = GetPositionFunc();
+            var cameraPosition =  targetPosition + m_PositionOffset;
+            m_Position = Vector3.SmoothDamp(transform.position, cameraPosition, ref m_MoveVelocity, m_MoveTime, m_MoveSpeed * Time.deltaTime);
+
+            transform.position = m_Position;
+            //transform.LookAt(targetPosition);
+        }
+
+        public void HandleZoom() 
+        {
+            var zoomTarget = GetZoomFunc();
+            
+            if(zoomTarget < m_ZoomMin)
+                zoomTarget = m_ZoomMin;
+            else if(zoomTarget > m_ZoomMax)
+                zoomTarget = m_ZoomMax;
+            
+            var zoomDifference = zoomTarget - UCamera.orthographicSize;
+            UCamera.orthographicSize += zoomDifference * m_ZoomSpeed * Time.deltaTime;
+
+
+        }
 
     }
 

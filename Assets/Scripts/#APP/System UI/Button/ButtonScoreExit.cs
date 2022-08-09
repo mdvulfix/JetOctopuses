@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using APP.Player;
 
 namespace APP.UI
 {
