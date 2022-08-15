@@ -8,10 +8,8 @@ namespace APP.Game
     [RequireComponent(typeof(Rigidbody2D))]
     public abstract class EnemyModel<TEnemy> : MonoBehaviour
     {
-
         [SerializeField] private float m_Energy;
         [SerializeField] private float m_EnergyMin;
-
 
         private List<IFood> m_Food;
 
@@ -25,26 +23,25 @@ namespace APP.Game
 
         public virtual void Damage() { }
         
-
-        private IBehaviour m_Move;
-        private IBehaviour m_Eat;
-        private IBehaviour m_Chase;
-        private IBehaviour m_Attack;
-        private IBehaviour m_Roam;
+        private IBehaviour m_MoveBehaviour;
+        private IBehaviour m_EatBehaviour;
+        private IBehaviour m_ChaseBehaviour;
+        private IAttackBehaviour m_AttackBehaviour;
+        private IBehaviour m_RoamBehaviour;
 
 
         public virtual void Eat() =>
-            m_Eat.Do();
+            m_EatBehaviour.Do();
 
         public virtual void Chase() =>
-            m_Chase.Do();
+            m_ChaseBehaviour.Do();
 
         public virtual void Attack() =>
-            m_Attack.Do();
+            m_AttackBehaviour.Do();
 
         public virtual void Roam()
         {
-            m_Move.Do();
+            m_RoamBehaviour.Do();
             CalculateEnergy();
         }
 
@@ -52,8 +49,6 @@ namespace APP.Game
         {
             Dead?.Invoke();
         }
-
-
 
 
         private void CalculateEnergy()
@@ -84,13 +79,28 @@ namespace APP.Game
             var roamDistance = 4;
             var roamStartPosition = transform.position;
 
-            m_Move = new BehaviourMoveDefaultAI(rigidbody, moveSpeed, roamStartPosition, roamDistance);
-            m_Eat = new BehaviourEatDefaultAI();
-            m_Chase = new BehaviourChaseDefaultAI();
-            m_Attack = new BehaviourAttackDefaultAI();
+            m_MoveBehaviour = new BehaviourMoveAI(rigidbody, moveSpeed, roamStartPosition, roamDistance);
+            m_EatBehaviour = new BehaviourEatAI();
+            m_ChaseBehaviour= new BehaviourChaseAI();
+            //m_AttackBehaviour = new BehaviourAttackAI();
 
             m_StateActive = EnemyState.Roam;
         }
+
+        private void OnEnable() 
+        {
+            m_AttackBehaviour.EnemyAttacked += OnEnemyAttack;
+            m_AttackBehaviour.EnergyWasted += OnEnergyWasted;
+        }
+
+        private void OnDisable() 
+        {
+            m_AttackBehaviour.EnemyAttacked -= OnEnemyAttack;
+            m_AttackBehaviour.EnergyWasted -= OnEnergyWasted;
+        }
+
+
+
 
         private void FixedUpdate()
         {
@@ -127,6 +137,18 @@ namespace APP.Game
             }
 
         }
+
+
+        private void OnEnemyAttack(float damage, IEnemy enemy)
+        { 
+
+        }
+
+        private void OnEnergyWasted(float energy)
+        { 
+
+        }
+
     }
 
     

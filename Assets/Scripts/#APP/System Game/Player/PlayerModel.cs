@@ -1,31 +1,52 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace APP.Game
 {
-    [RequireComponent(typeof(Rigidbody2D))]
     public abstract class PlayerModel<TPlayer> : MonoBehaviour
     {
         public int Health { get; private set; }
         public int Energy { get; private set; }
         public int Score { get; private set; }
 
-        public Rigidbody2D Rigidbody { get; private set; }
+        
+        [Header("Player components")]
+        [SerializeField] private Rigidbody2D m_PlayerBody;
+        [SerializeField] private ControlZone m_PlayerVision;
+        [SerializeField] private ControlZone m_PlayerAttackZone;
+        [SerializeField] private ControlZone m_PlayerEatZone;
 
-        private IBehaviour m_Move;
-        private IBehaviour m_Eat;
+        private IBehaviour m_MoveBehaviour;
+        private IBehaviour m_EatBehaviour;
+        private IBehaviour m_AttackBehaviour;
 
+        private List<IEntity> m_EntiesInEatRange;
+        private List<IEntity> m_EntiesInAttackRange;
+        private List<IEntity> m_EntiesInVisionkRange;
+
+        
         public void Move() =>
-            m_Move.Do();
+            m_MoveBehaviour.Do();
 
         public void Eat() =>
-            m_Eat.Do();
+            m_EatBehaviour.Do();
 
-        private void Start()
+        public void Attack() =>
+            m_AttackBehaviour.Do();
+     
+        private void Awake()
         {
-            Rigidbody = GetComponent<Rigidbody2D>();
-            m_Move = new BehaviourMoveDefault(Rigidbody, 2);
-            m_Eat = new BehaviourEatDefault();
+
+            m_MoveBehaviour = new BehaviourMovePlayer(m_PlayerBody, 2);
+
+  
+            m_EntiesInEatRange = new List<IEntity>();
+            m_EatBehaviour = new BehaviourEatPlayer(m_EntiesInEatRange);
+
+            m_EntiesInAttackRange = new List<IEntity>();
+            m_EatBehaviour = new BehaviourAttackPlayer(m_EntiesInAttackRange);
+        
         }
 
         private void FixedUpdate()
@@ -38,15 +59,10 @@ namespace APP.Game
 
 }
 
-namespace APP.Behaviour
-{
-
-
-}
 
 namespace APP
 {
-    public interface IPlayer
+    public interface IPlayer: IEntity
     {
 
     }

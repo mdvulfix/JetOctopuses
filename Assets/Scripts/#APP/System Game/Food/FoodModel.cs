@@ -20,7 +20,7 @@ namespace APP.Game
 
 namespace APP
 {
-    public interface IFood
+    public interface IFood: IEntity
     {
         float Energy { get; }
     }
