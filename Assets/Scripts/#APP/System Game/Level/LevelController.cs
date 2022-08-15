@@ -1,8 +1,9 @@
-
-using APP.Camera;
 using System.Collections.Generic;
 using UnityEngine;
 using URandom = UnityEngine.Random;
+
+using APP.Camera;
+using APP.Game.Map;
 
 namespace APP.Game
 {
@@ -65,8 +66,8 @@ namespace APP.Game
             SpawnFood(foodQuantity);
 
             
-            m_CameraZoom = 2f;
-            m_CameraZoomSensitivity = 1f;
+            m_CameraZoom = 5f;
+            m_CameraZoomSensitivity = 10f;
 
             var position = new Vector2(0, 0);
             var fieldOfView = 40;
@@ -83,7 +84,7 @@ namespace APP.Game
 
             //var zoomDelta = 2f + Input.mouseScrollDelta.y;
             // constrain zoom
-            m_CameraZoom = Mathf.Clamp(m_CameraZoom, 2f, 10f);
+            m_CameraZoom = Mathf.Clamp(m_CameraZoom, 5f, 15f);
             // apply zoom to field of view
 
         }

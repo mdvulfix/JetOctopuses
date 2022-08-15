@@ -76,11 +76,11 @@ namespace APP.Camera
             transform.position = m_Position;
 
             m_MoveVelocity = Vector3.zero;
-            m_MoveSpeed = 100f;
-            m_MoveTime = 0.5f;
+            m_MoveSpeed = 1000f;
+            m_MoveTime = 1f;
 
-            m_ZoomMin = 2f;
-            m_ZoomMax = 10f;
+            m_ZoomMin = 5f;
+            m_ZoomMax = 15f;
             m_ZoomSpeed = 1f;
 
             //var objCamera = GameObjectHandler.CreateGameObject ("PlayerCamera");
@@ -125,9 +125,13 @@ namespace APP.Camera
 
         public void HandleMove() 
         {
-            var targetPosition = GetPositionFunc();
-            var cameraPosition =  targetPosition + m_PositionOffset;
-            m_Position = Vector3.SmoothDamp(transform.position, cameraPosition, ref m_MoveVelocity, m_MoveTime, m_MoveSpeed * Time.deltaTime);
+            var currentPosition = transform.position;
+            var newPosition = GetPositionFunc();
+            var finalPosition =  newPosition + m_PositionOffset;
+            if(Vector3.Distance(currentPosition, finalPosition) >= 10f)
+                m_Position = finalPosition;
+            else
+                m_Position = Vector3.SmoothDamp(currentPosition, finalPosition, ref m_MoveVelocity, m_MoveTime, m_MoveSpeed * Time.deltaTime);
 
             transform.position = m_Position;
             //transform.LookAt(targetPosition);

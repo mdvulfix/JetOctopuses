@@ -18,6 +18,7 @@ namespace APP.Game
         public string Name { get; private set; }
         public float Health { get; private set; }
         public float Energy => m_Energy;
+        public Vector3 Position => transform.position; 
 
         public event Action Dead;
 
@@ -41,7 +42,7 @@ namespace APP.Game
 
         public virtual void Roam()
         {
-            m_RoamBehaviour.Do();
+            m_MoveBehaviour.Do();
             CalculateEnergy();
         }
 
@@ -51,6 +52,14 @@ namespace APP.Game
         }
 
 
+        public void SetPosition(Vector3 position) => 
+            transform.position = position;
+        
+        
+        
+        
+        
+        
         private void CalculateEnergy()
         {
             m_Energy -= Time.deltaTime;
@@ -82,20 +91,20 @@ namespace APP.Game
             m_MoveBehaviour = new BehaviourMoveAI(rigidbody, moveSpeed, roamStartPosition, roamDistance);
             m_EatBehaviour = new BehaviourEatAI();
             m_ChaseBehaviour= new BehaviourChaseAI();
-            //m_AttackBehaviour = new BehaviourAttackAI();
+            m_AttackBehaviour = new BehaviourAttackAI();
 
             m_StateActive = EnemyState.Roam;
         }
 
         private void OnEnable() 
         {
-            m_AttackBehaviour.EnemyAttacked += OnEnemyAttack;
+            m_AttackBehaviour.EntityAttacked += OnEntityAttack;
             m_AttackBehaviour.EnergyWasted += OnEnergyWasted;
         }
 
         private void OnDisable() 
         {
-            m_AttackBehaviour.EnemyAttacked -= OnEnemyAttack;
+            m_AttackBehaviour.EntityAttacked -= OnEntityAttack;
             m_AttackBehaviour.EnergyWasted -= OnEnergyWasted;
         }
 
@@ -139,7 +148,7 @@ namespace APP.Game
         }
 
 
-        private void OnEnemyAttack(float damage, IEnemy enemy)
+        private void OnEntityAttack(float damage, IEntity enemy)
         { 
 
         }
@@ -167,7 +176,7 @@ namespace APP.Game
 
 namespace APP
 {
-    public interface IEnemy
+    public interface IEnemy: IEntity
     {
         string Name { get; }
         

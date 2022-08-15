@@ -1,39 +1,57 @@
 using System;
 using UnityEngine;
 
-namespace APP.Game
+namespace APP.Game.Map
 {
     public class MapDefault : MapModel<MapDefault>, IMap
     {
-        public MapDefault () { }
-        public MapDefault (params object[] args) => Configure (args);
+        [SerializeField] private MapBoundary m_BoundaryTop;
+        [SerializeField] private MapBoundary m_BoundaryBottom;
+        [SerializeField] private MapBoundary m_BoundaryLeft;
+        [SerializeField] private MapBoundary m_BoundaryRight;
+        
+        
+        public MapDefault() { }
+        public MapDefault(params object[] args) => Configure(args);
 
-        public override void Configure (params object[] args)
+        public override void Configure(params object[] args)
         {
-            var hight = 25;
-            var width = 25;
-            var config = new MapConfig (hight, width);
+            var width = 250;
+            var hight = 100;
+            
 
-            base.Configure (config);
+            var boundaries = new MapBoundary[4]
+            {
+                m_BoundaryTop,
+                m_BoundaryBottom,
+                m_BoundaryLeft,
+                m_BoundaryRight
+            };
+
+            var config = new MapConfig(hight, width, boundaries);
+            base.Configure(config);
         }
 
     }
 
     public class MapModel<TMap> : MonoBehaviour, IConfigurable
     {
+        
+        [SerializeField] private MapUI m_MapUI;
+        
         [SerializeField] private int m_Hight;
         [SerializeField] private int m_Width;
 
-        private MapConfig m_Config;
-
-        private BoxCollider2D m_Collider;
-
-        [SerializeField] private float m_BoundaryTop;
-        [SerializeField] private float m_BoundaryBottom;
-        [SerializeField] private float m_BoundaryLeft;
-        [SerializeField] private float m_BoundaryRight;
+        [SerializeField] private float m_BoundarySizeTop;
+        [SerializeField] private float m_BoundarySizeBottom;
+        [SerializeField] private float m_BoundarySizeLeft;
+        [SerializeField] private float m_BoundarySizeRight;
         [SerializeField] private float m_BoundaryHightOffset;
         [SerializeField] private float m_BoundaryWidthOffset;
+
+
+        private MapConfig m_Config;
+        private IBoundary[] m_Boundaries;
 
         public bool IsConfigured { get; private set; }
         public bool IsInitialized { get; private set; }
@@ -45,107 +63,106 @@ namespace APP.Game
         public event Action Initialized;
         public event Action Disposed;
 
-        public event Action<Collider2D> LeftBoundaryReached;
-        public event Action<Collider2D> RightBoundaryReached;
-        public event Action<Collider2D> TopBoundaryReached;
-        public event Action<Collider2D> BottomBoundaryReached;
+        public event Action<IEntity> LeftBoundaryReached;
+        public event Action<IEntity> RightBoundaryReached;
+        public event Action<IEntity> TopBoundaryReached;
+        public event Action<IEntity> BottomBoundaryReached;
 
-        public virtual void Configure (params object[] args)
+        public virtual void Configure(params object[] args)
         {
             m_Config = (MapConfig) args[0];
             m_Hight = m_Config.Hight;
             m_Width = m_Config.Width;
+            m_Boundaries = m_Config.Boundaries;
 
             m_BoundaryHightOffset = -2;
-            m_BoundaryWidthOffset = 0;
+            m_BoundaryWidthOffset = -2;
 
-            m_Collider = gameObject.AddComponent<BoxCollider2D> ();
-            m_Collider.isTrigger = true;
-            m_Collider.size = new Vector2 (m_Width - 1, m_Hight - 5);
-            m_Collider.offset = new Vector2 (m_BoundaryWidthOffset, m_BoundaryHightOffset);
-
-            m_BoundaryTop = m_Collider.size.y / 2 + m_Collider.offset.y;
-            m_BoundaryBottom = -(m_Collider.size.y / 2) + m_Collider.offset.y;
-            m_BoundaryLeft = -(m_Collider.size.x / 2) + m_Collider.offset.x;
-            m_BoundaryRight = m_Collider.size.x / 2 + m_Collider.offset.x;
+            m_BoundarySizeTop = m_Hight / 2 + m_BoundaryHightOffset;
+            m_BoundarySizeBottom = -m_Hight / 2 + m_BoundaryHightOffset;
+            m_BoundarySizeLeft = - m_Width / 2 - m_BoundaryWidthOffset;
+            m_BoundarySizeRight = m_Width / 2 + m_BoundaryWidthOffset;
 
         }
 
-        public void Init ()
+        public void Init()
         {
-
+            foreach (var boundary in m_Boundaries)
+                boundary.EntityEntered += OnBoundaryEnter;
         }
 
-        public void Dispose ()
+        public void Dispose()
         {
-
+            foreach (var boundary in m_Boundaries)
+                boundary.EntityEntered -= OnBoundaryEnter;
         }
 
         public float[] GetBoundaries()
         {
-            return new float[4] { m_BoundaryTop, m_BoundaryBottom, m_BoundaryLeft, m_BoundaryRight };
+            return new float[4] { m_BoundarySizeTop, m_BoundarySizeBottom, m_BoundarySizeLeft, m_BoundarySizeRight };
         }
 
+        
 
-        private void Awake ()
+        private void OnBoundaryEnter(IBoundary mapBoundary, IEntity entity)
         {
-            Configure ();
+            //Debug.Log($"{entity.GetName()} entered {mapBoundary.Index.GetName()}");
 
+            switch (mapBoundary.Index)
+            {
+                default : break;
+
+                case BoundaryIndex.Top:
+                        entity.SetPosition(new Vector3(entity.Position.x, m_BoundarySizeTop, entity.Position.z));
+                    TopBoundaryReached?.Invoke(entity);
+                    break;
+
+                case BoundaryIndex.Bottom:
+                        entity.SetPosition(new Vector3(entity.Position.x, m_BoundarySizeBottom, entity.Position.z));
+                    BottomBoundaryReached?.Invoke(entity);
+                    break;
+
+                case BoundaryIndex.Left:
+                        entity.SetPosition(new Vector3(m_BoundarySizeRight, entity.Position.y, entity.Position.z));
+                    LeftBoundaryReached?.Invoke(entity);
+                    break;
+
+                case BoundaryIndex.Right:
+                        entity.SetPosition(new Vector3(m_BoundarySizeLeft, entity.Position.y, entity.Position.z));
+                    RightBoundaryReached?.Invoke(entity);
+                    break;
+            }
         }
 
-        private void FixedUpdate ()
+        // UNITY //       
+        private void Awake() =>
+            Configure();
+
+        private void OnEnable() =>
+            Init();
+
+        private void OnDisable() =>
+            Dispose();
+
+        private void Update()
         {
-            OnTriggerExit2D (m_Collider);
-
+            m_MapUI.SetSize(m_Width, m_Hight);
         }
-
-        private void OnTriggerExit2D (Collider2D collider)
-        {
-
-            //Debug.Log ($"Position: {collider.transform.position}");
-
-            if (collider.transform.position.x >= m_BoundaryRight)
-            {
-                collider.transform.position = new Vector3 (m_BoundaryLeft, collider.transform.position.y, collider.transform.position.z);
-                RightBoundaryReached?.Invoke(collider);
-                //Debug.Log ($"Position (new): {collider.transform.position}");
-            }
-            else if (collider.transform.position.x <= m_BoundaryLeft)
-            {
-                collider.transform.position = new Vector3 (m_BoundaryRight, collider.transform.position.y, collider.transform.position.z);
-                LeftBoundaryReached?.Invoke(collider);
-               // Debug.Log ($"Position (new): {collider.transform.position}");
-            }
-            else if (collider.transform.position.y >= m_BoundaryTop)
-            {
-                collider.transform.position = new Vector3 (collider.transform.position.x, m_BoundaryTop, collider.transform.position.z);
-                TopBoundaryReached?.Invoke(collider);
-               // Debug.Log ($"Position (new): {collider.transform.position}");
-            }
-            else if (collider.transform.position.y <= m_BoundaryBottom)
-            {
-                collider.transform.position = new Vector3 (collider.transform.position.x, m_BoundaryBottom, collider.transform.position.z);
-                BottomBoundaryReached?.Invoke(collider);
-               //Debug.Log ($"Position (new): {collider.transform.position}");
-            }
-
-            //var freezY = collider.transform.position.y;
-
-            //collider.transform.position = new Vector3(position.x, freezY, position.z);
-
-        }
-
+    
+    
     }
 
     public struct MapConfig : IConfig
     {
         public int Hight { get; private set; }
         public int Width { get; private set; }
+        public IBoundary[] Boundaries { get; private set; }
 
-        public MapConfig (int hight, int width)
+        public MapConfig(int hight, int width, IBoundary[] boundaries)
         {
             Hight = hight;
             Width = width;
+            Boundaries = boundaries;
         }
     }
 

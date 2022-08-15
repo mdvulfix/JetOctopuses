@@ -14,14 +14,14 @@ namespace APP.Game
     public class BehaviourMovePlayer : BehaviourModel<BehaviourMovePlayer>, IBehaviour
     {
         public BehaviourMovePlayer() { }
-        public BehaviourMovePlayer(Rigidbody2D rigidbody, int speed)
+        public BehaviourMovePlayer(Rigidbody2D rigidbody, float speed)
         {
             Speed = speed;
             Rigidbody = rigidbody;
         }
 
         
-        public int Speed { get; private set; }
+        public float Speed { get; private set; }
         public Rigidbody2D Rigidbody { get; private set; }
 
         public event Action<float> EnergyWasted;
@@ -186,7 +186,7 @@ namespace APP.Game
     public class BehaviourAttackPlayer : BehaviourModel<BehaviourAttackPlayer>, IAttackBehaviour
     {
         public event Action<float> EnergyWasted;
-        public event Action<float, IEnemy> EnemyAttacked;
+        public event Action<float, IEntity> EntityAttacked;
 
         private IEnumerable m_EnemyFound;
 
@@ -210,15 +210,16 @@ namespace APP.Game
         private void Attack(IEnemy enemy)
         {
             EnergyWasted?.Invoke(m_EnergyCost);
-            EnemyAttacked?.Invoke(m_Damage, enemy);
+            EntityAttacked?.Invoke(m_Damage, enemy);
         }
 
     }
     
-    public class BehaviourAttackAI : BehaviourModel<BehaviourAttackAI>, IBehaviour
+    public class BehaviourAttackAI : BehaviourModel<BehaviourAttackAI>, IAttackBehaviour
     {
         public event Action<float> EnergyWasted;
-        
+        public event Action<float, IEntity> EntityAttacked;
+
         public override void Do()
         {
 
@@ -241,7 +242,7 @@ namespace APP
 
     public interface IAttackBehaviour: IBehaviour
     {
-        event Action<float, IEnemy> EnemyAttacked; 
+        event Action<float, IEntity> EntityAttacked; 
     }
 
 }
