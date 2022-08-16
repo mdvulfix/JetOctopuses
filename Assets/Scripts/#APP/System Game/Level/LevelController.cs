@@ -109,17 +109,9 @@ namespace APP.Game
                 m_Enemy.Add(m_EnemySpawner.Spawn(GetRendomPosition()));
         }
 
-        private Vector3 GetRendomPosition()
-        {
-            var boundaries = m_Map.GetBoundaries();
-            var topBoundary = boundaries[0];
-            var bottomBoundary = boundaries[1];
-            var leftBoundary = boundaries[2];
-            var rightBoundary = boundaries[3];
+        private Vector3 GetRendomPosition() =>
+            new Vector3(URandom.Range(-Map.Width/2, Map.Width/2 +1), URandom.Range(-Map.HightWater/2, Map.HightWater/2 +1), 0);
 
-            return new Vector3(URandom.Range(leftBoundary, rightBoundary), URandom.Range(topBoundary, bottomBoundary), 0);
-
-        }
     
         private void OnBoundaryReached(Collider2D collider)
         {

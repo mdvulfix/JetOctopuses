@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using URandom = UnityEngine.Random;
 
@@ -120,34 +121,47 @@ namespace APP.Game
 
     }
  
-    public class BehaviourEatPlayer : BehaviourModel<BehaviourEatPlayer>, IBehaviour
+    public class BehaviourEatPlayer : BehaviourModel<BehaviourEatPlayer>, IEatBehaviour
     {
-        private IEnumerable m_FoodRevealed;
+        
+        private float m_EnergyCost = 2; 
+        private IEnumerable m_FoodReceived;
 
         public BehaviourEatPlayer(IEnumerable food)
         {
-            m_FoodRevealed = food;
+            m_FoodReceived = food;
         }
 
         public event Action<float> EnergyReceived;
         public event Action<float> EnergyWasted;
+        public event Action<IFood> FoodWasConsumed;
+        
 
         public override void Do()
         {
-            foreach (var food in m_FoodRevealed)
+            foreach (var food in m_FoodReceived)
             {
                 if(food is IFood)
+                {
                     Eat((IFood)food);
+                    break;
+                }
+                    
             }
         }
 
         private void Eat(IFood food)
         {
             EnergyReceived?.Invoke(food.Energy);
+            EnergyWasted?.Invoke(m_EnergyCost);
+            FoodWasConsumed?.Invoke(food);
+            Debug.Log($"{food.GetName()} was consumed");
         }
 
     }
-    
+
+
+
     public class BehaviourEatAI : BehaviourModel<BehaviourEatAI>, IBehaviour
     {
         
@@ -190,7 +204,7 @@ namespace APP.Game
 
         private IEnumerable m_EnemyFound;
 
-        private float m_EnergyCost = 10f;
+        private float m_EnergyCost = 10;
         private float m_Damage = 25;
 
         public BehaviourAttackPlayer(IEnumerable enemy)
@@ -243,6 +257,12 @@ namespace APP
     public interface IAttackBehaviour: IBehaviour
     {
         event Action<float, IEntity> EntityAttacked; 
+    }
+
+    public interface IEatBehaviour: IBehaviour
+    {
+        event Action<float> EnergyReceived;
+        event Action<IFood> FoodWasConsumed;
     }
 
 }

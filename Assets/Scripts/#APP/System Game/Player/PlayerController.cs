@@ -2,17 +2,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+namespace APP.Game
 {
-    // Start is called before the first frame update
-    void Start()
+    public class PlayerController : MonoBehaviour
     {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+        [SerializeField] private PlayerDefault m_Player;
+
+        private void Update()
+        {
+            if(Input.GetKeyUp(KeyCode.Space))
+                m_Player.Eat();
+        }
+
+        private void FixedUpdate()
+        {
+            m_Player.Move();
+        }
+
+
+
+
     }
 }
