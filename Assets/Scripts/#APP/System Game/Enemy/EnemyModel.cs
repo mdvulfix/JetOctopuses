@@ -6,161 +6,377 @@ namespace APP.Game
 {
 
     [RequireComponent(typeof(Rigidbody2D))]
+    [RequireComponent(typeof(Collider2D))]
+    [RequireComponent(typeof(Transform))]
     public abstract class EnemyModel<TEnemy> : MonoBehaviour
     {
+        [Header("UI")]
+        [SerializeField] private EnemyUI m_UI;
+
+        [Header("Components")]
+        [SerializeField] private ControlZone m_Vision;
+        [SerializeField] private ControlZone m_AttackZone;
+        [SerializeField] private ControlZone m_EatZone;
+
+        [Header("Stats")]
+        [SerializeField] private float m_Health;
+        [SerializeField] private float m_HealthMax = 100;
+
         [SerializeField] private float m_Energy;
-        [SerializeField] private float m_EnergyMin;
+        [SerializeField] private float m_EnergyMax = 100;
+        [SerializeField] private float m_EnergyMin = 25;
 
-        private List<IFood> m_Food;
+        [SerializeField] private float m_Speed;
+        [SerializeField] private float m_LowEnergySpeedModifier = 0.25f;
+        [SerializeField] private float m_LowEnergyRoamDistanseModifier = 0.15f;
 
-        private EnemyState m_StateActive;
+        [Header("State")]
+        [SerializeField] private EnemyState m_StateActive;
 
-        public string Name { get; private set; }
-        public float Health { get; private set; }
+        private EnemyConfig m_Config;
+        private IEnemy m_Enemy;
+        
+        private Rigidbody2D m_Rigidbody;
+        private Collider2D m_Collider;
+        private Transform m_Transform;
+
+        private IMoveBehaviour m_Move;
+        private IEatBehaviour m_Eat;
+        private IChaseBehaviour m_Chase;
+        private IAttackBehaviour m_Attack;
+
+        private List<IEntity> m_EntiesInEatRange;
+        private List<IEntity> m_EntiesInAttackRange;
+        private List<IEntity> m_EntiesInVisionkRange;
+        
+
+        public float Health => m_Health;
         public float Energy => m_Energy;
-        public Vector3 Position => transform.position; 
+        public Vector3 Position => transform.position;
 
-        public event Action Dead;
+        public event Action<IEntity> Dead;
 
-        public virtual void Damage() { }
-        
-        private IBehaviour m_MoveBehaviour;
-        private IBehaviour m_EatBehaviour;
-        private IBehaviour m_ChaseBehaviour;
-        private IAttackBehaviour m_AttackBehaviour;
-        private IBehaviour m_RoamBehaviour;
-
-
-        public virtual void Eat() =>
-            m_EatBehaviour.Do();
-
-        public virtual void Chase() =>
-            m_ChaseBehaviour.Do();
-
-        public virtual void Attack() =>
-            m_AttackBehaviour.Do();
-
-        public virtual void Roam()
+        public virtual void Configure(params object[] args)
         {
-            m_MoveBehaviour.Do();
-            CalculateEnergy();
-        }
+            if(args.Length > 0)
+            {
+                foreach (var arg in args)
+                {
+                    if(arg is EnemyConfig)
+                    {
+                        m_Config = (EnemyConfig) args[0];
+                        m_Enemy = m_Config.Enemy;
+                    }
 
-        public virtual void Die() 
-        {
-            Dead?.Invoke();
-        }
-
-
-        public void SetPosition(Vector3 position) => 
-            transform.position = position;
-        
-        
-        
-        
-        
-        
-        private void CalculateEnergy()
-        {
-            m_Energy -= Time.deltaTime;
-            
-            if(m_Energy <= m_EnergyMin)
-                m_StateActive = EnemyState.Eat;
-            
-            if (m_Energy <= 0)
-            { 
-                m_Energy = 0;
-                m_StateActive = EnemyState.Die;
+                }
             }
+
+            m_Rigidbody = GetComponent<Rigidbody2D>();
+            m_Collider = GetComponent<Collider2D>();
+            m_Transform = GetComponent<Transform>();
+
+            m_Health = 100;
+            m_Energy = 100;
+            m_Speed = 2;
+
+            m_Move = new BehaviourMoveAI(m_Rigidbody, m_Speed, m_Transform.position, m_Vision.Radius);
+
+            m_EntiesInVisionkRange = new List<IEntity>();
+            //m_Roam = new BehaviourRoamAI(m_EntiesInVisionkRange, m_Move);
+  
+            m_EntiesInVisionkRange = new List<IEntity>();
+            //m_Chase = new BehaviourChaseAI(m_EntiesInVisionkRange, m_Move);
             
+            m_EntiesInAttackRange = new List<IEntity>();
+            m_Attack = new BehaviourAttackAI(m_EntiesInAttackRange);
+
+            m_EntiesInEatRange = new List<IEntity>();
+            m_Eat = new BehaviourEatAI(m_EntiesInEatRange);
+
         }
 
-
-        private void Awake()
+        public virtual void Init()
         {
-            Name = gameObject.name;
-            
-            m_Energy = 100f;
-            m_EnergyMin = 25f;
+            m_Vision.InZone += OnEntityInVisionZone;
+            m_Vision.OutZone += OnEntityOutVisionZone;
 
-            var rigidbody = GetComponent<Rigidbody2D>();
-            var moveSpeed = 2;
-            var roamDistance = 4;
-            var roamStartPosition = transform.position;
+            m_AttackZone.InZone += OnEntityInAttackZone;
+            m_AttackZone.OutZone += OnEntityOutAttackZone;
 
-            m_MoveBehaviour = new BehaviourMoveAI(rigidbody, moveSpeed, roamStartPosition, roamDistance);
-            m_EatBehaviour = new BehaviourEatAI();
-            m_ChaseBehaviour= new BehaviourChaseAI();
-            m_AttackBehaviour = new BehaviourAttackAI();
+            m_EatZone.InZone += OnEntityInEatZone;
+            m_EatZone.OutZone += OnEntityOutEatZone;
+
+            m_Eat.EnergyReceived += OnEnergyReceived;
+            m_Eat.EnergyWasted += OnEnergyWasted;
+            m_Eat.FoodWasConsumed += OnFoodWasConsumed;
+
+            m_Attack.EnergyWasted += OnEnergyWasted;
+            m_Attack.EntityAttacked += OnEntityAttacked;
 
             m_StateActive = EnemyState.Roam;
+
         }
 
-        private void OnEnable() 
+        public virtual void Dispose()
         {
-            m_AttackBehaviour.EntityAttacked += OnEntityAttack;
-            m_AttackBehaviour.EnergyWasted += OnEnergyWasted;
+            m_Vision.InZone -= OnEntityInVisionZone;
+            m_Vision.OutZone -= OnEntityOutVisionZone;
+
+            m_AttackZone.InZone -= OnEntityInAttackZone;
+            m_AttackZone.OutZone -= OnEntityOutAttackZone;
+
+            m_EatZone.InZone -= OnEntityInEatZone;
+            m_EatZone.OutZone -= OnEntityOutEatZone;
+
+            m_Eat.EnergyReceived -= OnEnergyReceived;
+            m_Eat.EnergyWasted -= OnEnergyWasted;
+            m_Eat.FoodWasConsumed -= OnFoodWasConsumed;
+
+            m_Attack.EnergyWasted += OnEnergyWasted;
+            m_Attack.EntityAttacked += OnEntityAttacked;
         }
 
-        private void OnDisable() 
+        
+
+        public virtual void Eat() => 
+            m_Eat.Do();
+
+        public virtual void Chase() =>
+            m_Chase.Do();
+
+        public virtual void Attack() =>
+            m_Attack.Do();
+
+        public virtual void Move() =>
+            m_Move.Do();
+
+        public virtual void Damage(float damage)
         {
-            m_AttackBehaviour.EntityAttacked -= OnEntityAttack;
-            m_AttackBehaviour.EnergyWasted -= OnEnergyWasted;
+            m_Health -= damage;
+            Debug.Log("Damage done " +  damage);
         }
 
-
-
-
-        private void FixedUpdate()
+        public virtual void Die()
         {
-            HandleState();
+            m_StateActive = EnemyState.None;
+            Dead?.Invoke(m_Enemy);
         }
+       
+        
+        public void SetPosition(Vector3 position) =>
+            m_Transform.position = position;
 
+        public void AddForce(Vector3 direction) => 
+            m_Rigidbody.AddForce(direction, ForceMode2D.Impulse);
+
+        
+        
+        
+        
+        
         private void HandleState()
         {
             switch (m_StateActive)
             {
-                default: break;
+                default : break;
 
                 case EnemyState.Roam:
-                    Roam();
+                        Move();
                     break;
 
                 case EnemyState.Eat:
-                    Eat();
+                        Eat();
                     break;
 
                 case EnemyState.Chase:
-                    Chase();
+                        Chase();
                     break;
 
                 case EnemyState.Attack:
-                    Attack();
-                    break;
-                
-                case EnemyState.Die:
-                    Die();
+                        Attack();
                     break;
 
+                case EnemyState.Die:
+                        Die();
+                    break;
 
             }
 
         }
 
+        private void EnergyCalculate()
+        {
+            m_Energy -= Time.deltaTime;
 
-        private void OnEntityAttack(float damage, IEntity enemy)
-        { 
+            if (m_Energy <= m_EnergyMin)
+                m_StateActive = EnemyState.Eat;
+
+            if (m_Energy <= 0)
+            {
+                m_Energy = 0;
+                if(m_Move.Modified == false)
+                {
+                    var lowEnergyModifier = new BehaviourMoveModifyer(m_LowEnergySpeedModifier, m_LowEnergyRoamDistanseModifier);
+                    m_Move.Modify(lowEnergyModifier);
+                }
+            }
+            else
+            {
+                if(m_Move.Modified == true)
+                    m_Move.Default();
+            }
+
+        }
+
+        private void HealthCalculate()
+        {
+            if(m_Energy <= 0 && m_Health > 0)
+                m_Health -= Time.deltaTime;
+            
+            if (m_Health <= 0)
+            {
+                m_Health = 0;
+                m_StateActive = EnemyState.Die;
+            }
+
+        }
+
+ 
+        // VISION AND CONTROL //
+        private void OnEntityInEatZone(IEntity entity)
+        {
+            if(entity is IFood)
+            {
+                m_EntiesInEatRange.Add(entity);
+                //Debug.Log($"{entity.GetName()} enter eat zone.");
+            }     
+        }
+
+        private void OnEntityOutEatZone(IEntity entity)
+        {
+            if(entity is IFood)
+            {
+                try
+                {
+                    m_EntiesInEatRange.Remove(entity);
+                }
+                catch (System.Exception)
+                {
+                    Debug.Log($"{entity.GetName()} is not found!");
+                }
+
+                //Debug.Log($"{entity.GetName()} exit eat zone.");
+            }
+
+                
+        }
+
+        private void OnEntityInAttackZone(IEntity entity)
+        {
+            if(entity is IPlayer)
+            {
+                m_EntiesInAttackRange.Add(entity);
+                //Debug.Log($"{entity.GetName()} enter attack zone.");
+            }   
+        }
+
+        private void OnEntityOutAttackZone(IEntity entity)
+        {
+            if(entity is IEnemy)
+            {
+                try
+                {
+                    m_EntiesInAttackRange.Remove(entity);
+                }
+                catch (System.Exception)
+                {
+                    Debug.Log($"{entity.GetName()} is not found!");
+                }
+
+                //Debug.Log($"{entity.GetName()} exit attack zone.");
+            }
+        }
+
+        private void OnEntityInVisionZone(IEntity entity)
+        {
+
+            m_EntiesInVisionkRange.Add(entity);
+            //Debug.Log($"{entity.GetName()} enter vision zone.");
+
+        }
+
+        private void OnEntityOutVisionZone(IEntity entity)
+        {
+            try
+            {
+                m_EntiesInVisionkRange.Remove(entity);
+            }
+            catch (System.Exception)
+            {
+                Debug.Log($"{entity.GetName()} is not found!");
+            }
+
+            //Debug.Log($"{entity.GetName()} exit vision zone.");
+        }
+
+        
+        private void OnFoodWasConsumed(IEntity entity)
+        {
+
+        }
+
+        private void OnEnergyReceived(float energy)
+        {
+
+        }
+
+
+        private void OnEntityAttacked(float damage, IEntity enemy)
+        {
 
         }
 
         private void OnEnergyWasted(float energy)
-        { 
+        {
 
         }
 
+        // UNITY //       
+        private void Awake() =>
+            Configure();
+
+        private void OnEnable() =>
+            Init();
+
+        private void OnDisable() =>
+            Dispose();
+
+        private void Update()
+        {
+            EnergyCalculate();
+            HealthCalculate();
+            
+            HandleState();
+        }
+
+        private void FixedUpdate()
+        {
+            
+        }
+
+
     }
 
-    
+    public class EnemyConfig
+    {
+        public IEnemy Enemy { get; private set; }
+
+        public EnemyConfig(IEnemy enemy)
+        {
+            Enemy = enemy;
+        }
+    }
+
     public enum EnemyState
     {
         None,
@@ -171,19 +387,17 @@ namespace APP.Game
         Die
     }
 
-
 }
 
 namespace APP
 {
-    public interface IEnemy: IEntity
+    public interface IEnemy : IEntity
     {
-        string Name { get; }
-        
-        void Roam();
+        void Move();
         void Eat();
         void Chase();
         void Attack();
+        void Damage(float damage);
         void Die();
     }
 }

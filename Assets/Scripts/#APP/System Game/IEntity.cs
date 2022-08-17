@@ -7,6 +7,7 @@ namespace APP
         Vector3 Position {get; }
 
         void SetPosition(Vector3 position);
+        void AddForce(Vector3 position);
     }
 
 }

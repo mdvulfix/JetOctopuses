@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace APP.Game
 {
+    [RequireComponent(typeof(Rigidbody2D))]
+    [RequireComponent(typeof(Collider2D))]
+    [RequireComponent(typeof(Transform))]
     public abstract class PlayerModel<TPlayer> : MonoBehaviour
     {
         
@@ -12,9 +15,9 @@ namespace APP.Game
         [SerializeField] private PlayerUI m_PlayerUI;
         
         [Header("Components")]
-        [SerializeField] private ControlZone m_PlayerVision;
-        [SerializeField] private ControlZone m_PlayerAttackZone;
-        [SerializeField] private ControlZone m_PlayerEatZone;
+        [SerializeField] private ControlZone m_Vision;
+        [SerializeField] private ControlZone m_AttackZone;
+        [SerializeField] private ControlZone m_EatZone;
 
         [Header("Stats")]
         [SerializeField] private float m_Health;
@@ -24,9 +27,16 @@ namespace APP.Game
         [SerializeField] private float m_Speed;
 
 
-        private IBehaviour m_MoveBehaviour;
-        private IEatBehaviour m_EatBehaviour;
-        private IAttackBehaviour m_AttackBehaviour;
+        private Rigidbody2D m_Rigidbody;
+        private Collider2D m_Collider;
+        private Transform m_Transform;
+        
+        
+        private IMoveBehaviour m_Move;
+        private IEatBehaviour m_Eat;
+        private IAttackBehaviour m_Attack;
+        private IDamageBehaviour m_Damage;
+        private IDieBehaviour m_Die;
 
         private List<IEntity> m_EntiesInEatRange;
         private List<IEntity> m_EntiesInAttackRange;
@@ -36,79 +46,107 @@ namespace APP.Game
 
         
         
+        public event Action<IEntity> FoodWasConsumed;
+        public event Action<IEntity> EntityAttacked;
+        
+        
+        
         public virtual void Configure(params object[] args)
         {
-            m_Speed = 2f;
-            var rigidbody2D =  GetComponent<Rigidbody2D>();
-            m_MoveBehaviour = new BehaviourMovePlayer(rigidbody2D, m_Speed);
+            
+            m_Rigidbody = GetComponent<Rigidbody2D>();
+            m_Collider = GetComponent<Collider2D>();
+            m_Transform = GetComponent<Transform>();
+            
+            
+            m_Speed = 3f;
 
-  
+
+            m_Move = new BehaviourMovePlayer(m_Rigidbody, m_Speed);
+
             m_EntiesInEatRange = new List<IEntity>();
-            m_EatBehaviour = new BehaviourEatPlayer(m_EntiesInEatRange);
+            m_Eat = new BehaviourEatPlayer(m_EntiesInEatRange);
 
             m_EntiesInAttackRange = new List<IEntity>();
-            m_AttackBehaviour = new BehaviourAttackPlayer(m_EntiesInAttackRange);
+            m_Attack = new BehaviourAttackPlayer(m_EntiesInAttackRange, () => Position);
 
+            
             m_EntiesInVisionkRange = new List<IEntity>();
 
         }
         
-        
         public virtual void Init()
         {
-            m_PlayerVision.InZone += OnEntityInVisionZone;
-            m_PlayerVision.OutZone += OnEntityOutVisionZone;
+            m_Vision.InZone += OnEntityInVisionZone;
+            m_Vision.OutZone += OnEntityOutVisionZone;
 
-            m_PlayerAttackZone.InZone += OnEntityInAttackZone;
-            m_PlayerAttackZone.OutZone += OnEntityOutAttackZone;
+            m_AttackZone.InZone += OnEntityInAttackZone;
+            m_AttackZone.OutZone += OnEntityOutAttackZone;
 
-            m_PlayerEatZone.InZone += OnEntityInEatZone;
-            m_PlayerEatZone.OutZone += OnEntityOutEatZone;
+            m_EatZone.InZone += OnEntityInEatZone;
+            m_EatZone.OutZone += OnEntityOutEatZone;
 
-            m_EatBehaviour.EnergyReceived += OnEnergyReceived;
-            m_EatBehaviour.EnergyWasted += OnEnergyWasted;
-            m_EatBehaviour.FoodWasConsumed += OnFoodWasConsumed;
+            m_Eat.EnergyReceived += OnEnergyReceived;
+            m_Eat.EnergyWasted += OnEnergyWasted;
+            m_Eat.FoodWasConsumed += OnFoodWasConsumed;
+
+
+            m_Attack.EnergyWasted += OnEnergyWasted;
+            m_Attack.EntityAttacked += OnEntityAttacked;
 
         }
-
-
 
         public virtual void Dispose()
         {
-            m_PlayerVision.InZone -= OnEntityInVisionZone;
-            m_PlayerVision.OutZone -= OnEntityOutVisionZone;
+            m_Vision.InZone -= OnEntityInVisionZone;
+            m_Vision.OutZone -= OnEntityOutVisionZone;
 
-            m_PlayerAttackZone.InZone -= OnEntityInAttackZone;
-            m_PlayerAttackZone.OutZone -= OnEntityOutAttackZone;
+            m_AttackZone.InZone -= OnEntityInAttackZone;
+            m_AttackZone.OutZone -= OnEntityOutAttackZone;
 
-            m_PlayerEatZone.InZone -= OnEntityInEatZone;
-            m_PlayerEatZone.OutZone -= OnEntityOutEatZone;
+            m_EatZone.InZone -= OnEntityInEatZone;
+            m_EatZone.OutZone -= OnEntityOutEatZone;
 
-            m_EatBehaviour.EnergyReceived -= OnEnergyReceived;
-            m_EatBehaviour.EnergyWasted -= OnEnergyWasted;
-            m_EatBehaviour.FoodWasConsumed -= OnFoodWasConsumed;
+            m_Eat.EnergyReceived -= OnEnergyReceived;
+            m_Eat.EnergyWasted -= OnEnergyWasted;
+            m_Eat.FoodWasConsumed -= OnFoodWasConsumed;
+
+            m_Attack.EnergyWasted += OnEnergyWasted;
+            m_Attack.EntityAttacked += OnEntityAttacked;
         }
-        
-        
+
+
+
         public void Move() =>
-            m_MoveBehaviour.Do();
+            m_Move.Do();
 
         public void Eat() =>
-            m_EatBehaviour.Do();
+            m_Eat.Do();
 
         public void Attack() =>
-            m_AttackBehaviour.Do();
+            m_Attack.Do();
+
+        public void Damage(float damage) =>
+            m_Damage.Do();
+
+        public void Die() =>
+            m_Die.Do();
+
 
         public void SetPosition(Vector3 position) => 
-            transform.position = position;
+            m_Transform.position = position;
+
+        public void AddForce(Vector3 direction) => 
+            m_Rigidbody.AddForce(direction, ForceMode2D.Impulse);
 
 
+        // VISION AND CONTROL //
         private void OnEntityInEatZone(IEntity entity)
         {
             if(entity is IFood)
             {
                 m_EntiesInEatRange.Add(entity);
-                Debug.Log($"{entity.GetName()} enter eat zone.");
+                // Debug.Log($"{entity.GetName()} enter eat zone.");
             }     
         }
 
@@ -125,7 +163,7 @@ namespace APP.Game
                     Debug.Log($"{entity.GetName()} is not found!");
                 }
 
-                Debug.Log($"{entity.GetName()} exit eat zone.");
+                //Debug.Log($"{entity.GetName()} exit eat zone.");
             }
 
                 
@@ -161,7 +199,7 @@ namespace APP.Game
         {
 
             m_EntiesInVisionkRange.Add(entity);
-            Debug.Log($"{entity.GetName()} enter vision zone.");
+            //Debug.Log($"{entity.GetName()} enter vision zone.");
 
         }
 
@@ -176,17 +214,18 @@ namespace APP.Game
                 Debug.Log($"{entity.GetName()} is not found!");
             }
 
-            Debug.Log($"{entity.GetName()} exit vision zone.");
+            //Debug.Log($"{entity.GetName()} exit vision zone.");
         }
 
-        private void OnFoodWasConsumed(IFood food)
+
+
+        // EAT //
+        private void OnFoodWasConsumed(IEntity food)
         {
             OnEntityOutEatZone(food);
             OnEntityOutVisionZone(food);
 
-            if(food is MonoBehaviour)
-                Destroy(((MonoBehaviour)food).gameObject);
-            
+            FoodWasConsumed?.Invoke(food);
         }
 
         private void OnEnergyWasted(float energy)
@@ -205,6 +244,13 @@ namespace APP.Game
                 m_Energy += energy;
         }
      
+        // ATTACK //
+        private void OnEntityAttacked(float damage, IEntity entity)
+        {
+
+        }
+        
+        
         // UNITY //       
         private void Awake() =>
             Configure();
@@ -234,8 +280,11 @@ namespace APP
 {
     public interface IPlayer: IEntity
     {
+        void Move();
         void Eat();
         void Attack();
-        void Move();
+        void Damage(float damage);
+        void Die();
+
     }
 }

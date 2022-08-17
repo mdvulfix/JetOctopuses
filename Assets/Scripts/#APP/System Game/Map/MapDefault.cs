@@ -6,8 +6,7 @@ namespace APP.Game.Map
     public class MapDefault : MapModel<MapDefault>, IMap
     {
         
-        [SerializeField] private float m_Width;
-        [SerializeField] private float m_Hight;
+
         
         [SerializeField] private MapBoundary m_BoundaryTop;
         [SerializeField] private MapBoundary m_BoundaryBottom;
@@ -20,13 +19,13 @@ namespace APP.Game.Map
 
         public override void Configure(params object[] args)
         {
-            //var width = 250;
-            //var hight = 100;
+            var width = 100;
+            var hight = 100;
             
 
 
 
-            var config = new MapConfig(m_Width, m_Hight);
+            var config = new MapConfig(width, hight);
             base.Configure(config);
         }
 
@@ -37,7 +36,8 @@ namespace APP.Game.Map
         [SerializeField] private MapBoundaryController m_MapBoundaryController;
         [SerializeField] private MapUI m_MapUI;
         
-
+        [SerializeField] private float m_Width;
+        [SerializeField] private float m_Hight;
         [SerializeField] private float m_HightWater;
         [SerializeField] private float m_HightGround;
         
@@ -49,8 +49,8 @@ namespace APP.Game.Map
         public bool IsInitialized { get; private set; }
 
         
-        public float Width => m_Config.Width;
-        public float Hight => m_Config.Hight;
+        public float Width => m_Width;
+        public float Hight => m_Hight;
         public float HightWater => m_HightWater;
         public float HightGround => m_HightGround;
 

@@ -4,6 +4,7 @@ using URandom = UnityEngine.Random;
 
 using APP.Camera;
 using APP.Game.Map;
+using System;
 
 namespace APP.Game
 {
@@ -25,45 +26,40 @@ namespace APP.Game
         [SerializeField] private Sprite m_FoodSprite;
         [SerializeField] private Sprite m_EnemySprite;
 
+        [SerializeField] private PlayerController m_PlayerController;
+        
+        [SerializeField] private EnemyDefault[] m_Enemies;
+        
+        
         private EnemySpawner m_EnemySpawner;
         private List<IEnemy> m_Enemy;
 
         private FoodSpawner m_FoodSpawner;
         private List<IFood> m_Food;
         
-        
+
         public IMap Map => m_Map;
 
         public ICamera CameraFollowPlayer => m_Camera;
         public IPlayer PLayer => m_Player;
 
-        
-        private void Awake() 
+        public virtual void Configure(params object[] args)
         {
-            
             m_EnemySpawner = new EnemySpawner(m_EnemySprite, ROOT_ENEMY);
             m_FoodSpawner = new FoodSpawner(m_FoodSprite, ROOT_FOOD);
+        }
 
-        }
         
-        private void OnEnable() 
+        public virtual void Init()
         {
-            
-        }
-        
-        private void OnDisable() 
-        {
-            
-        }
-        
-        private void Start() 
-        {
-            var enemyQuantity = 5;
-            SpawnEnemy(enemyQuantity);
+            //var enemyQuantity = 5;
+            //SpawnEnemy(enemyQuantity);
 
-            var foodQuantity = 15;
+            var foodNamber = 25;
             m_Food = new List<IFood>();
-            SpawnFood(foodQuantity);
+            
+            for (int i = 0; i < foodNamber; i++)
+                SpawnFood(GetRendomPosition());
 
             
             m_CameraZoom = 5f;
@@ -75,6 +71,105 @@ namespace APP.Game
             m_Camera.Configure(cameraConfig);
             m_Camera.Follow(() => m_Player.transform.position);
             m_Camera.Zoom(() => m_CameraZoom);
+
+            m_PlayerController.FoodWasConsumed += OnFoodWasConsumed;
+            m_PlayerController.EntityAttacked += OnEntityAttacked;
+
+            if(m_Enemies.Length > 0)
+                foreach (var enemy in m_Enemies)
+                    enemy.Dead += OnEnemyDead;
+
+        }
+
+
+        public virtual void Dispose()
+        {
+            m_Player.FoodWasConsumed -= OnFoodWasConsumed;
+            m_Player.EntityAttacked -= OnEntityAttacked;
+
+            if(m_Enemies.Length > 0)
+                foreach (var enemy in m_Enemies)
+                    enemy.Dead -= OnEnemyDead;
+        } 
+        
+
+        private IFood SpawnFood(Vector3 position)
+        { 
+            if(m_Food == null)
+                m_Food = new List<IFood>();
+
+            var food = m_FoodSpawner.Spawn(position);
+            m_Food.Add(food);
+
+            return food;
+        }
+        
+        private void SpawnEnemy(int quantity = 1)
+        { 
+            if(m_Enemy == null)
+                m_Enemy = new List<IEnemy>();
+            
+            for (int i = 0; i < quantity; i++)
+                m_Enemy.Add(m_EnemySpawner.Spawn(GetRendomPosition()));
+        }
+
+        private Vector3 GetRendomPosition() =>
+            new Vector3(URandom.Range(-Map.Width/2, Map.Width/2 +1), URandom.Range(-Map.Hight/2, Map.Hight/2 +1), 0);
+
+    
+        private void OnBoundaryReached(Collider2D collider)
+        {
+            if (collider.TryGetComponent<IEnemy>(out var entity))
+            { 
+                
+            }
+        }
+    
+        // FOOD: POOL OR DESTROY //
+        private void OnFoodWasConsumed(IEntity food)
+        {
+            if(food is MonoBehaviour)
+                Destroy(((MonoBehaviour)food).gameObject);
+            
+        }
+
+        // ENEMY: POOL OR DESTROY //
+        private void OnEnemyDead(IEntity enemy)
+        {
+            var position = enemy.Position;
+            
+            if(enemy is MonoBehaviour)
+                Destroy(((MonoBehaviour)enemy).gameObject);
+
+            var foodNamber = 5;
+            for (int i = 0; i < foodNamber; i++)
+            {
+                var food = SpawnFood(position);
+                var direction =  new Vector3(URandom.Range(-5, 6) * 0.5f, URandom.Range(-5, 6) * 0.5f, 0);
+                food.AddForce(direction);
+            }
+                
+        }
+
+
+        private void OnEntityAttacked(IEntity enemy)
+        {
+            
+        }
+
+        // UNITY //       
+        private void Awake() =>
+            Configure();
+
+        private void OnEnable() =>
+            Init();
+
+        private void OnDisable() =>
+            Dispose();
+
+        private void Start() 
+        {
+            
 
         }
 
@@ -89,37 +184,5 @@ namespace APP.Game
 
         }
 
-
-        private void SpawnFood(int quantity = 1)
-        { 
-            if(m_Food == null)
-                m_Food = new List<IFood>();
-
-            for (int i = 0; i < quantity; i++)
-                m_Food.Add(m_FoodSpawner.Spawn(GetRendomPosition()));
-
-        }
-        
-        private void SpawnEnemy(int quantity = 1)
-        { 
-            if(m_Enemy == null)
-                m_Enemy = new List<IEnemy>();
-            
-            for (int i = 0; i < quantity; i++)
-                m_Enemy.Add(m_EnemySpawner.Spawn(GetRendomPosition()));
-        }
-
-        private Vector3 GetRendomPosition() =>
-            new Vector3(URandom.Range(-Map.Width/2, Map.Width/2 +1), URandom.Range(-Map.HightWater/2, Map.HightWater/2 +1), 0);
-
-    
-        private void OnBoundaryReached(Collider2D collider)
-        {
-            if (collider.TryGetComponent<IEnemy>(out var entity))
-            { 
-                
-            }
-        }
-    
     }
 }
