@@ -50,7 +50,7 @@ namespace APP.Game
         
         private void Update()
         {
-            if(Input.GetKeyUp(KeyCode.Space))
+            if(Input.GetMouseButtonUp(1))
                 m_Player.Eat();
         
             if(Input.GetMouseButtonUp(0))

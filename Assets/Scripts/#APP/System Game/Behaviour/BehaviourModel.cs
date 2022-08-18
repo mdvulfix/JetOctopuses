@@ -290,6 +290,9 @@ namespace APP.Game
         {
             EnergyWasted?.Invoke(m_EnergyCost);
             enemy.Damage(m_Damage);
+            EnergyWasted?.Invoke(m_EnergyCost);
+            EntityAttacked?.Invoke(m_Damage, enemy);
+
         }
 
         private bool FindClosest(out IEntity targetEntity)

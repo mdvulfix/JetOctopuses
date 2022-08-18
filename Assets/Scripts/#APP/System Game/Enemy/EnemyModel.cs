@@ -97,6 +97,25 @@ namespace APP.Game
 
         public virtual void Init()
         {
+            Subscribe();
+
+            m_StateActive = EnemyState.Roam;
+
+            m_UI.Configure();
+            m_UI.Init();
+
+        }
+
+        public virtual void Dispose()
+        {
+            m_UI.Dispose();
+            
+            Unsubscribe();
+        }
+
+
+        public void Subscribe()
+        { 
             m_Vision.InZone += OnEntityInVisionZone;
             m_Vision.OutZone += OnEntityOutVisionZone;
 
@@ -112,13 +131,10 @@ namespace APP.Game
 
             m_Attack.EnergyWasted += OnEnergyWasted;
             m_Attack.EntityAttacked += OnEntityAttacked;
-
-            m_StateActive = EnemyState.Roam;
-
         }
 
-        public virtual void Dispose()
-        {
+        public void Unsubscribe()
+        { 
             m_Vision.InZone -= OnEntityInVisionZone;
             m_Vision.OutZone -= OnEntityOutVisionZone;
 
@@ -138,6 +154,9 @@ namespace APP.Game
 
         
 
+        
+        
+        
         public virtual void Eat() => 
             m_Eat.Do();
 
@@ -153,6 +172,7 @@ namespace APP.Game
         public virtual void Damage(float damage)
         {
             m_Health -= damage;
+            m_UI.PopupShowDamage((int)damage);
             Debug.Log("Damage done " +  damage);
         }
 
@@ -330,7 +350,6 @@ namespace APP.Game
 
         }
 
-
         private void OnEntityAttacked(float damage, IEntity enemy)
         {
 
@@ -340,6 +359,7 @@ namespace APP.Game
         {
 
         }
+
 
         // UNITY //       
         private void Awake() =>
