@@ -132,6 +132,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 597503145}
+  - component: {fileID: 597503146}
   m_Layer: 0
   m_Name: Session
   m_TagString: Untagged
@@ -154,3 +155,39 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &597503146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 597503144}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 973f8730ceecf494f8d413ffa87c65a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Configured: 0
+  m_Initialized: 0
+  m_Debug: 1
+  m_SceneLogin:
+    m_Configured: 0
+    m_Initialized: 0
+    m_Loaded: 0
+    m_Activated: 0
+    m_Debug: 1
+    m_Index: 1
+  m_SceneMenu:
+    m_Configured: 0
+    m_Initialized: 0
+    m_Loaded: 0
+    m_Activated: 0
+    m_Debug: 1
+    m_Index: 2
+  m_SceneLevel:
+    m_Configured: 0
+    m_Initialized: 0
+    m_Loaded: 0
+    m_Activated: 0
+    m_Debug: 1
+    m_Index: 3

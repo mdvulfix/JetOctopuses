@@ -6,20 +6,20 @@ namespace Core
 {
     public abstract class SessionModel : ModelComponent, ISession
     {
-        [Header("Debug")]
-        [SerializeField] bool m_Debug = true;
 
         [Header("Stats")]
-        [SerializeField] bool m_Configured;
-        [SerializeField] bool m_Initialized;
+        [SerializeField] private bool m_isConfigured;
+        [SerializeField] private bool m_isInitialized;
 
+        [Header("Config")]
+        [SerializeField] protected SessionConfig m_Config;
 
-        private SessionConfig m_Config;
+        [Header("Debug")]
+        [SerializeField] protected bool m_isDebug = true;
 
 
         public event Action<bool> Configured;
         public event Action<bool> Initialized;
-
 
         public enum Params
         {
@@ -35,29 +35,30 @@ namespace Core
             if (args.Length > 0)
             {
                 try { m_Config = (SessionConfig)args[config]; }
-                catch { Debug.LogWarning("Scene config was not found. Configuration failed!"); }
-                return;
+                catch { Debug.LogWarning($"{this.GetName()} config was not found. Configuration failed!"); return; }
             }
 
             m_Config = (SessionConfig)args[config];
 
-
-            Configured?.Invoke(m_Configured = true);
-            if (m_Debug) Debug.Log($"{this.GetName()} configured.");
+            m_isConfigured = true;
+            Configured?.Invoke(m_isConfigured);
+            if (m_isDebug) Debug.Log($"{this.GetName()} configured.");
         }
 
         public override void Init()
         {
 
-            Initialized?.Invoke(m_Initialized = true);
-            if (m_Debug) Debug.Log($"{this.GetName()} initialized.");
+            m_isInitialized = true;
+            Initialized?.Invoke(m_isInitialized);
+            if (m_isDebug) Debug.Log($"{this.GetName()} initialized.");
 
         }
 
         public override void Dispose()
         {
-            Initialized?.Invoke(m_Initialized = false);
-            if (m_Debug) Debug.Log($"{this.GetName()} disposed.");
+            m_isInitialized = false;
+            Initialized?.Invoke(m_isInitialized);
+            if (m_isDebug) Debug.Log($"{this.GetName()} disposed.");
         }
 
 
@@ -111,6 +112,19 @@ namespace Core
             StopCoroutine(func);
             StartCoroutine(func);
         }
+
+
+        // UNITY //
+        private void Awake()
+            => Configure();
+
+        private void OnEnable()
+            => Init();
+
+        private void OnDisable()
+            => Dispose();
+
+
     }
 
     public interface ISession : IConfigurable
@@ -120,12 +134,7 @@ namespace Core
 
     public class SessionConfig : IConfig
     {
-        public ISession Session { get; private set; }
 
-        public SessionConfig(ISession session)
-        {
-            Session = session;
-        }
     }
 
 }

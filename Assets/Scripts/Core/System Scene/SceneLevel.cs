@@ -20,9 +20,6 @@ namespace App.Scene
         //[SerializeField] private ScreenLoading m_Loading;
         //[SerializeField] private ScreenLogin m_Login;
 
-        //private readonly string m_Label = "Scene: Login";
-        [SerializeField] int m_Index = (int)SceneIndex.Level;
-
         private List<IScreen> m_Screens;
 
 
@@ -40,6 +37,7 @@ namespace App.Scene
             }
 
             // CONFIGURE BY DEFAULT //
+            if (m_isDebug) Debug.Log($"{this.GetName()} will be configured by default!");
 
 
             //var signals = new List<ISignal>();
@@ -49,11 +47,9 @@ namespace App.Scene
             //var config = new StateConfig(this, signals.ToArray());
             //base.Configure(config);
 
-            var config = new SceneConfig(m_Index);
+            var index = SceneIndex.Level;
+            var config = new SceneConfig(index);
             base.Configure(config);
-            Debug.Log($"{this.GetName()} was configured by default!");
-
-
         }
 
 
@@ -63,7 +59,7 @@ namespace App.Scene
     }
 
 
-    public partial class SceneFactoryDefault : Factory<IScene>
+    public partial class SceneFactory : Factory<IScene>
     {
         private SceneLevel GetSceneLevel(params object[] args)
         {

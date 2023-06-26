@@ -2,13 +2,17 @@ using System;
 
 namespace Core
 {
-    public abstract class ModelController : IController
+    public abstract class ModelController
     {
-        private bool m_Debug = true;
+        // CONFIGURE //
+        public abstract void Configure(params object[] args);
+        public abstract void Init();
+        public abstract void Dispose();
+
 
     }
 
-    public interface IController
+    public interface IController : IConfigurable
     {
 
     }

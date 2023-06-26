@@ -15,8 +15,6 @@ namespace App.Scene
         //[SerializeField] private ScreenLoading m_Loading;
         //[SerializeField] private ScreenLogin m_Login;
 
-        private int m_Index = (int)SceneIndex.Menu;
-
         private List<IScreen> m_Screens;
 
         public SceneMenu() { }
@@ -33,6 +31,7 @@ namespace App.Scene
             }
 
             // CONFIGURE BY DEFAULT //
+            if (m_isDebug) Debug.Log($"{this.GetName()} will be configured by default!");
 
 
             //var signals = new List<ISignal>();
@@ -42,10 +41,9 @@ namespace App.Scene
             //var config = new StateConfig(this, signals.ToArray());
             //base.Configure(config);
 
-            var config = new SceneConfig(m_Index);
+            var index = SceneIndex.Menu;
+            var config = new SceneConfig(index);
             base.Configure(config);
-            Debug.Log($"{this.GetName()} was configured by default!");
-
 
         }
 
@@ -56,7 +54,7 @@ namespace App.Scene
     }
 
 
-    public partial class SceneFactoryDefault : Factory<IScene>
+    public partial class SceneFactory : Factory<IScene>
     {
         private SceneMenu GetSceneMenu(params object[] args)
         {

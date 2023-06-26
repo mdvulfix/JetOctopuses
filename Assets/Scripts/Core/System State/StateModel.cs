@@ -15,15 +15,16 @@ namespace Core.State
     public abstract class StateModel : ModelBasic, IState
     {
 
-        [Header("Debug")]
-        [SerializeField] bool m_Debug = true;
-
         [Header("Stats")]
-        [SerializeField] bool m_Configured;
-        [SerializeField] bool m_Initialized;
+        [SerializeField] private bool m_isConfigured;
+        [SerializeField] private bool m_isInitialized;
 
 
-        private StateConfig m_Config;
+        [Header("Debug")]
+        [SerializeField] protected bool m_isDebug = true;
+
+        [Header("Config")]
+        [SerializeField] protected StateConfig m_Config;
 
 
         public event Action<bool> Configured;
@@ -61,35 +62,32 @@ namespace Core.State
             if (args.Length > 0)
             {
                 try { m_Config = (StateConfig)args[config]; }
-                catch { Debug.LogWarning("Scene config was not found. Configuration failed!"); }
-                return;
+                catch { Debug.LogWarning($"{this.GetName()} config was not found. Configuration failed!"); return; }
             }
 
 
             m_Config = (StateConfig)args[config];
 
 
-            Configured?.Invoke(m_Configured = true);
-            if (m_Debug) Debug.Log($"{this.GetName()} configured.");
+            m_isConfigured = true;
+            Configured?.Invoke(m_isConfigured);
+            if (m_isDebug) Debug.Log($"{this.GetName()} configured.");
         }
 
         public override void Init()
         {
-            //ScenesRegistered.Add(m_Scene);
 
-
-
-            Initialized?.Invoke(m_Initialized = true);
-            if (m_Debug) Debug.Log($"{this.GetName()} initialized.");
+            m_isInitialized = true;
+            Initialized?.Invoke(m_isInitialized);
+            if (m_isDebug) Debug.Log($"{this.GetName()} initialized.");
 
         }
 
         public override void Dispose()
         {
-
-
-            Initialized?.Invoke(m_Initialized = false);
-            if (m_Debug) Debug.Log($"{this.GetName()} disposed.");
+            m_isInitialized = false;
+            Initialized?.Invoke(m_isInitialized);
+            if (m_isDebug) Debug.Log($"{this.GetName()} disposed.");
         }
 
 
@@ -140,6 +138,7 @@ namespace Core.State
 
 
     }
+
 
 
 
@@ -214,4 +213,15 @@ namespace Core
         void Run();
         void Exit();
     }
+
+
+
+    public class StateConfig : IConfig
+    {
+
+
+
+    }
+
+
 }

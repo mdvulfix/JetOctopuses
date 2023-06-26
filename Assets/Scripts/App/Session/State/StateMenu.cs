@@ -40,7 +40,7 @@ namespace App.State
 
 
 
-            var config = new StateConfig(this);
+            var config = new StateConfig();
             base.Configure(config);
             Debug.Log($"{this.GetName()} was configured by default!");
         }

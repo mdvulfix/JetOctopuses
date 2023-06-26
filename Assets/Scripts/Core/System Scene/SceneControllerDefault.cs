@@ -1,128 +1,146 @@
 using System;
 using System.Threading.Tasks;
+using UnityEngine;
 using UScene = UnityEngine.SceneManagement.Scene;
 using Core;
 using Core.Signal;
 
 
-namespace App.Scene
+namespace Core.Scene
 {
-
-    /*
-    public class SceneControllerDefault : AController//, ISceneController
+    public class SceneController : ModelController, ISceneController
     {
-        
-        private SceneControllerConfig m_Config;
 
-        private IScene m_SceneCore;
+        //private IScene m_Scene;
+        //private ISignal m_SignalSceneActivate;
 
-        private ISignal m_SignalSceneActivate;
+
+        public SceneController() { }
+        public SceneController(params object[] args)
+            => Configure(args);
+
+        [Header("Stats")]
+        [SerializeField] private bool m_isConfigured;
+        [SerializeField] private bool m_isInitialized;
+
+
+        [Header("Debug")]
+        [SerializeField] protected bool m_isDebug = true;
+
+        [Header("Config")]
+        [SerializeField] protected SceneControllerConfig m_Config;
+
 
 
         public IScene SceneActive { get; private set; }
 
-        public event Action<IScene> SceneLoaded;
-        public event Action<IScene> SceneActivated;
+        public event Action<bool> Configured;
+        public event Action<bool> Initialized;
 
-        public SceneControllerDefault() { }
-        public SceneControllerDefault(params object[] param) => Configure(param);
+        public event Action<IScene, bool> SceneLoaded;
+        public event Action<IScene, bool> SceneActivated;
+
+
+        public enum Params
+        {
+            Config,
+            Factory
+        }
 
         // CONFIGURE //
-        public override void Configure(params object[] param)
+        public override void Configure(params object[] args)
         {
-            if (IsConfigured == true)
-            {
-                Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Warning);
-                return;
-            }
+            var config = (int)Params.Config;
 
-            if (param != null && param.Length > 0)
+            if (args.Length > 0)
             {
-                foreach (var obj in param)
-                {
-                    if (obj is IConfig)
-                    {
-                        m_Config = (SceneControllerConfig)obj;
-
-                        m_SceneCore = m_Config.SceneCore;
-
-                        Send($"{obj.GetName()} setup.");
-                    }
-                }
-            }
-            else
-            {
-                Send("Params are empty. Config setup aborted!", LogFormat.Warning);
+                try { m_Config = (SceneControllerConfig)args[config]; }
+                catch { Debug.LogWarning($"{this.GetName()} config was not found. Configuration failed!"); return; }
             }
 
 
-            //IsConfigured = true;
-            //Configured?.Invoke();
+            m_Config = (SceneControllerConfig)args[config];
 
-            Send("Configuration completed!");
+
+            m_isConfigured = true;
+            Configured?.Invoke(m_isConfigured);
+            if (m_isDebug) Debug.Log($"{this.GetName()} configured.");
         }
 
         public override void Init()
         {
-            if (IsConfigured == false)
-            {
-                Send($"{this.GetName()} is not configured. Initialization was aborted!", LogFormat.Warning);
-                return;
-            }
 
-            if (IsInitialized == true)
-            {
-                Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Warning);
-                return;
-            }
+            m_isInitialized = true;
+            Initialized?.Invoke(m_isInitialized);
+            if (m_isDebug) Debug.Log($"{this.GetName()} initialized.");
 
-            Subscribe();
-
-            //IsInitialized = true;
-            //Initialized?.Invoke();
-            Send("Initialization completed!");
         }
 
         public override void Dispose()
         {
-
-            Unsubscribe();
-
-            //IsInitialized = false;
-            //Disposed?.Invoke();
-            Send("Dispose completed!");
+            m_isInitialized = false;
+            Initialized?.Invoke(m_isInitialized);
+            if (m_isDebug) Debug.Log($"{this.GetName()} disposed.");
         }
+
+
+        // LOAD //
+        public virtual IResult SceneLoad(IScene scene)
+        {
+            var result = SceneLoadAsync(scene);
+            SceneLoaded?.Invoke(scene, result.Status);
+            return result;
+        }
+
+        public virtual void SceneUnload(IScene scene)
+        {
+            var loaded = false;
+            SceneLoaded?.Invoke(scene, loaded);
+            if (m_isDebug) Debug.Log($"{this.GetName()} unloaded.");
+        }
+
+        // ACTIVATE //
+        public virtual void SceneActivate(IScene scene)
+        {
+            var activated = true;
+            SceneActivated?.Invoke(scene, activated);
+            if (m_isDebug) Debug.Log($"{this.GetName()} activated.");
+        }
+
+        public virtual void SceneDeactivate(IScene scene)
+        {
+            var activated = false;
+            SceneActivated?.Invoke(scene, activated);
+            if (m_isDebug) Debug.Log($"{this.GetName()} activated.");
+        }
+
 
         // SUBSCRIBE //
         public virtual void Subscribe()
         {
-            SignalProvider.SignalCalled += OnSignalCalled;
+            //SignalProvider.SignalCalled += OnSignalCalled;
         }
 
         public virtual void Unsubscribe()
         {
-            SignalProvider.SignalCalled -= OnSignalCalled;
+            //SignalProvider.SignalCalled -= OnSignalCalled;
         }
 
 
-        public async Task<ITaskResult> SceneLoad(IScene scene)
+        protected virtual IResult SceneLoadAsync(IScene scene)
         {
             if (scene == null)
-                return new TaskResult(false, Send($"{scene.GetName()} not found!", LogFormat.Warning));
+                return new Result(this, false, $"{scene.GetName()} not found!", m_isDebug, LogFormat.Warning);
 
-            if (scene.IsLoaded == true)
-                return new TaskResult(true, Send($"{scene.GetName()} is already loaded!"));
+            if (scene.isLoaded)
+                return new Result(this, true, $"{scene.GetName()} is already loaded!", m_isDebug, LogFormat.Warning);
 
-
-            var sceneTargetLoadTaskResult = await scene.Load();
-            if (sceneTargetLoadTaskResult.Status == false)
-                return new TaskResult(false, sceneTargetLoadTaskResult.Message);
-
-
-            SceneLoaded?.Invoke(scene);
-            return new TaskResult(true, Send($"{scene.GetName()} was loaded!"));
+            /*await*/
+            return scene.Load();
         }
 
+
+        /*
         public async Task<ITaskResult> SceneActivate(IScene scene, bool animate)
         {
             if (scene == null)
@@ -156,11 +174,11 @@ namespace App.Scene
             SceneActive = scene;
 
             return new TaskResult(true, Send($"{scene.GetName()} was activated."));
-        
-        
-        
+
+
+
         }
-          
+
 
         // CALLBACK //
         private void OnSignalCalled(ISignal signal)
@@ -179,22 +197,21 @@ namespace App.Scene
             //    SceneAc
 
         }
+         */
+    }
+}
 
+
+namespace Core
+{
+    public interface ISceneController : IController
+    {
+        IResult SceneLoad(IScene scene);
+        //IResult SceneActivate(IScene scene, bool animate);
     }
 
     public struct SceneControllerConfig : IConfig
     {
-        public IScene SceneCore { get; internal set; }
-    }
 
-    */
-}
-
-namespace App
-{
-    public interface ISceneController : IController, IConfigurable, ISubscriber, IMessager
-    {
-        Task<ITaskResult> SceneLoad(IScene scene);
-        Task<ITaskResult> SceneActivate(IScene scene, bool animate);
     }
 }

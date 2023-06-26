@@ -4,9 +4,9 @@ using Core.Factory;
 
 namespace App.Scene
 {
-    public partial class SceneFactoryDefault : Factory<IScene>
+    public partial class SceneFactory : Factory<IScene>
     {
-        public SceneFactoryDefault()
+        public SceneFactory()
         {
             Set<SceneLogin>(Constructor.Get((args) => GetSceneLogin(args)));
             Set<SceneMenu>(Constructor.Get((args) => GetSceneMenu(args)));

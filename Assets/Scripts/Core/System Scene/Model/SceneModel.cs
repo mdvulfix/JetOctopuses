@@ -11,28 +11,36 @@ using Core.Factory;
 
 namespace Core.Scene
 {
+
     [Serializable]
-    public abstract class SceneModel : ModelBasic, IScene
+    public abstract class SceneModel : ModelBasic
     {
-        [Header("Debug")]
-        [SerializeField] bool m_Debug = true;
 
         [Header("Stats")]
-        [SerializeField] bool m_Configured;
-        [SerializeField] bool m_Initialized;
-        [SerializeField] bool m_Loaded;
-        [SerializeField] bool m_Activated;
-
-        private SceneConfig m_Config;
-
-        //private static List<IScene> ScenesRegistered = new List<IScene>(10);
+        [SerializeField] private bool m_isConfigured;
+        [SerializeField] private bool m_isInitialized;
+        [SerializeField] private bool m_isLoaded;
+        [SerializeField] private bool m_isActivated;
 
 
+        [SerializeField] private SceneIndex m_Index;
+
+        private List<IScreen> m_Screens;
 
 
-        private static List<IScene> m_Scenes;
 
-        public int Index { get; private set; }
+        [Header("Debug")]
+        [SerializeField] protected bool m_isDebug = true;
+
+        [Header("Config")]
+        [SerializeField] protected SceneConfig m_Config;
+
+
+
+
+        public SceneIndex Index => m_Index;
+        public bool isLoaded => m_isLoaded;
+        public bool isActivated => m_isActivated;
 
         public event Action<bool> Configured;
         public event Action<bool> Initialized;
@@ -54,64 +62,64 @@ namespace Core.Scene
             if (args.Length > 0)
             {
                 try { m_Config = (SceneConfig)args[config]; }
-                catch { Debug.LogWarning("Scene config was not found. Configuration failed!"); }
-                return;
+                catch { Debug.LogWarning($"{this.GetName()} config was not found. Configuration failed!"); return; }
             }
 
 
             m_Config = (SceneConfig)args[config];
-            Index = m_Config.Index;
+            m_Index = m_Config.Index;
 
-            Configured?.Invoke(m_Configured = true);
-            if (m_Debug) Debug.Log($"{this.GetName()} configured.");
+            m_isConfigured = true;
+            Configured?.Invoke(m_isConfigured);
+            if (m_isDebug) Debug.Log($"{this.GetName()} configured.");
         }
 
         public override void Init()
         {
-            //ScenesRegistered.Add(m_Scene);
 
-
-
-            Initialized?.Invoke(m_Initialized = true);
-            if (m_Debug) Debug.Log($"{this.GetName()} initialized.");
+            m_isInitialized = true;
+            Initialized?.Invoke(m_isInitialized);
+            if (m_isDebug) Debug.Log($"{this.GetName()} initialized.");
 
         }
 
         public override void Dispose()
         {
-
-
-            Initialized?.Invoke(m_Initialized = false);
-            if (m_Debug) Debug.Log($"{this.GetName()} disposed.");
+            m_isInitialized = false;
+            Initialized?.Invoke(m_isInitialized);
+            if (m_isDebug) Debug.Log($"{this.GetName()} disposed.");
         }
 
 
         // LOAD //
-        public virtual void Load()
+        public virtual IResult Load()
         {
-
-            Loaded?.Invoke(m_Loaded = true);
-            if (m_Debug) Debug.Log($"{this.GetName()} loaded.");
+            m_isLoaded = true;
+            Loaded?.Invoke(m_isLoaded);
+            return new Result(this, m_isLoaded, $"{this.GetName()} loaded.", m_isDebug);
         }
 
-        public virtual void Unload()
+        public virtual IResult Unload()
         {
-            Loaded?.Invoke(m_Loaded = false);
-            if (m_Debug) Debug.Log($"{this.GetName()} unloaded.");
+            m_isLoaded = false;
+            Loaded?.Invoke(m_isLoaded);
+            return new Result(this, m_isLoaded, $"{this.GetName()} unloaded.", m_isDebug);
         }
 
 
         // ACTIVATE //
-        public virtual void Activate()
+        public virtual IResult Activate()
         {
-            Activated?.Invoke(m_Activated = true);
-            if (m_Debug) Debug.Log($"{this.GetName()} activated.");
+            m_isActivated = true;
+            Activated?.Invoke(m_isActivated);
+            return new Result(this, m_isLoaded, $"{this.GetName()} activated.", m_isDebug);
         }
 
-        public virtual void Deactivate()
+        public virtual IResult Deactivate()
         {
-            Activated?.Invoke(m_Activated = false);
-            if (m_Debug) Debug.Log($"{this.GetName()} deactivated.");
+            m_isActivated = false;
+            Activated?.Invoke(m_isActivated);
+            return new Result(this, m_isLoaded, $"{this.GetName()} deactivated.", m_isDebug);
         }
 
 
@@ -120,23 +128,24 @@ namespace Core.Scene
         {
             UScene uScene;
 
+            var buildIndex = (int)Index;
             var sceneNumber = SceneManager.sceneCount;
             for (int i = 0; i < sceneNumber; i++)
             {
                 uScene = SceneManager.GetSceneAt(i);
-                if (uScene.buildIndex == Index)
+                if (uScene.buildIndex == buildIndex)
                     yield return null;
 
             }
 
             try
             {
-                var loading = SceneManager.LoadSceneAsync(Index, LoadSceneMode.Additive);
+                var loading = SceneManager.LoadSceneAsync(buildIndex, LoadSceneMode.Additive);
                 var loadingTime = 10f;
                 while (loadingTime > 0 && loading.progress < 1f)
                 {
                     if (loadingTime <= 0f)
-                        Debug.LogWarning($"Can't loading scene by index {Index}. Load time is up!");
+                        Debug.LogWarning($"Can't loading scene by index {buildIndex}. Load time is up!");
 
                     loadingTime -= Time.deltaTime;
                 }
@@ -144,41 +153,46 @@ namespace Core.Scene
             }
             catch
             {
-                Debug.LogWarning($"Can't loading scene by index {Index}. Scene is not found.");
+                Debug.LogWarning($"Can't loading scene by index {buildIndex}. Scene is not found.");
             }
         }
 
         protected virtual IEnumerator ActivateAsync()
         {
             UScene uScene = SceneManager.GetActiveScene();
-            if (uScene.buildIndex == Index)
+
+            var buildIndex = (int)Index;
+            if (uScene.buildIndex == buildIndex)
                 yield return null;
 
             var sceneNumber = SceneManager.sceneCount;
             for (int i = 0; i < sceneNumber; i++)
             {
                 uScene = SceneManager.GetSceneAt(i);
-                if (uScene.buildIndex == Index)
+                if (uScene.buildIndex == buildIndex)
                 {
                     SceneManager.SetActiveScene(uScene);
                     yield return null;
                 }
             }
 
-            Debug.LogWarning($"Can't activate scene by index {Index}. Scene is not loaded!.");
+            Debug.LogWarning($"Can't activate scene by index {buildIndex}. Scene is not loaded!.");
         }
 
         protected virtual IEnumerator DeactivateAsync()
         {
+            var buildIndex = (int)Index;
 
-            Debug.LogWarning($"Can't deactivate scene by index {Index}. Scene is not found.");
+
+            Debug.LogWarning($"Can't deactivate scene by index {buildIndex}. Scene is not found.");
             yield return null;
         }
 
         protected virtual IEnumerator UnloadAsync()
         {
+            var buildIndex = (int)Index;
 
-            Debug.LogWarning($"Can't unload scene by index {Index}. Scene is not found.");
+            Debug.LogWarning($"Can't unload scene by index {buildIndex}. Scene is not found.");
             yield return null;
         }
 
@@ -202,17 +216,7 @@ namespace Core.Scene
             return instance;
         }
 
-        // CONFIG //
-        public class SceneConfig : IConfig
-        {
-            public int Index { get; private set; }
 
-            public SceneConfig(int index)
-            {
-                Index = index;
-            }
-
-        }
 
         public struct SceneActionInfo : IActionInfo
         {
@@ -515,12 +519,30 @@ namespace Core.Scene
 
 namespace Core
 {
-    public interface IScene : IComponent, IConfigurable, ILoadable
-    {
-        int Index { get; }
 
+    public enum SceneIndex
+    {
+        None,
+        Login,
+        Menu,
+        Level
     }
 
 
+    public interface IScene : IComponent, IConfigurable, ILoadable, IActivable
+    {
+        SceneIndex Index { get; }
+    }
+
+    public class SceneConfig : IConfig
+    {
+        public SceneIndex Index { get; private set; }
+
+        public SceneConfig(SceneIndex index)
+        {
+            Index = index;
+        }
+
+    }
 
 }

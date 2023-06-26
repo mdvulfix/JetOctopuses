@@ -11,22 +11,15 @@ using App.State;
 
 namespace App
 {
-    public enum SceneIndex
-    {
-        Core,
-        Login,
-        Menu,
-        Level
-    }
 
     [Serializable]
     public class SessionDefault : SessionModel, ISession
     {
 
-        [SerializeField] private StateLogin m_StateLogin;
-        [SerializeField] private StateMenu m_StateMenu;
-        private IState m_StateActive;
-        private List<IState> m_States;
+        //[SerializeField] private StateLogin m_StateLogin;
+        //[SerializeField] private StateMenu m_StateMenu;
+        //private IState m_StateActive;
+        //private List<IState> m_States;
 
 
         [SerializeField] private SceneLogin m_SceneLogin;
@@ -37,32 +30,43 @@ namespace App
 
 
         // CONFIGURE //
-        public override void Configure(params object[] param)
+        public override void Configure(params object[] args)
         {
-            Debug.Log("Session configuring...");
+            if (m_isDebug) Debug.Log("Session configuring...");
 
-            var config = new SessionConfig(this);
+            if (args.Length > 0)
+            {
+                base.Configure(args);
+                return;
+            }
+
+            // CONFIGURE BY DEFAULT //
+            if (m_isDebug) Debug.Log($"{this.GetName()} will be configured by default!");
+
+            var config = new SessionConfig();
             base.Configure(config);
 
         }
 
         public override void Init()
         {
-            Debug.Log("Session initializing...");
+            if (m_isDebug) Debug.Log("Session initializing...");
 
-            m_States = new List<IState>(10);
-            m_States.Add(m_StateLogin = StateLogin.Get());
-            m_States.Add(m_StateMenu = StateMenu.Get());
+            //m_States = new List<IState>(10);
+            //m_States.Add(m_StateLogin = StateLogin.Get());
+            //m_States.Add(m_StateMenu = StateMenu.Get());
 
             m_Scenes = new List<IScene>(10);
-            m_Scenes.Add(m_SceneLogin = SceneLogin.Get());
-            m_Scenes.Add(m_SceneMenu = SceneMenu.Get());
+            m_Scenes.Add(m_SceneLogin = SceneLogin.Get(new SceneConfig(SceneIndex.Login)));
+            m_Scenes.Add(m_SceneMenu = SceneMenu.Get(new SceneConfig(SceneIndex.Menu)));
+            m_Scenes.Add(m_SceneLevel = SceneLevel.Get(new SceneConfig(SceneIndex.Level)));
 
 
             foreach (var scene in m_Scenes)
             {
-                scene.Configure();
                 scene.Init();
+                scene.Load();
+                scene.Activate();
 
                 //scene.LoadRequired += OnSceneLoadRequired;
                 //scene.Loaded += OnSceneLoaded;
@@ -72,31 +76,32 @@ namespace App
 
 
 
-            SetState(m_StateLogin);
+            //SetState(m_StateLogin);
 
-            SceneActivate(m_SceneLogin);
+            //SceneActivate(m_SceneLogin);
 
             base.Init();
         }
 
-
         public override void Dispose()
         {
-            Debug.Log("Session disposing...");
+            if (m_isDebug) Debug.Log("Session disposing...");
             foreach (var scene in m_Scenes)
             {
                 //scene.Activated -= OnSceneLoaded;
                 //scene.Loaded -= OnSceneLoaded;
                 //scene.LoadRequired -= OnSceneLoadRequired;
+                scene.Deactivate();
+                scene.Unload();
                 scene.Dispose();
             }
 
 
-            m_StateActive = null;
-            m_Scenes.Clear();
+            // m_StateActive = null;
+            // m_Scenes.Clear();
 
-            m_SceneActive = null;
-            m_States.Clear();
+            // m_SceneActive = null;
+            // m_States.Clear();
 
             base.Dispose();
         }
@@ -104,13 +109,13 @@ namespace App
 
         private void SetState(IState state)
         {
-            m_StateActive?.Exit();
+            //m_StateActive?.Exit();
 
-            m_StateActive = state;
-            m_StateActive.Enter();
+            //m_StateActive = state;
+            //m_StateActive.Enter();
             OnStateChanged();
 
-            m_StateActive.Run();
+            //m_StateActive.Run();
 
         }
 
@@ -401,7 +406,7 @@ namespace App
 
 
 
-public enum Result
+public enum PlayResult
 {
     None,
     Draw,
