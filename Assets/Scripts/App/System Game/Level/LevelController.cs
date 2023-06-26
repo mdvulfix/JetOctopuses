@@ -3,7 +3,7 @@ using UnityEngine;
 using URandom = UnityEngine.Random;
 
 //using App.Camera;
-using App.Game.Map;
+//using App.Game.Map;
 using System;
 /*
 namespace App.Game
