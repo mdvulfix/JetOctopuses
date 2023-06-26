@@ -6,11 +6,10 @@ namespace Core
     public interface ILoadable
     {
         event Action<bool> Loaded;
-        event Action<bool> Activated;
+        event Action<ILoadable> LoadRequired;
+
 
         void Load();
-        void Activate();
-        void Deactivate();
         void Unload();
 
     }

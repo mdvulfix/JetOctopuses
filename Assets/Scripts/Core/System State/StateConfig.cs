@@ -1,6 +1,6 @@
 namespace Core.State
 {
-    public class StateConfig : AConfig, IConfig
+    public class StateConfig : IConfig
     {
 
         public IState State { get; }

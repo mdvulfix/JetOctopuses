@@ -12,16 +12,22 @@ using App.Scene;
 
 namespace Core.State
 {
-    public abstract class StateModel : ModelCommon
+    public abstract class StateModel : ModelBasic, IState
     {
 
+        [Header("Debug")]
+        [SerializeField] bool m_Debug = true;
 
-        [SerializeField] bool m_Debug;
-        [SerializeField] bool m_IsConfigured;
-        [SerializeField] bool m_IsInitialized;
+        [Header("Stats")]
+        [SerializeField] bool m_Configured;
+        [SerializeField] bool m_Initialized;
+
 
         private StateConfig m_Config;
-        private IState m_State;
+
+
+        public event Action<bool> Configured;
+        public event Action<bool> Initialized;
 
 
         //private ICacheHandler m_CacheHandler;
@@ -41,7 +47,7 @@ namespace Core.State
         //public event Action RecordRequired;
         //public event Action DeleteRequired;
 
-        protected enum ConfigParams
+        public enum Params
         {
             Config,
             Factory
@@ -50,58 +56,41 @@ namespace Core.State
         // CONFIGURE //
         public override void Configure(params object[] args)
         {
-            m_Debug = true;
+            var config = (int)Params.Config;
 
             if (args.Length > 0)
-                foreach (var arg in args)
-                    m_IsConfigured = arg is IConfig ? Setup(arg as IConfig) : false;
+            {
+                try { m_Config = (StateConfig)args[config]; }
+                catch { Debug.LogWarning("Scene config was not found. Configuration failed!"); }
+                return;
+            }
 
 
+            m_Config = (StateConfig)args[config];
 
-            if (m_Debug)
-                if (m_IsConfigured)
-                    Debug.Log($"{m_State.GetName()} configured successfully.");
+
+            Configured?.Invoke(m_Configured = true);
+            if (m_Debug) Debug.Log($"{this.GetName()} configured.");
         }
 
         public override void Init()
         {
-            m_IsInitialized = true;
+            //ScenesRegistered.Add(m_Scene);
 
-            if (m_Debug)
-                if (m_IsInitialized)
-                    Debug.Log($"{m_State.GetName()} initialized successfully.");
+
+
+            Initialized?.Invoke(m_Initialized = true);
+            if (m_Debug) Debug.Log($"{this.GetName()} initialized.");
 
         }
 
         public override void Dispose()
         {
-            m_IsInitialized = false;
 
 
-
-            if (m_Debug)
-                if (!m_IsInitialized)
-                    Debug.Log($"{m_State.GetName()} disposed successfully.");
-
+            Initialized?.Invoke(m_Initialized = false);
+            if (m_Debug) Debug.Log($"{this.GetName()} disposed.");
         }
-
-
-        protected virtual bool Setup(IConfig config)
-        {
-            if (config is StateConfig)
-            {
-                m_Config = (StateConfig)config;
-                m_State = m_Config.State;
-
-                return true;
-            }
-
-            if (m_Debug)
-                Debug.LogWarning("State config not found. Configuration failed!");
-
-            return false;
-        }
-
 
 
         public virtual void Subscribe() { }
@@ -138,7 +127,7 @@ namespace Core.State
             IFactory factoryCustom = null;
 
             if (args.Length > 0)
-                try { factoryCustom = (IFactory)args[(int)ConfigParams.Factory]; }
+                try { factoryCustom = (IFactory)args[(int)Params.Factory]; }
                 catch { Debug.Log("Custom factory not found! The instance will be created by default."); }
 
 

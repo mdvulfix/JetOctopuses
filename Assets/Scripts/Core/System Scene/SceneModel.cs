@@ -12,22 +12,33 @@ using Core.Factory;
 namespace Core.Scene
 {
     [Serializable]
-    public abstract class SceneModel : ModelComponent
+    public abstract class SceneModel : ModelBasic, IScene
     {
-
+        [Header("Debug")]
         [SerializeField] bool m_Debug = true;
+
+        [Header("Stats")]
+        [SerializeField] bool m_Configured;
+        [SerializeField] bool m_Initialized;
+        [SerializeField] bool m_Loaded;
+        [SerializeField] bool m_Activated;
 
         private SceneConfig m_Config;
 
         //private static List<IScene> ScenesRegistered = new List<IScene>(10);
 
 
-        public int Index { get; private set; }
+
 
         private static List<IScene> m_Scenes;
 
+        public int Index { get; private set; }
 
-        public event Action<IScene> LoadRequired;
+        public event Action<bool> Configured;
+        public event Action<bool> Initialized;
+        public event Action<bool> Loaded;
+        public event Action<bool> Activated;
+        public event Action<ILoadable> LoadRequired;
 
         public enum Params
         {
@@ -38,21 +49,21 @@ namespace Core.Scene
         // CONFIGURE //
         public override void Configure(params object[] args)
         {
-            var configIndex = (int)Params.Config;
+            var config = (int)Params.Config;
 
             if (args.Length > 0)
             {
-                try { m_Config = (SceneConfig)args[(int)Params.Config]; }
+                try { m_Config = (SceneConfig)args[config]; }
                 catch { Debug.LogWarning("Scene config was not found. Configuration failed!"); }
                 return;
             }
 
 
-            m_Config = (SceneConfig)args[configIndex];
+            m_Config = (SceneConfig)args[config];
             Index = m_Config.Index;
 
-            Configured += OnConfigured;
-            base.Configure();
+            Configured?.Invoke(m_Configured = true);
+            if (m_Debug) Debug.Log($"{this.GetName()} configured.");
         }
 
         public override void Init()
@@ -61,10 +72,8 @@ namespace Core.Scene
 
 
 
-            Initialized += OnInitialized;
-            Loaded += OnLoaded;
-            Activated += OnActivated;
-            base.Init();
+            Initialized?.Invoke(m_Initialized = true);
+            if (m_Debug) Debug.Log($"{this.GetName()} initialized.");
 
         }
 
@@ -72,11 +81,39 @@ namespace Core.Scene
         {
 
 
-            base.Dispose();
-            Activated -= OnActivated;
-            Loaded -= OnLoaded;
-            Initialized -= OnInitialized;
+            Initialized?.Invoke(m_Initialized = false);
+            if (m_Debug) Debug.Log($"{this.GetName()} disposed.");
         }
+
+
+        // LOAD //
+        public virtual void Load()
+        {
+
+            Loaded?.Invoke(m_Loaded = true);
+            if (m_Debug) Debug.Log($"{this.GetName()} loaded.");
+        }
+
+        public virtual void Unload()
+        {
+            Loaded?.Invoke(m_Loaded = false);
+            if (m_Debug) Debug.Log($"{this.GetName()} unloaded.");
+        }
+
+
+        // ACTIVATE //
+        public virtual void Activate()
+        {
+            Activated?.Invoke(m_Activated = true);
+            if (m_Debug) Debug.Log($"{this.GetName()} activated.");
+        }
+
+        public virtual void Deactivate()
+        {
+            Activated?.Invoke(m_Activated = false);
+            if (m_Debug) Debug.Log($"{this.GetName()} deactivated.");
+        }
+
 
 
         protected virtual IEnumerator LoadAsync()
@@ -146,31 +183,6 @@ namespace Core.Scene
         }
 
 
-        private void OnConfigured(bool result)
-        {
-            if (m_Debug)
-                if (result) Debug.Log($"{this.GetName()} configured successfully.");
-        }
-
-        private void OnInitialized(bool result)
-        {
-            if (m_Debug)
-                if (result) Debug.Log($"{this.GetName()} initialized successfully.");
-        }
-
-        private void OnLoaded(bool result)
-        {
-            if (m_Debug)
-                if (result) Debug.Log($"{this.GetName()} loaded successfully.");
-        }
-
-        private void OnActivated(bool result)
-        {
-            if (m_Debug)
-                if (result) Debug.Log($"{this.GetName()} activated successfully.");
-
-        }
-
 
         // FACTORY //
         public static TScene Get<TScene>(params object[] args)
@@ -191,7 +203,7 @@ namespace Core.Scene
         }
 
         // CONFIG //
-        public class SceneConfig : AConfig, IConfig
+        public class SceneConfig : IConfig
         {
             public int Index { get; private set; }
 
@@ -506,7 +518,7 @@ namespace Core
     public interface IScene : IComponent, IConfigurable, ILoadable
     {
         int Index { get; }
-        event Action<IScene> LoadRequired;
+
     }
 
 

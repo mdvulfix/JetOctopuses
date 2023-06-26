@@ -77,7 +77,6 @@ namespace Core
         public IMessage Message { get; private set; }
     }
 
-
     public struct TaskResult<TTaskInfo> where TTaskInfo : ITaskInfo
     {
         public TaskResult(bool status, IMessage message, TTaskInfo info = default(TTaskInfo))

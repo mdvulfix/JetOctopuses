@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Core
 {
-    public abstract class ModelComponent : MonoBehaviour
+    public abstract class ModelBasic
     {
 
         // CONFIGURE //
@@ -15,9 +15,11 @@ namespace Core
 
     }
 
-    public interface IComponent : IConfigurable
+    public interface IBasic : IConfigurable
     {
 
     }
+
+
 }
 
