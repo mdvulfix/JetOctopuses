@@ -7,7 +7,7 @@ using UScene = UnityEngine.SceneManagement.Scene;
 
 using Core;
 using Core.Factory;
-
+using Core.Async;
 
 namespace Core.Scene
 {
@@ -26,6 +26,8 @@ namespace Core.Scene
         [SerializeField] private SceneIndex m_Index;
 
         private List<IScreen> m_Screens;
+
+        private IAwaiter m_Awaiter;
 
 
 
@@ -62,7 +64,7 @@ namespace Core.Scene
             if (args.Length > 0)
             {
                 try { m_Config = (SceneConfig)args[config]; }
-                catch { Debug.LogWarning($"{this.GetName()} config was not found. Configuration failed!"); return; }
+                catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug); return; }
             }
 
 
@@ -71,60 +73,100 @@ namespace Core.Scene
 
             m_isConfigured = true;
             Configured?.Invoke(m_isConfigured);
-            if (m_isDebug) Debug.Log($"{this.GetName()} configured.");
+            $"{this.GetName()} configured.".Send(this, m_isDebug);
         }
 
         public override void Init()
         {
 
+            var awaiterConfig = new AwaiterConfig();
+            m_Awaiter = AwaiterDefault.Get();
+            m_Awaiter.Configure();
+            m_Awaiter.Init();
+            m_Awaiter.Activate();
+
+
+
+
             m_isInitialized = true;
             Initialized?.Invoke(m_isInitialized);
-            if (m_isDebug) Debug.Log($"{this.GetName()} initialized.");
+            $"{this.GetName()} initialized.".Send(this, m_isDebug);
 
         }
 
         public override void Dispose()
         {
+            m_Awaiter.Deactivate();
+            m_Awaiter.Dispose();
+
             m_isInitialized = false;
             Initialized?.Invoke(m_isInitialized);
-            if (m_isDebug) Debug.Log($"{this.GetName()} disposed.");
+            $"{this.GetName()} disposed.".Send(this, m_isDebug);
         }
 
 
         // LOAD //
-        public virtual IResult Load()
+        public virtual void Load()
         {
+
+            var result = AsyncOperation(() => AwaitLoading());
+            var log = result.Log;
+
+            if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
+
             m_isLoaded = true;
             Loaded?.Invoke(m_isLoaded);
-            return new Result(this, m_isLoaded, $"{this.GetName()} loaded.", m_isDebug);
+            log.Send(this, m_isDebug);
+            //$"{this.GetName()} loaded.".Send(this, m_isDebug);
+
         }
 
-        public virtual IResult Unload()
+        public virtual void Unload()
         {
+            var result = AsyncOperation(() => AwaitUnloading());
+            var log = result.Log;
+
+            if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
+
             m_isLoaded = false;
             Loaded?.Invoke(m_isLoaded);
-            return new Result(this, m_isLoaded, $"{this.GetName()} unloaded.", m_isDebug);
+            log.Send(this, m_isDebug);
+            //$"{this.GetName()} unloaded.".Send(this, m_isDebug);
+
         }
 
 
         // ACTIVATE //
-        public virtual IResult Activate()
+        public virtual void Activate()
         {
+            var result = AsyncOperation(() => AwaitActivating());
+            var log = result.Log;
+
+            if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
+
             m_isActivated = true;
             Activated?.Invoke(m_isActivated);
-            return new Result(this, m_isLoaded, $"{this.GetName()} activated.", m_isDebug);
+            log.Send(this, m_isDebug);
+            //$"{this.GetName()} activated.".Send(this, m_isDebug);
+
         }
 
-        public virtual IResult Deactivate()
+        public virtual void Deactivate()
         {
+            var result = AsyncOperation(() => AwaitDeactivating());
+            var log = result.Log;
+
+            if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
+
             m_isActivated = false;
             Activated?.Invoke(m_isActivated);
-            return new Result(this, m_isLoaded, $"{this.GetName()} deactivated.", m_isDebug);
+            log.Send(this, m_isDebug);
+
+            //$"{this.GetName()} deactivated.".Send(this, m_isDebug);
         }
 
 
-
-        protected virtual IEnumerator LoadAsync()
+        protected virtual bool AwaitLoading()
         {
             UScene uScene;
 
@@ -134,36 +176,41 @@ namespace Core.Scene
             {
                 uScene = SceneManager.GetSceneAt(i);
                 if (uScene.buildIndex == buildIndex)
-                    yield return null;
-
-            }
-
-            try
-            {
-                var loading = SceneManager.LoadSceneAsync(buildIndex, LoadSceneMode.Additive);
-                var loadingTime = 10f;
-                while (loadingTime > 0 && loading.progress < 1f)
                 {
-                    if (loadingTime <= 0f)
-                        Debug.LogWarning($"Can't loading scene by index {buildIndex}. Load time is up!");
-
-                    loadingTime -= Time.deltaTime;
+                    $"Scene by index {buildIndex} is already loaded.".Send(this, m_isDebug);
+                    return true;
                 }
+            }
 
-            }
-            catch
+            var loading = SceneManager.LoadSceneAsync(buildIndex, LoadSceneMode.Additive);
+            if (loading.progress < 0.9f)
             {
-                Debug.LogWarning($"Can't loading scene by index {buildIndex}. Scene is not found.");
+                $"Awaiting loading scene by index {buildIndex}...".Send(this, m_isDebug);
+                return false;
             }
+
+            $"Scene by index {buildIndex} successfully loaded.".Send(this, m_isDebug);
+            return true;
         }
 
-        protected virtual IEnumerator ActivateAsync()
+        protected virtual bool AwaitUnloading()
+        {
+            var buildIndex = (int)Index;
+
+            Debug.LogWarning($"Can't unload scene by index {buildIndex}. Scene is not found.");
+            return false;
+        }
+
+        protected virtual bool AwaitActivating()
         {
             UScene uScene = SceneManager.GetActiveScene();
 
             var buildIndex = (int)Index;
             if (uScene.buildIndex == buildIndex)
-                yield return null;
+            {
+                $"Scene by index {buildIndex} is already activated.".Send(this, m_isDebug);
+                return true;
+            }
 
             var sceneNumber = SceneManager.sceneCount;
             for (int i = 0; i < sceneNumber; i++)
@@ -172,30 +219,34 @@ namespace Core.Scene
                 if (uScene.buildIndex == buildIndex)
                 {
                     SceneManager.SetActiveScene(uScene);
-                    yield return null;
+                    $"Scene by index {buildIndex} successfully activated.".Send(this, m_isDebug);
+                    return true;
                 }
             }
 
-            Debug.LogWarning($"Can't activate scene by index {buildIndex}. Scene is not loaded!.");
+            $"Can't activate scene by index {buildIndex}.".Send(this, m_isDebug, LogFormat.Warning);
+            return false;
         }
 
-        protected virtual IEnumerator DeactivateAsync()
+        protected virtual bool AwaitDeactivating()
         {
             var buildIndex = (int)Index;
 
 
             Debug.LogWarning($"Can't deactivate scene by index {buildIndex}. Scene is not found.");
-            yield return null;
+            return false;
         }
 
-        protected virtual IEnumerator UnloadAsync()
+        private IResult AsyncOperation(Func<bool> func)
         {
-            var buildIndex = (int)Index;
+            using (var awaiter = AwaiterDefault.Get(new AwaiterConfig()))
+            {
+                awaiter.Init();
+                awaiter.Activate();
+                return m_Awaiter.Run(this, func);
+            }
 
-            Debug.LogWarning($"Can't unload scene by index {buildIndex}. Scene is not found.");
-            yield return null;
         }
-
 
 
         // FACTORY //

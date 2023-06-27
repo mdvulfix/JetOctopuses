@@ -27,6 +27,7 @@ namespace App
         [SerializeField] private SceneLevel m_SceneLevel;
         private IScene m_SceneActive;
         private List<IScene> m_Scenes;
+        private ISceneController m_SceneController;
 
 
         // CONFIGURE //
@@ -58,20 +59,17 @@ namespace App
 
             m_Scenes = new List<IScene>(10);
             m_Scenes.Add(m_SceneLogin = SceneLogin.Get(new SceneConfig(SceneIndex.Login)));
-            m_Scenes.Add(m_SceneMenu = SceneMenu.Get(new SceneConfig(SceneIndex.Menu)));
-            m_Scenes.Add(m_SceneLevel = SceneLevel.Get(new SceneConfig(SceneIndex.Level)));
+            //m_Scenes.Add(m_SceneMenu = SceneMenu.Get(new SceneConfig(SceneIndex.Menu)));
+            //m_Scenes.Add(m_SceneLevel = SceneLevel.Get(new SceneConfig(SceneIndex.Level)));
+
+            var sceneControllerConfig = new SceneControllerConfig(m_Scenes);
 
 
-            foreach (var scene in m_Scenes)
-            {
-                scene.Init();
-                scene.Load();
-                scene.Activate();
+            m_SceneController = new SceneController();
+            m_SceneController.Configure(sceneControllerConfig);
+            m_SceneController.Init();
+            m_SceneController.SceneActivated += OnSceneLoaded;
 
-                //scene.LoadRequired += OnSceneLoadRequired;
-                //scene.Loaded += OnSceneLoaded;
-                //scene.Activated += OnSceneLoaded;
-            }
 
 
 
@@ -86,16 +84,9 @@ namespace App
         public override void Dispose()
         {
             if (m_isDebug) Debug.Log("Session disposing...");
-            foreach (var scene in m_Scenes)
-            {
-                //scene.Activated -= OnSceneLoaded;
-                //scene.Loaded -= OnSceneLoaded;
-                //scene.LoadRequired -= OnSceneLoadRequired;
-                scene.Deactivate();
-                scene.Unload();
-                scene.Dispose();
-            }
 
+            m_SceneController.Dispose();
+            m_SceneController.SceneActivated -= OnSceneLoaded;
 
             // m_StateActive = null;
             // m_Scenes.Clear();
@@ -107,8 +98,21 @@ namespace App
         }
 
 
+
+        private void Start()
+        {
+            m_SceneController.SceneLoad(m_SceneLogin);
+            m_SceneController.SceneActivate(m_SceneLogin);
+
+        }
+
+
+
         private void SetState(IState state)
         {
+
+
+
             //m_StateActive?.Exit();
 
             //m_StateActive = state;

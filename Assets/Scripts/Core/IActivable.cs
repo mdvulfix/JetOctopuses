@@ -8,8 +8,8 @@ namespace Core
 
         event Action<bool> Activated;
 
-        IResult Activate();
-        IResult Deactivate();
+        void Activate();
+        void Deactivate();
 
     }
 

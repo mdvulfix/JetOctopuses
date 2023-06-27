@@ -7,9 +7,9 @@ public static class ObjectExtension
     public static string GetName(this object instance) =>
         instance.GetType().Name;
 
-    public static string Send(this object instance, object context, LogFormat format)
+    public static string Send(this object instance, object context, bool logSend = true, LogFormat format = LogFormat.None)
     {
-        if (instance is string)
+        if (instance is string && logSend)
         {
             switch (format)
             {

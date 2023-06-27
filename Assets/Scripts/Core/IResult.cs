@@ -14,8 +14,7 @@ namespace Core
             LogSend = false;
             LogFormat = LogFormat.None;
 
-            if (LogSend) Send();
-
+            Log.Send(Context, LogSend, LogFormat);
         }
 
 
@@ -27,7 +26,7 @@ namespace Core
             LogSend = false;
             LogFormat = LogFormat.None;
 
-            if (LogSend) Send();
+            Log.Send(Context, LogSend, LogFormat);
 
         }
 
@@ -39,7 +38,7 @@ namespace Core
             LogSend = logSend;
             LogFormat = LogFormat.None;
 
-            if (LogSend) Send();
+            Log.Send(Context, LogSend, LogFormat);
         }
 
 
@@ -51,7 +50,7 @@ namespace Core
             LogSend = logSend;
             LogFormat = format;
 
-            if (LogSend) Send();
+            Log.Send(Context, LogSend, LogFormat);
         }
 
         public object Context { get; private set; }
@@ -59,11 +58,6 @@ namespace Core
         public string Log { get; private set; }
         public bool LogSend { get; private set; }
         public LogFormat LogFormat { get; private set; }
-
-        private void Send()
-            => Log.Send(Context, LogFormat);
-
-
 
     }
 

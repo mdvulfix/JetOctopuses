@@ -10,8 +10,8 @@ namespace Core
         event Action<bool> Loaded;
         event Action<ILoadable> LoadRequired;
 
-        IResult Load();
-        IResult Unload();
+        void Load();
+        void Unload();
 
     }
 }
