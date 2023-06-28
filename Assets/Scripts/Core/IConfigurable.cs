@@ -3,14 +3,14 @@ using System;
 
 namespace Core
 {
-    public interface IConfigurable : IDisposable
-    {
+   public interface IConfigurable : IDisposable
+   {
 
-        event Action<bool> Configured;
-        event Action<bool> Initialized;
+      event Action<IEvent> Configured;
+      event Action<IEvent> Initialized;
 
-        void Configure(params object[] args);
-        void Init();
-    }
+      void Configure(params object[] args);
+      void Init();
+   }
 }
 

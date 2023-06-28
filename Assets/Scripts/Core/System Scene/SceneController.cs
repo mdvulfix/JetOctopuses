@@ -9,211 +9,216 @@ using System.Collections;
 
 namespace Core.Scene
 {
-    public class SceneController : ModelController, ISceneController
-    {
+   public class SceneController : ModelController, ISceneController
+   {
 
-        //private IScene m_Scene;
-        //private ISignal m_SignalSceneActivate;
-
-
-
-        public SceneController() { }
-        public SceneController(params object[] args)
-            => Configure(args);
-
-        [Header("Stats")]
-        [SerializeField] private bool m_isConfigured;
-        [SerializeField] private bool m_isInitialized;
-
-
-        [Header("Debug")]
-        [SerializeField] protected bool m_isDebug = true;
-
-        [Header("Config")]
-        [SerializeField] protected SceneControllerConfig m_Config;
-
-        public IEnumerable<IScene> m_Scenes;
-
-        public event Action<bool> Configured;
-        public event Action<bool> Initialized;
-
-        public event Action<IScene, bool> SceneLoaded;
-        public event Action<IScene, bool> SceneActivated;
-
-
-        public enum Params
-        {
-            Config,
-            Factory
-        }
-
-        // CONFIGURE //
-        public override void Configure(params object[] args)
-        {
-            var config = (int)Params.Config;
-
-            if (args.Length > 0)
-            {
-                try { m_Config = (SceneControllerConfig)args[config]; }
-                catch { Debug.LogWarning($"{this.GetName()} config was not found. Configuration failed!"); return; }
-            }
-
-            m_Config = (SceneControllerConfig)args[config];
-            m_Scenes = m_Config.Scenes;
-
-
-            m_isConfigured = true;
-            Configured?.Invoke(m_isConfigured);
-            if (m_isDebug) Debug.Log($"{this.GetName()} configured.");
-        }
-
-        public override void Init()
-        {
-            foreach (var scene in m_Scenes)
-            {
-                scene.Init();
-
-
-                //scene.LoadRequired += OnSceneLoadRequired;
-                //scene.Loaded += OnSceneLoaded;
-                //scene.Activated += OnSceneLoaded;
-            }
+      //private IScene m_Scene;
+      //private ISignal m_SignalSceneActivate;
 
 
 
 
 
-
-            m_isInitialized = true;
-            Initialized?.Invoke(m_isInitialized);
-            if (m_isDebug) Debug.Log($"{this.GetName()} initialized.");
-
-        }
-
-        public override void Dispose()
-        {
-
-            foreach (var scene in m_Scenes)
-            {
+      [Header("Stats")]
+      [SerializeField] private bool m_isConfigured;
+      [SerializeField] private bool m_isInitialized;
 
 
-                scene.Deactivate();
-                scene.Unload();
-                scene.Dispose();
+      [Header("Debug")]
+      [SerializeField] protected bool m_isDebug = true;
 
+      [Header("Config")]
+      [SerializeField] protected SceneControllerConfig m_Config;
 
-                //scene.LoadRequired += OnSceneLoadRequired;
-                //scene.Loaded += OnSceneLoaded;
-                //scene.Activated += OnSceneLoaded;
-            }
+      public IEnumerable<IScene> m_Scenes;
+
+      public event Action<bool> Configured;
+      public event Action<bool> Initialized;
+
+      public event Action<IScene, bool> SceneLoaded;
+      public event Action<IScene, bool> SceneActivated;
 
 
 
-            m_isInitialized = false;
-            Initialized?.Invoke(m_isInitialized);
-            if (m_isDebug) Debug.Log($"{this.GetName()} disposed.");
-        }
+      public SceneController() { }
+      public SceneController(params object[] args)
+          => Configure(args);
 
 
-        // LOAD //
-        public virtual void SceneLoad(IScene scene)
-        {
-            if (scene == null) { $"{scene.GetName()} not found!".Send(this, m_isDebug, LogFormat.Warning); return; }
-            if (scene.isLoaded) { $"{scene.GetName()} is already loaded!".Send(this, m_isDebug, LogFormat.Warning); return; }
+      public enum Params
+      {
+         Config,
+         Factory
+      }
 
-            scene.Load();
-        }
 
-        public virtual void SceneUnload(IScene scene)
-        {
-            if (scene == null) { $"{scene.GetName()} not found!".Send(this, m_isDebug, LogFormat.Warning); return; }
-            if (!scene.isLoaded) { $"{scene.GetName()} is already unloaded!".Send(this, m_isDebug, LogFormat.Warning); return; }
+      // CONFIGURE //
+      public override void Configure(params object[] args)
+      {
+         var config = (int)Params.Config;
 
-            scene.Unload();
-        }
+         if (args.Length > 0)
+         {
+            try { m_Config = (SceneControllerConfig)args[config]; }
+            catch { Debug.LogWarning($"{this.GetName()} config was not found. Configuration failed!"); return; }
+         }
 
-        // ACTIVATE //
-        public virtual void SceneActivate(IScene scene)
-        {
-            if (scene == null) { $"{scene.GetName()} not found!".Send(this, m_isDebug, LogFormat.Warning); return; }
-            if (!scene.isLoaded) { $"{scene.GetName()} is not loaded!".Send(this, m_isDebug, LogFormat.Warning); return; }
-            if (scene.isActivated) { $"{scene.GetName()} is already activated!".Send(this, m_isDebug, LogFormat.Warning); return; }
+         m_Config = (SceneControllerConfig)args[config];
+         m_Scenes = m_Config.Scenes;
 
-            scene.Activate();
 
-        }
+         m_isConfigured = true;
+         Configured?.Invoke(m_isConfigured);
+         if (m_isDebug) Debug.Log($"{this.GetName()} configured.");
+      }
 
-        public virtual void SceneDeactivate(IScene scene)
-        {
+      public override void Init()
+      {
+         foreach (var scene in m_Scenes)
+         {
+            scene.Init();
 
-            if (scene == null) { $"{scene.GetName()} not found!".Send(this, m_isDebug, LogFormat.Warning); return; }
-            if (!scene.isLoaded) { $"{scene.GetName()} is not loaded!".Send(this, m_isDebug, LogFormat.Warning); return; }
-            if (!scene.isActivated) { $"{scene.GetName()} is already deactivated!".Send(this, m_isDebug, LogFormat.Warning); return; }
+
+            //scene.LoadRequired += OnSceneLoadRequired;
+            //scene.Loaded += OnSceneLoaded;
+            //scene.Activated += OnSceneLoaded;
+         }
+
+
+
+
+
+
+         m_isInitialized = true;
+         Initialized?.Invoke(m_isInitialized);
+         if (m_isDebug) Debug.Log($"{this.GetName()} initialized.");
+
+      }
+
+      public override void Dispose()
+      {
+
+         foreach (var scene in m_Scenes)
+         {
+
 
             scene.Deactivate();
-        }
+            scene.Unload();
+            scene.Dispose();
 
 
-        // SUBSCRIBE //
-        public virtual void Subscribe()
-        {
-            //SignalProvider.SignalCalled += OnSignalCalled;
-        }
-
-        public virtual void Unsubscribe()
-        {
-            //SignalProvider.SignalCalled -= OnSignalCalled;
-        }
+            //scene.LoadRequired += OnSceneLoadRequired;
+            //scene.Loaded += OnSceneLoaded;
+            //scene.Activated += OnSceneLoaded;
+         }
 
 
 
+         m_isInitialized = false;
+         Initialized?.Invoke(m_isInitialized);
+         if (m_isDebug) Debug.Log($"{this.GetName()} disposed.");
+      }
+
+
+      // LOAD //
+      public virtual void SceneLoad(IScene scene)
+      {
+         if (scene == null) { $"{scene.GetName()} not found!".Send(this, m_isDebug, LogFormat.Warning); return; }
+         if (scene.isLoaded) { $"{scene.GetName()} is already loaded!".Send(this, m_isDebug, LogFormat.Warning); return; }
+
+         scene.Load();
+      }
+
+      public virtual void SceneUnload(IScene scene)
+      {
+         if (scene == null) { $"{scene.GetName()} not found!".Send(this, m_isDebug, LogFormat.Warning); return; }
+         if (!scene.isLoaded) { $"{scene.GetName()} is already unloaded!".Send(this, m_isDebug, LogFormat.Warning); return; }
+
+         scene.Unload();
+      }
+
+      // ACTIVATE //
+      public virtual void SceneActivate(IScene scene)
+      {
+         if (scene == null) { $"{scene.GetName()} not found!".Send(this, m_isDebug, LogFormat.Warning); return; }
+         if (!scene.isLoaded) { $"{scene.GetName()} is not loaded!".Send(this, m_isDebug, LogFormat.Warning); return; }
+         if (scene.isActivated) { $"{scene.GetName()} is already activated!".Send(this, m_isDebug, LogFormat.Warning); return; }
+
+         scene.Activate();
+
+      }
+
+      public virtual void SceneDeactivate(IScene scene)
+      {
+
+         if (scene == null) { $"{scene.GetName()} not found!".Send(this, m_isDebug, LogFormat.Warning); return; }
+         if (!scene.isLoaded) { $"{scene.GetName()} is not loaded!".Send(this, m_isDebug, LogFormat.Warning); return; }
+         if (!scene.isActivated) { $"{scene.GetName()} is already deactivated!".Send(this, m_isDebug, LogFormat.Warning); return; }
+
+         scene.Deactivate();
+      }
+
+
+      // SUBSCRIBE //
+      public virtual void Subscribe()
+      {
+         //SignalProvider.SignalCalled += OnSignalCalled;
+      }
+
+      public virtual void Unsubscribe()
+      {
+         //SignalProvider.SignalCalled -= OnSignalCalled;
+      }
 
 
 
-        /*
-
-  // CALLBACK //
-  private void OnSignalCalled(ISignal signal)
-  {
-
-      //if(signal is SignalSceneActivate)
 
 
-  }
+
+      /*
+
+// CALLBACK //
+private void OnSignalCalled(ISignal signal)
+{
+
+    //if(signal is SignalSceneActivate)
 
 
-  private void OnSignalCached(ISignal signal)
-  {
+}
 
-      //if(signal is SignalSceneActivate)
-      //    SceneAc
 
-  }
-   */
-    }
+private void OnSignalCached(ISignal signal)
+{
+
+    //if(signal is SignalSceneActivate)
+    //    SceneAc
+
+}
+ */
+   }
 }
 
 
 namespace Core
 {
-    public interface ISceneController : IController
-    {
+   public interface ISceneController : IController
+   {
 
-        event Action<IScene, bool> SceneLoaded;
-        event Action<IScene, bool> SceneActivated;
+      event Action<IScene, bool> SceneLoaded;
+      event Action<IScene, bool> SceneActivated;
 
-        void SceneLoad(IScene scene);
-        void SceneActivate(IScene scene);
-        //IResult SceneActivate(IScene scene, bool animate);
-    }
+      void SceneLoad(IScene scene);
+      void SceneActivate(IScene scene);
+      //IResult SceneActivate(IScene scene, bool animate);
+   }
 
-    public struct SceneControllerConfig : IConfig
-    {
-        public SceneControllerConfig(IEnumerable<IScene> scenes)
-        {
-            Scenes = scenes;
-        }
+   public struct SceneControllerConfig : IConfig
+   {
+      public SceneControllerConfig(IEnumerable<IScene> scenes)
+      {
+         Scenes = scenes;
+      }
 
-        public IEnumerable<IScene> Scenes { get; private set; }
-    }
+      public IEnumerable<IScene> Scenes { get; private set; }
+   }
 }

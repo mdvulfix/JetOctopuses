@@ -103,6 +103,11 @@ namespace Core.Pool
          return false;
       }
 
+
+      public abstract void Update();
+
+
+
       // FACTORY //
       public static TPool Get<TPool>(params object[] args)
       where TPool : IPool
@@ -144,7 +149,7 @@ namespace Core.Pool
 
 namespace Core
 {
-   public interface IPool : IConfigurable
+   public interface IPool : IConfigurable, IUpdatable
    {
       bool Push(IPoolable poolable);
       bool Pop(out IPoolable poolable);

@@ -41,6 +41,9 @@ namespace Core.Pool
             return false;
          }
       }
+
+      public override void Update() { }
+
    }
 
    public partial class PoolFactory : Factory<IPool>
