@@ -7,30 +7,47 @@ namespace Core
 
    public interface IResult
    {
-      object Context { get; }
-      bool Status { get; }
-      string Log { get; }
-      bool LogSend { get; }
-      LogFormat LogFormat { get; }
+      object Context { get; set; }
+      bool Status { get; set; }
+      string Log { get; set; }
+      bool LogSend { get; set; }
+      LogFormat LogFormat { get; set; }
    }
 
-   public class Result<T> : Result, IResult
+   public struct Result<T> : IResult
    {
-      public new T Context
-      {
-         get => (T)base.Context;
-         set => base.Context = value;
 
-      }
+      private T m_Context;
+
 
       public Result(T context, bool status = false, string log = "...", bool logSend = false, LogFormat format = LogFormat.None)
-      : base(context, status, log, logSend, format)
-      { }
+      {
+         m_Context = context;
+         Status = status;
+         Log = log;
+         LogSend = logSend;
+         LogFormat = format;
+
+         Log.Send(Context, LogSend, LogFormat);
+      }
+
+      public object Context
+      {
+         get => m_Context;
+         set => Context = m_Context;
+      }
+
+
+      public bool Status { get; set; }
+      public string Log { get; set; }
+      public bool LogSend { get; set; }
+      public LogFormat LogFormat { get; set; }
+
    }
 
 
 
-   public class Result
+   public struct Result : IResult
    {
 
       public Result(object context, bool status = false, string log = "...", bool logSend = false, LogFormat format = LogFormat.None)

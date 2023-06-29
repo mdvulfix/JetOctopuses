@@ -23,8 +23,8 @@ namespace Core.Pool
       [SerializeField] protected PoolConfig m_Config;
 
 
-      public event Action<bool> Configured;
-      public event Action<bool> Initialized;
+      public event Action<IResult> Configured;
+      public event Action<IResult> Initialized;
 
 
       public enum Params
@@ -38,37 +38,54 @@ namespace Core.Pool
       {
          var config = (int)Params.Config;
 
+         var result = default(IResult);
+         var log = "...";
+
+
          if (args.Length > 0)
          {
             try { m_Config = (PoolConfig)args[config]; }
-            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug); return; }
+            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
          }
 
 
 
          m_isConfigured = true;
-         Configured?.Invoke(m_isConfigured);
-         $"{this.GetName()} configured.".Send(this, m_isDebug);
+         log = $"{this.GetName()} configured.";
+         result = new Result(this, m_isConfigured, log, m_isDebug);
+         Configured?.Invoke(result);
       }
 
       public override void Init()
       {
+         var result = default(IResult);
+         var log = "...";
+
          m_Poolables = new Stack<IPoolable>(10);
 
+
          m_isInitialized = true;
-         Initialized?.Invoke(m_isInitialized);
-         $"{this.GetName()} initialized.".Send(this, m_isDebug);
+         log = $"{this.GetName()} initialized.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
 
       }
 
       public override void Dispose()
       {
+         var result = default(IResult);
+         var log = "...";
+
          m_Poolables.Clear();
 
+
          m_isInitialized = false;
-         Initialized?.Invoke(m_isInitialized);
-         $"{this.GetName()} disposed.".Send(this, m_isDebug);
+         log = $"{this.GetName()} disposed.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
+
       }
+
 
 
       public bool Push(IPoolable poolable)
@@ -117,7 +134,7 @@ namespace Core.Pool
          if (args.Length > 0)
          {
             try { factoryCustom = (IFactory)args[(int)Params.Factory]; }
-            catch { Debug.Log("Custom factory not found! The instance will be created by default."); }
+            catch { Debug.LogWarning("Custom factory not found! The instance will be created by default."); }
          }
 
          var factory = (factoryCustom != null) ? factoryCustom : new PoolFactory();

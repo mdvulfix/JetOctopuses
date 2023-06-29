@@ -2,15 +2,15 @@ using System;
 
 namespace Core
 {
-    public interface IActivable
-    {
-        bool isActivated { get; }
+   public interface IActivable
+   {
+      bool isActivated { get; }
 
-        event Action<bool> Activated;
+      event Action<IResult> Activated;
 
-        void Activate();
-        void Deactivate();
+      void Activate();
+      void Deactivate();
 
-    }
+   }
 
 }

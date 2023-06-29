@@ -13,8 +13,7 @@ namespace Core.Scene
 {
 
    [Serializable]
-   public abstract class SceneModel<T> : ModelBasic
-   where T : class, IScene
+   public abstract class SceneModel : ModelBasic
    {
 
       [Header("Stats")]
@@ -45,10 +44,10 @@ namespace Core.Scene
       public bool isLoaded => m_isLoaded;
       public bool isActivated => m_isActivated;
 
-      public event Action<IEvent> Configured;
-      public event Action<IEvent> Initialized;
-      public event Action<bool> Loaded;
-      public event Action<bool> Activated;
+      public event Action<IResult> Configured;
+      public event Action<IResult> Initialized;
+      public event Action<IResult> Loaded;
+      public event Action<IResult> Activated;
       public event Action<ILoadable> LoadRequired;
 
       public enum Params
@@ -62,23 +61,30 @@ namespace Core.Scene
       {
          var config = (int)Params.Config;
 
+         var result = default(IResult);
+         var log = "...";
+
          if (args.Length > 0)
          {
             try { m_Config = (SceneConfig)args[config]; }
-            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug); return; }
+            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
          }
-
 
          m_Config = (SceneConfig)args[config];
          m_Index = m_Config.Index;
 
+
+
          m_isConfigured = true;
-         Configured?.Invoke(new ResultEvent<IScene>((IScene)this, m_isConfigured));
-         $"{this.GetName()} configured.".Send(this, m_isDebug);
+         log = $"{this.GetName()} configured.";
+         result = new Result(this, m_isConfigured, log, m_isDebug);
+         Configured?.Invoke(result);
       }
 
       public override void Init()
       {
+         var result = default(IResult);
+         var log = "...";
 
          var awaiterConfig = new AwaiterConfig();
          m_Awaiter = AwaiterDefault.Get();
@@ -90,55 +96,27 @@ namespace Core.Scene
 
 
          m_isInitialized = true;
-         Initialized?.Invoke(m_isInitialized);
-         $"{this.GetName()} initialized.".Send(this, m_isDebug);
+         log = $"{this.GetName()} initialized.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
 
       }
 
       public override void Dispose()
       {
+         var result = default(IResult);
+         var log = "...";
+
          m_Awaiter.Deactivate();
          m_Awaiter.Dispose();
 
-         m_isInitialized = false;
-         Initialized?.Invoke(m_isInitialized);
-         $"{this.GetName()} disposed.".Send(this, m_isDebug);
-      }
-
-
-
-      m_isConfigured = true;
-         Configured?.Invoke(new ResultEvent<ISession>(this, m_isConfigured));
-         $"{this.GetName()} configured.".Send(this, m_isDebug);
-      }
-
-      public override void Init()
-      {
-
-         m_isInitialized = true;
-         Initialized?.Invoke(new ResultEvent<ISession>(this, m_isInitialized));
-         $"{this.GetName()} initialized.".Send(this, m_isDebug);
-
-      }
-
-      public override void Dispose()
-      {
-
 
          m_isInitialized = false;
-         Initialized?.Invoke(new ResultEvent<ISession>(this, m_isInitialized));
-         $"{this.GetName()} disposed.".Send(this, m_isDebug);
+         log = $"{this.GetName()} disposed.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
 
       }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -151,10 +129,11 @@ namespace Core.Scene
 
          if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
 
+
          m_isLoaded = true;
-         Loaded?.Invoke(m_isLoaded);
-         log.Send(this, m_isDebug);
-         //$"{this.GetName()} loaded.".Send(this, m_isDebug);
+         //log = $"{this.GetName()} loaded.".Send(this, m_isDebug);
+         result = new Result(this, m_isLoaded, log, m_isDebug);
+         Loaded?.Invoke(result);
 
       }
 
@@ -166,9 +145,9 @@ namespace Core.Scene
          if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
 
          m_isLoaded = false;
-         Loaded?.Invoke(m_isLoaded);
-         log.Send(this, m_isDebug);
-         //$"{this.GetName()} unloaded.".Send(this, m_isDebug);
+         //log = $"{this.GetName()} unloaded.";
+         result = new Result(this, m_isLoaded, log, m_isDebug);
+         Loaded?.Invoke(result);
 
       }
 
@@ -182,9 +161,9 @@ namespace Core.Scene
          if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
 
          m_isActivated = true;
-         Activated?.Invoke(m_isActivated);
-         log.Send(this, m_isDebug);
-         //$"{this.GetName()} activated.".Send(this, m_isDebug);
+         //log = $"{this.GetName()} activated."
+         result = new Result(this, m_isActivated, log, m_isDebug);
+         Activated?.Invoke(result);
 
       }
 
@@ -195,11 +174,12 @@ namespace Core.Scene
 
          if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
 
-         m_isActivated = false;
-         Activated?.Invoke(m_isActivated);
-         log.Send(this, m_isDebug);
 
-         //$"{this.GetName()} deactivated.".Send(this, m_isDebug);
+         m_isActivated = false;
+         //log = $"{this.GetName()} deactivated."
+         result = new Result(this, m_isActivated, log, m_isDebug);
+         Activated?.Invoke(result);
+
       }
 
 
@@ -273,6 +253,9 @@ namespace Core.Scene
          Debug.LogWarning($"Can't deactivate scene by index {buildIndex}. Scene is not found.");
          return false;
       }
+
+
+
 
       private IResult AsyncOperation(Func<bool> func)
       {

@@ -20,7 +20,7 @@ namespace Core
 
    }
 
-   public interface IComponent : IConfigurable
+   public interface IComponent
    {
 
    }

@@ -24,14 +24,12 @@ namespace Core.Async
       [SerializeField] protected AwaiterConfig m_Config;
 
 
-
-
-
       public bool isActivated => m_isActivated;
 
-      public event Action<bool> Configured;
-      public event Action<bool> Initialized;
-      public event Action<bool> Activated;
+      public event Action<IResult> Configured;
+      public event Action<IResult> Initialized;
+
+      public event Action<IResult> Activated;
 
 
       public static string PREFAB_Folder;
@@ -42,64 +40,88 @@ namespace Core.Async
          Factory
       }
 
+
       // CONFIGURE //
       public override void Configure(params object[] args)
       {
          var config = (int)Params.Config;
 
+         var result = default(IResult);
+         var log = "...";
+
+
          if (args.Length > 0)
          {
             try { m_Config = (AwaiterConfig)args[config]; }
-            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug); return; }
+            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
          }
 
 
-         m_Config = (AwaiterConfig)args[config];
-
 
          m_isConfigured = true;
-         Configured?.Invoke(m_isConfigured);
-         $"{this.GetName()} configured.".Send(this, m_isDebug);
+         log = $"{this.GetName()} configured.";
+         result = new Result(this, m_isConfigured, log, m_isDebug);
+         Configured?.Invoke(result);
       }
 
       public override void Init()
       {
+         var result = default(IResult);
+         var log = "...";
+
+
 
          m_isInitialized = true;
-         Initialized?.Invoke(m_isInitialized);
-         $"{this.GetName()} initialized.".Send(this, m_isDebug);
+         log = $"{this.GetName()} initialized.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
 
       }
 
       public override void Dispose()
       {
+         var result = default(IResult);
+         var log = "...";
+
+
 
          m_isInitialized = false;
-         Initialized?.Invoke(m_isInitialized);
-         $"{this.GetName()} disposed.".Send(this, m_isDebug);
+         log = $"{this.GetName()} disposed.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
+
       }
 
 
       // ACTIVATE //
       public virtual void Activate()
       {
+         var result = default(IResult);
+         var log = "...";
+
 
          m_isActivated = true;
-         Activated?.Invoke(m_isActivated);
-         $"{this.GetName()} activated.".Send(this, m_isDebug);
+         log = $"{this.GetName()} activated.";
+         result = new Result(this, m_isActivated, log, m_isDebug);
+         Activated?.Invoke(result);
+
       }
 
       public virtual void Deactivate()
       {
-
-
-
+         var result = default(IResult);
+         var log = "...";
 
 
          m_isActivated = false;
-         Activated?.Invoke(m_isActivated);
-         $"{this.GetName()} deactivated.".Send(this, m_isDebug);
+         log = $"{this.GetName()} deactivated.";
+         result = new Result(this, m_isActivated, log, m_isDebug);
+         Activated?.Invoke(result);
+
       }
+
+
+
 
 
       public abstract IResult Run(object context, Func<bool> action);
@@ -129,8 +151,7 @@ namespace Core.Async
    {
       bool isReady { get; }
 
-      event Action<IAwaiter> FuncStarted;
-      event Action<IAwaiter> FuncCompleted;
+      event Action<IResult> Ready;
 
       IResult Run(object context, Func<bool> action);
 

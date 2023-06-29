@@ -18,7 +18,6 @@ namespace Core.Pool
       private IPool m_Pool;
 
 
-
       [Header("Debug")]
       [SerializeField] protected bool m_isDebug = true;
 
@@ -27,8 +26,8 @@ namespace Core.Pool
 
 
 
-      public event Action<bool> Configured;
-      public event Action<bool> Initialized;
+      public event Action<IResult> Configured;
+      public event Action<IResult> Initialized;
 
 
 
@@ -44,57 +43,57 @@ namespace Core.Pool
       }
 
 
+
       // CONFIGURE //
       public override void Configure(params object[] args)
       {
          var config = (int)Params.Config;
 
+         var result = default(IResult);
+         var log = "...";
+
          if (args.Length > 0)
          {
             try { m_Config = (PoolControllerConfig)args[config]; }
-            catch { Debug.LogWarning($"{this.GetName()} config was not found. Configuration failed!"); return; }
+            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
          }
 
-         m_Config = (PoolControllerConfig)args[config];
-
-
-         var factoryPoolable = new FactoryDefault();
-         //var limit = 5;
-         //var poolConfig = new PoolConfig(limit, () => factoryPoolable.Get<TPoolable>());
-         //m_Pool = new Pool<TPoolable>();
-         //m_Pool.Configure(poolConfig);
-         //m_Pool.Init();
+         m_Pool = m_Config.Pool;
 
 
          m_isConfigured = true;
-         Configured?.Invoke(m_isConfigured);
-         if (m_isDebug) Debug.Log($"{this.GetName()} configured.");
+         log = $"{this.GetName()} configured.";
+         result = new Result(this, m_isConfigured, log, m_isDebug);
+         Configured?.Invoke(result);
       }
 
       public override void Init()
       {
+         var result = default(IResult);
+         var log = "...";
 
 
 
          m_isInitialized = true;
-         Initialized?.Invoke(m_isInitialized);
-         if (m_isDebug) Debug.Log($"{this.GetName()} initialized.");
+         log = $"{this.GetName()} initialized.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
 
       }
 
       public override void Dispose()
       {
+         var result = default(IResult);
+         var log = "...";
 
 
 
          m_isInitialized = false;
-         Initialized?.Invoke(m_isInitialized);
-         if (m_isDebug) Debug.Log($"{this.GetName()} disposed.");
+         log = $"{this.GetName()} disposed.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
+
       }
-
-
-
-
 
 
 
@@ -150,6 +149,7 @@ namespace Core.Pool
    public class PoolControllerConfig : IConfig
    {
       public IPool Pool { get; private set; }
+
 
       public PoolControllerConfig(IPool pool)
       {

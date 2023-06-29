@@ -4,8 +4,7 @@ using UnityEngine;
 
 namespace Core
 {
-   public abstract class SessionModel<T> : ModelComponent
-   where T : ISession
+   public abstract class SessionModel : ModelComponent, ISession
    {
 
       [Header("Stats")]
@@ -18,13 +17,8 @@ namespace Core
       [Header("Debug")]
       [SerializeField] protected bool m_isDebug = true;
 
-
-      public event Action<IEvent> Configured;
-      public event Action<IEvent> Initialized;
-
-
-
-
+      public event Action<IResult> Configured;
+      public event Action<IResult> Initialized;
 
       public enum Params
       {
@@ -36,37 +30,53 @@ namespace Core
       // CONFIGURE //
       public override void Configure(params object[] args)
       {
+
          var config = (int)Params.Config;
+
+         var result = default(IResult);
+         var log = "...";
 
          if (args.Length > 0)
          {
             try { m_Config = (SessionConfig)args[config]; }
-            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug); return; }
+            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
          }
 
-         m_Config = (SessionConfig)args[config];
 
          m_isConfigured = true;
-         Configured?.Invoke(new ResultEvent<T>(this, m_isConfigured));
-         $"{this.GetName()} configured.".Send(this, m_isDebug);
+         log = $"{this.GetName()} configured.";
+         result = new Result(this, m_isConfigured, log, m_isDebug);
+         Configured?.Invoke(result);
+
       }
 
       public override void Init()
       {
+         var result = default(IResult);
+         var log = "...";
+
+
+
 
          m_isInitialized = true;
-         Initialized?.Invoke(new ResultEvent<T>(this, m_isInitialized));
-         $"{this.GetName()} initialized.".Send(this, m_isDebug);
+         log = $"{this.GetName()} initialized.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
 
       }
 
       public override void Dispose()
       {
+         var result = default(IResult);
+         var log = "...";
+
+
 
 
          m_isInitialized = false;
-         Initialized?.Invoke(new ResultEvent<ISession>(this, m_isInitialized));
-         $"{this.GetName()} disposed.".Send(this, m_isDebug);
+         log = $"{this.GetName()} disposed.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
 
       }
 
@@ -116,13 +126,6 @@ namespace Core
       //}
 
 
-      protected void RunAsync(IEnumerator func)
-      {
-         StopCoroutine(func);
-         StartCoroutine(func);
-      }
-
-
       // UNITY //
       private void Awake()
           => Configure();
@@ -136,7 +139,7 @@ namespace Core
 
    }
 
-   public interface ISession : IConfigurable
+   public interface ISession : IComponent, IConfigurable
    {
 
    }

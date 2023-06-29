@@ -32,11 +32,10 @@ namespace Core.Scene
 
       public IEnumerable<IScene> m_Scenes;
 
-      public event Action<bool> Configured;
-      public event Action<bool> Initialized;
-
-      public event Action<IScene, bool> SceneLoaded;
-      public event Action<IScene, bool> SceneActivated;
+      public event Action<IResult> Configured;
+      public event Action<IResult> Initialized;
+      public event Action<IResult> SceneLoaded;
+      public event Action<IResult> SceneActivated;
 
 
 
@@ -57,23 +56,31 @@ namespace Core.Scene
       {
          var config = (int)Params.Config;
 
+         var result = default(IResult);
+         var log = "...";
+
          if (args.Length > 0)
          {
             try { m_Config = (SceneControllerConfig)args[config]; }
-            catch { Debug.LogWarning($"{this.GetName()} config was not found. Configuration failed!"); return; }
+            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
          }
 
          m_Config = (SceneControllerConfig)args[config];
          m_Scenes = m_Config.Scenes;
 
 
+
          m_isConfigured = true;
-         Configured?.Invoke(m_isConfigured);
-         if (m_isDebug) Debug.Log($"{this.GetName()} configured.");
+         log = $"{this.GetName()} configured.";
+         result = new Result(this, m_isConfigured, log, m_isDebug);
+         Configured?.Invoke(result);
       }
 
       public override void Init()
       {
+         var result = default(IResult);
+         var log = "...";
+
          foreach (var scene in m_Scenes)
          {
             scene.Init();
@@ -85,18 +92,17 @@ namespace Core.Scene
          }
 
 
-
-
-
-
          m_isInitialized = true;
-         Initialized?.Invoke(m_isInitialized);
-         if (m_isDebug) Debug.Log($"{this.GetName()} initialized.");
+         log = $"{this.GetName()} initialized.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
 
       }
 
       public override void Dispose()
       {
+         var result = default(IResult);
+         var log = "...";
 
          foreach (var scene in m_Scenes)
          {
@@ -112,11 +118,11 @@ namespace Core.Scene
             //scene.Activated += OnSceneLoaded;
          }
 
-
-
          m_isInitialized = false;
-         Initialized?.Invoke(m_isInitialized);
-         if (m_isDebug) Debug.Log($"{this.GetName()} disposed.");
+         log = $"{this.GetName()} disposed.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
+
       }
 
 
@@ -204,8 +210,8 @@ namespace Core
    public interface ISceneController : IController
    {
 
-      event Action<IScene, bool> SceneLoaded;
-      event Action<IScene, bool> SceneActivated;
+      event Action<IResult> SceneLoaded;
+      event Action<IResult> SceneActivated;
 
       void SceneLoad(IScene scene);
       void SceneActivate(IScene scene);

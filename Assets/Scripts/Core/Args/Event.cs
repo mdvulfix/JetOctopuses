@@ -1,23 +1,20 @@
 namespace Core
 {
-
-
-   public struct ResultEvent<T> : IEvent
+   public struct ResultEvent : IEvent
    {
-      public T Context { get; set; }
+      public object Context { get; set; }
       public bool Status { get; set; }
       public string Log { get; set; }
 
-      public ResultEvent(T context, bool status, string log = "...")
+      public ResultEvent(object context, bool status, string log = "...")
       {
          Context = context;
          Status = status;
          Log = log;
-
       }
 
       public IResult Get(bool logSend = false, LogFormat format = LogFormat.None)
-         => new Result<T>(Context, Status, Log, logSend, format);
+         => new Result(Context, Status, Log, logSend, format);
 
    }
 
