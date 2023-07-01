@@ -32,8 +32,8 @@ namespace Core.Async
 
       private IPoolController m_PoolController;
 
-      public event Action<bool> Configured;
-      public event Action<bool> Initialized;
+      public event Action<IResult> Configured;
+      public event Action<IResult> Initialized;
       public event Action<FuncAsyncInfo> FuncAsyncExecuted;
 
       public AsyncController() { }
@@ -47,27 +47,33 @@ namespace Core.Async
          Factory
       }
 
+
       // CONFIGURE //
       public override void Configure(params object[] args)
       {
          var config = (int)Params.Config;
 
+         var result = default(IResult);
+         var log = "...";
+
          if (args.Length > 0)
          {
             try { m_Config = (AsyncControllerConfig)args[config]; }
-            catch { Debug.LogWarning($"{this.GetName()} config was not found. Configuration failed!"); return; }
+            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
          }
-
-         m_Config = (AsyncControllerConfig)args[config];
 
 
          m_isConfigured = true;
-         Configured?.Invoke(m_isConfigured);
-         if (m_isDebug) Debug.Log($"{this.GetName()} configured.");
+         log = $"{this.GetName()} configured.";
+         result = new Result(this, m_isConfigured, log, m_isDebug);
+         Configured?.Invoke(result);
       }
 
       public override void Init()
       {
+         var result = default(IResult);
+         var log = "...";
+
          if (m_AwaiterIsReady == null)
             m_AwaiterIsReady = new List<IAwaiter>(m_AwaiterIsReadyLimit);
 
@@ -82,7 +88,7 @@ namespace Core.Async
          m_FuncQueueAwaiter.Init();
 
          var factoryPoolable = new AwaiterFactory();
-         var limit = 5;
+         //var limit = 5;
          var poolConfig = new PoolConfig();
          var pool = new PoolDefault();
          pool.Configure(poolConfig);
@@ -94,29 +100,41 @@ namespace Core.Async
          m_PoolController.Init();
 
 
+
          m_isInitialized = true;
-         Initialized?.Invoke(m_isInitialized);
-         if (m_isDebug) Debug.Log($"{this.GetName()} initialized.");
+         log = $"{this.GetName()} initialized.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
 
       }
 
       public override void Dispose()
       {
+         var result = default(IResult);
+         var log = "...";
+
+
 
          m_PoolController.Dispose();
          m_FuncQueueAwaiter.Dispose();
 
-
          m_isInitialized = false;
-         Initialized?.Invoke(m_isInitialized);
-         if (m_isDebug) Debug.Log($"{this.GetName()} disposed.");
+         log = $"{this.GetName()} disposed.";
+         result = new Result(this, m_isInitialized, log, m_isDebug);
+         Initialized?.Invoke(result);
+
       }
+
+
+
+
+
+
 
 
 
       public void Update()
       {
-         m_PoolController.Update();
 
          LimitUpdate();
          FuncQueueUpdate();
@@ -149,23 +167,26 @@ namespace Core.Async
          return true;
       }
 
-
       private bool PopAwaiter(out IAwaiter awaiter)
       {
          awaiter = null;
 
          try
          {
-            if (m_PoolController.Pop(out var newAwaiter))
+            if (m_PoolController.Pop(out var poolable))
             {
-               newAwaiter.Initialized += OnAwaiterInitialized;
-               newAwaiter.Disposed += OnAwaiterDisposed;
-               newAwaiter.FuncStarted += OnAwaiterFuncStarted;
-               newAwaiter.FuncCompleted += OnAwaiterFuncComplete;
+               if (poolable is IAwaiter)
+               {
+                  awaiter = (IAwaiter)poolable;
+                  awaiter.Initialized += OnAwaiterInitialized;
+                  awaiter.Ready += OnAwaiterReady;
+                  awaiter.Init();
+                  return true;
 
-               newAwaiter.Init();
-               awaiter = newAwaiter;
-               return true;
+               }
+
+               ($"Pop awaiter was not found!").Send(this, m_isDebug, LogFormat.Warning);
+               return false;
             }
          }
          catch (Exception exception) { ($"Pop awaiter is failed! Exception: {exception.Message}").Send(LogFormat.Warning); }
@@ -179,15 +200,11 @@ namespace Core.Async
 
       private void PushAwaiter(IAwaiter awaiter)
       {
-
-         awaiter.Initialized -= OnAwaiterInitialized;
-         awaiter.Disposed -= OnAwaiterDisposed;
-         awaiter.FuncStarted -= OnAwaiterFuncStarted;
-         awaiter.FuncCompleted -= OnAwaiterFuncComplete;
          awaiter.Dispose();
+         awaiter.Initialized -= OnAwaiterInitialized;
+         awaiter.Ready -= OnAwaiterReady;
 
          m_PoolController.Push(awaiter);
-
       }
 
 
@@ -243,30 +260,48 @@ namespace Core.Async
       }
 
 
-      private void OnAwaiterInitialized(IAwaiter awaiter, bool status)
+      private void OnAwaiterInitialized(IResult result)
       {
-         if (status)
-            m_AwaiterIsReady.Add(awaiter);
+         if (result == null)
+            return;
+
+         var status = result.Status;
+         var awaiter = result.Context is IAwaiter ? (IAwaiter)result.Context : null;
+
+         switch (status)
+         {
+            case true:
+               if (awaiter != null) m_AwaiterIsReady.Add(awaiter);
+               break;
+
+            case false:
+               if (awaiter != null && m_AwaiterIsReady.Contains(awaiter)) m_AwaiterIsReady.Remove(awaiter);
+               break;
+
+         }
+
       }
 
-      private void OnAwaiterDisposed(IAwaiter awaiter, bool status)
+      private void OnAwaiterReady(IResult result)
       {
-         if (!status && m_AwaiterIsReady.Contains(awaiter))
-            m_AwaiterIsReady.Remove(awaiter);
+         if (result == null)
+            return;
+
+         var status = result.Status;
+         var awaiter = result.Context is IAwaiter ? (IAwaiter)result.Context : null;
+
+         switch (status)
+         {
+            case true:
+               if (awaiter != null) m_AwaiterIsReady.Add(awaiter);
+               break;
+
+            case false:
+               if (awaiter != null && m_AwaiterIsReady.Contains(awaiter)) m_AwaiterIsReady.Remove(awaiter);
+               break;
+
+         }
       }
-
-      private void OnAwaiterFuncStarted(IAwaiter awaiter)
-      {
-         if (m_AwaiterIsReady.Contains(awaiter))
-            m_AwaiterIsReady.Remove(awaiter);
-      }
-
-      private void OnAwaiterFuncComplete(IAwaiter awaiter)
-      {
-         m_AwaiterIsReady.Add(awaiter);
-      }
-
-
    }
 
 

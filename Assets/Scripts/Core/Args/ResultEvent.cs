@@ -1,6 +1,6 @@
 namespace Core
 {
-   public struct ResultEvent : IEvent
+   public struct ResultEvent : IEventArgs
    {
       public object Context { get; set; }
       public bool Status { get; set; }
@@ -19,7 +19,7 @@ namespace Core
    }
 
 
-   public struct Event<T> : IEvent
+   public struct Event<T> : IEventArgs
    {
       public Event(T context)
       {
@@ -34,7 +34,7 @@ namespace Core
       }
    }
 
-   public interface IEvent
+   public interface IEventArgs
    {
 
    }

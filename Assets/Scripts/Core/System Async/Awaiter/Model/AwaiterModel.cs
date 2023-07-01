@@ -14,9 +14,6 @@ namespace Core.Async
       [SerializeField] private bool m_isActivated;
 
 
-
-
-
       [Header("Debug")]
       [SerializeField] protected bool m_isDebug = true;
 
@@ -28,7 +25,6 @@ namespace Core.Async
 
       public event Action<IResult> Configured;
       public event Action<IResult> Initialized;
-
       public event Action<IResult> Activated;
 
 

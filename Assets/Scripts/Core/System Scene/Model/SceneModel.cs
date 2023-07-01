@@ -70,7 +70,6 @@ namespace Core.Scene
             catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
          }
 
-         m_Config = (SceneConfig)args[config];
          m_Index = m_Config.Index;
 
 
