@@ -4,12 +4,9 @@ using UnityEngine;
 
 using Core;
 using Core.Factory;
-using Core.Scene;
 
 
-
-
-namespace App.Scene
+namespace Core.Scene
 {
     [Serializable]
     public class SceneLogin : SceneModel, IScene
@@ -20,19 +17,19 @@ namespace App.Scene
 
         public SceneLogin() { }
         public SceneLogin(params object[] args)
-            => Configure(args);
+            => Init(args);
 
 
-        public override void Configure(params object[] args)
+        public override void Init(params object[] args)
         {
             if (args.Length > 0)
             {
-                base.Configure(args);
+                base.Init(args);
                 return;
             }
 
             // CONFIGURE BY DEFAULT //
-            if (m_isDebug) Debug.Log($"{this.GetName()} will be configured by default!");
+            $"Scene will be initialized by default!".Send(this, m_isDebug, LogFormat.Warning);
 
 
             //var signals = new List<ISignal>();
@@ -40,17 +37,17 @@ namespace App.Scene
             //signals.Add(m_StateMenuSet = new SignalStateSet(СacheProvider<StateMenu>.Get()));
 
             //var config = new StateConfig(this, signals.ToArray());
-            //base.Configure(config);
+            //base.Init(config);
             var index = SceneIndex.Login;
             var config = new SceneConfig(index);
-            base.Configure(config);
+            base.Init(config);
 
         }
 
 
         // FACTORY //
-        public static SceneLogin Get(params object[] args)
-            => Get<SceneLogin>(args);
+        public static SceneLogin Get(IFactory factory, params object[] args)
+            => Get<SceneLogin>(factory, args);
     }
 
 

@@ -15,9 +15,7 @@ namespace Test.Spawn
 
         private void OnEnable()
         {
-            m_Spawner = SpawnerDefault.Get();
-            m_Spawner.Configure(new SpawnerConfig());
-            m_Spawner.Init();
+            m_Spawner = SpawnerDefault.Get(new SpawnerConfig());
 
         }
 

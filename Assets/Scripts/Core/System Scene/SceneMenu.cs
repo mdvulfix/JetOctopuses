@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using Core;
-using Core.Scene;
 using Core.Factory;
 
 
-namespace App.Scene
+namespace Core.Scene
 {
     [Serializable]
     public class SceneMenu : SceneModel, IScene
@@ -19,19 +18,19 @@ namespace App.Scene
 
         public SceneMenu() { }
         public SceneMenu(params object[] args)
-            => Configure(args);
+            => Init(args);
 
 
-        public override void Configure(params object[] args)
+        public override void Init(params object[] args)
         {
             if (args.Length > 0)
             {
-                base.Configure(args);
+                base.Init(args);
                 return;
             }
 
             // CONFIGURE BY DEFAULT //
-            if (m_isDebug) Debug.Log($"{this.GetName()} will be configured by default!");
+            $"Scene will be initialized by default!".Send(this, m_isDebug, LogFormat.Warning);
 
 
             //var signals = new List<ISignal>();
@@ -39,18 +38,18 @@ namespace App.Scene
             //signals.Add(m_StateMenuSet = new SignalStateSet(СacheProvider<StateMenu>.Get()));
 
             //var config = new StateConfig(this, signals.ToArray());
-            //base.Configure(config);
+            //base.Init(config);
 
             var index = SceneIndex.Menu;
             var config = new SceneConfig(index);
-            base.Configure(config);
+            base.Init(config);
 
         }
 
 
         // FACTORY //
-        public static SceneMenu Get(params object[] args)
-            => Get<SceneMenu>(args);
+        public static SceneMenu Get(IFactory factory, params object[] args)
+            => Get<SceneMenu>(factory, args);
     }
 
 

@@ -1,14 +1,11 @@
 using UnityEngine;
 using Core;
-using Core.State;
-using Core.Cache;
 using Core.Factory;
 
 //using App.Signal;
-using App.Scene;
 
 
-namespace App.State
+namespace Core.State
 {
 
     public class StateLogin : StateModel, IState
@@ -18,18 +15,18 @@ namespace App.State
 
         public StateLogin() { }
         public StateLogin(params object[] args)
-            => Configure(args);
+            => Init(args);
 
 
-        public override void Configure(params object[] args)
+        public override void Init(params object[] args)
         {
             if (args.Length > 0)
             {
-                base.Configure(args);
+                base.Init(args);
                 return;
             }
-
             // CONFIGURE BY DEFAULT //
+            $"{this.GetName()} will be initialized by default!".Send(this, m_isDebug, LogFormat.Warning);
 
 
             //var signals = new List<ISignal>();
@@ -40,10 +37,8 @@ namespace App.State
             //base.Configure(config);
 
 
+            base.Init(new StateConfig());
 
-            var config = new StateConfig();
-            base.Configure(config);
-            Debug.Log($"{this.GetName()} was configured by default!");
         }
 
 
@@ -93,7 +88,7 @@ namespace App.State
     }
 
 
-    public partial class StateFactoryDefault : Factory<IState>
+    public partial class StateFactory : Factory<IState>
     {
         private StateLogin GetStateLogin(params object[] args)
         {

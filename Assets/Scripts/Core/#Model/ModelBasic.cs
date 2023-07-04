@@ -8,8 +8,7 @@ namespace Core
     {
 
         // CONFIGURE //
-        public abstract void Configure(params object[] args);
-        public abstract void Init();
+        public abstract void Init(params object[] args);
         public abstract void Dispose();
 
 

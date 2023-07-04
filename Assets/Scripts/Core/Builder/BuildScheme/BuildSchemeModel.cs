@@ -2,8 +2,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 
 using Core;
-using App.Scene;
-
 /*
 namespace App.Builder
 {

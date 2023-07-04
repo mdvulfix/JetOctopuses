@@ -1,13 +1,11 @@
 using UnityEngine;
 using Core;
-using Core.State;
 using Core.Factory;
 
 //using App.Signal;
-using App.Scene;
 
 
-namespace App.State
+namespace Core.State
 {
 
     public class StateMenu : StateModel, IState
@@ -17,14 +15,14 @@ namespace App.State
 
         public StateMenu() { }
         public StateMenu(params object[] args)
-            => Configure(args);
+            => Init(args);
 
 
-        public override void Configure(params object[] args)
+        public override void Init(params object[] args)
         {
             if (args.Length > 0)
             {
-                base.Configure(args);
+                base.Init(args);
                 return;
             }
 
@@ -36,12 +34,12 @@ namespace App.State
             //signals.Add(m_StateMenuSet = new SignalStateSet(СacheProvider<StateMenu>.Get()));
 
             //var config = new StateConfig(this, signals.ToArray());
-            //base.Configure(config);
+            //base.Init(config);
 
 
 
             var config = new StateConfig();
-            base.Configure(config);
+            base.Init(config);
             Debug.Log($"{this.GetName()} was configured by default!");
         }
 
@@ -91,7 +89,7 @@ namespace App.State
     }
 
 
-    public partial class StateFactoryDefault : Factory<IState>
+    public partial class StateFactory : Factory<IState>
     {
         private StateMenu GetStateMenu(params object[] args)
         {

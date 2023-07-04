@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using Core;
-using App.Scene;
 using App.Screen;
 
 

@@ -12,607 +12,609 @@ using Core.Async;
 namespace Core.Scene
 {
 
-   [Serializable]
-   public abstract class SceneModel : ModelBasic
-   {
+    [Serializable]
+    public abstract class SceneModel : ModelBasic
+    {
 
-      [Header("Stats")]
-      [SerializeField] private bool m_isConfigured;
-      [SerializeField] private bool m_isInitialized;
-      [SerializeField] private bool m_isLoaded;
-      [SerializeField] private bool m_isActivated;
+        [Header("Stats")]
+        [SerializeField] private bool m_isInitialized;
+        [SerializeField] private bool m_isLoaded;
+        [SerializeField] private bool m_isActivated;
 
 
-      [SerializeField] private SceneIndex m_Index;
+        [SerializeField] private SceneIndex m_Index;
 
-      private List<IScreen> m_Screens;
-
-      private IAwaiter m_Awaiter;
+        private List<IScreen> m_Screens;
 
 
 
-      [Header("Debug")]
-      [SerializeField] protected bool m_isDebug = true;
+        protected string m_Name = "Scene";
+        protected SceneConfig m_Config;
 
-      [Header("Config")]
-      [SerializeField] protected SceneConfig m_Config;
-
-
-
-
-      public SceneIndex Index => m_Index;
-      public bool isLoaded => m_isLoaded;
-      public bool isActivated => m_isActivated;
-
-      public event Action<IResult> Configured;
-      public event Action<IResult> Initialized;
-      public event Action<IResult> Loaded;
-      public event Action<IResult> Activated;
-      public event Action<ILoadable> LoadRequired;
-
-      public enum Params
-      {
-         Config,
-         Factory
-      }
-
-      // CONFIGURE //
-      public override void Configure(params object[] args)
-      {
-         var config = (int)Params.Config;
-
-         var result = default(IResult);
-         var log = "...";
-
-         if (args.Length > 0)
-         {
-            try { m_Config = (SceneConfig)args[config]; }
-            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
-         }
-
-         m_Index = m_Config.Index;
+        [Header("Debug"), SerializeField]
+        protected bool m_isDebug = true;
 
 
 
-         m_isConfigured = true;
-         log = $"{this.GetName()} configured.";
-         result = new Result(this, m_isConfigured, log, m_isDebug);
-         Configured?.Invoke(result);
-      }
+        public SceneIndex Index => m_Index;
+        public bool isLoaded => m_isLoaded;
+        public bool isActivated => m_isActivated;
 
-      public override void Init()
-      {
-         var result = default(IResult);
-         var log = "...";
+        public event Action<IResult> Initialized;
+        public event Action<IResult> Loaded;
+        public event Action<IResult> Activated;
+        public event Action<ILoadable> LoadRequired;
 
-         var awaiterConfig = new AwaiterConfig();
-         m_Awaiter = AwaiterDefault.Get();
-         m_Awaiter.Configure();
-         m_Awaiter.Init();
-         m_Awaiter.Activate();
+        public enum Params
+        {
+            Config,
+            Factory
+        }
 
+        // CONFIGURE //
+        public override void Init(params object[] args)
+        {
+            var config = (int)Params.Config;
 
+            var result = default(IResult);
+            var log = "...";
 
-
-         m_isInitialized = true;
-         log = $"{this.GetName()} initialized.";
-         result = new Result(this, m_isInitialized, log, m_isDebug);
-         Initialized?.Invoke(result);
-
-      }
-
-      public override void Dispose()
-      {
-         var result = default(IResult);
-         var log = "...";
-
-         m_Awaiter.Deactivate();
-         m_Awaiter.Dispose();
-
-
-         m_isInitialized = false;
-         log = $"{this.GetName()} disposed.";
-         result = new Result(this, m_isInitialized, log, m_isDebug);
-         Initialized?.Invoke(result);
-
-      }
-
-
-
-      // LOAD //
-      public virtual void Load()
-      {
-
-         var result = AsyncOperation(() => AwaitLoading());
-         var log = result.Log;
-
-         if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
-
-
-         m_isLoaded = true;
-         //log = $"{this.GetName()} loaded.".Send(this, m_isDebug);
-         result = new Result(this, m_isLoaded, log, m_isDebug);
-         Loaded?.Invoke(result);
-
-      }
-
-      public virtual void Unload()
-      {
-         var result = AsyncOperation(() => AwaitUnloading());
-         var log = result.Log;
-
-         if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
-
-         m_isLoaded = false;
-         //log = $"{this.GetName()} unloaded.";
-         result = new Result(this, m_isLoaded, log, m_isDebug);
-         Loaded?.Invoke(result);
-
-      }
-
-
-      // ACTIVATE //
-      public virtual void Activate()
-      {
-         var result = AsyncOperation(() => AwaitActivating());
-         var log = result.Log;
-
-         if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
-
-         m_isActivated = true;
-         //log = $"{this.GetName()} activated."
-         result = new Result(this, m_isActivated, log, m_isDebug);
-         Activated?.Invoke(result);
-
-      }
-
-      public virtual void Deactivate()
-      {
-         var result = AsyncOperation(() => AwaitDeactivating());
-         var log = result.Log;
-
-         if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
-
-
-         m_isActivated = false;
-         //log = $"{this.GetName()} deactivated."
-         result = new Result(this, m_isActivated, log, m_isDebug);
-         Activated?.Invoke(result);
-
-      }
-
-
-      protected virtual bool AwaitLoading()
-      {
-         UScene uScene;
-
-         var buildIndex = (int)Index;
-         var sceneNumber = SceneManager.sceneCount;
-         for (int i = 0; i < sceneNumber; i++)
-         {
-            uScene = SceneManager.GetSceneAt(i);
-            if (uScene.buildIndex == buildIndex)
+            if (args.Length > 0)
             {
-               $"Scene by index {buildIndex} is already loaded.".Send(this, m_isDebug);
-               return true;
+                try { m_Config = (SceneConfig)args[config]; }
+                catch { $"{m_Name} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
             }
-         }
 
-         var loading = SceneManager.LoadSceneAsync(buildIndex, LoadSceneMode.Additive);
-         if (loading.progress < 0.9f)
-         {
-            $"Awaiting loading scene by index {buildIndex}...".Send(this, m_isDebug);
-            return false;
-         }
+            m_Index = m_Config.Index;
 
-         $"Scene by index {buildIndex} successfully loaded.".Send(this, m_isDebug);
-         return true;
-      }
 
-      protected virtual bool AwaitUnloading()
-      {
-         var buildIndex = (int)Index;
 
-         Debug.LogWarning($"Can't unload scene by index {buildIndex}. Scene is not found.");
-         return false;
-      }
+            //var awaiterConfig = new AwaiterConfig();
+            //m_Awaiter = AwaiterDefault.Get();
+            //m_Awaiter.Init();
+            //m_Awaiter.Activate();
 
-      protected virtual bool AwaitActivating()
-      {
-         UScene uScene = SceneManager.GetActiveScene();
 
-         var buildIndex = (int)Index;
-         if (uScene.buildIndex == buildIndex)
-         {
-            $"Scene by index {buildIndex} is already activated.".Send(this, m_isDebug);
+
+
+            m_isInitialized = true;
+            log = $"{m_Name} initialized.";
+            result = new Result(this, m_isInitialized, log, m_isDebug);
+            Initialized?.Invoke(result);
+
+        }
+
+        public override void Dispose()
+        {
+            var result = default(IResult);
+            var log = "...";
+
+            //m_AsyncController.Dispose();
+
+            //m_Awaiter.Deactivate();
+            //m_Awaiter.Dispose();
+
+
+            m_isInitialized = false;
+            log = $"{m_Name} disposed.";
+            result = new Result(this, m_isInitialized, log, m_isDebug);
+            Initialized?.Invoke(result);
+
+        }
+
+
+
+        // LOAD //
+        public virtual void Load()
+        {
+            var result = default(IResult);
+            var log = "...";
+
+            using (var asyncController = new AsyncController(new AsyncControllerConfig()))
+            {
+                result = asyncController.RunAsync(() => AwaitLoading());
+                log = result.Log;
+
+            }
+
+            if (!result.Status)
+            { log.Send(this, m_isDebug, LogFormat.Warning); return; }
+
+
+            m_isLoaded = true;
+            //log = $"{this.GetName()} loaded.".Send(this, m_isDebug);
+            result = new Result(this, m_isLoaded, log, m_isDebug);
+            Loaded?.Invoke(result);
+
+        }
+
+        public virtual void Unload()
+        {
+            var result = AsyncOperation(() => AwaitUnloading());
+            var log = result.Log;
+
+            if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
+
+            m_isLoaded = false;
+            //log = $"{this.GetName()} unloaded.";
+            result = new Result(this, m_isLoaded, log, m_isDebug);
+            Loaded?.Invoke(result);
+
+        }
+
+
+        // ACTIVATE //
+        public virtual void Activate()
+        {
+            var result = AsyncOperation(() => AwaitActivating());
+            var log = result.Log;
+
+            if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
+
+            m_isActivated = true;
+            //log = $"{this.GetName()} activated."
+            result = new Result(this, m_isActivated, log, m_isDebug);
+            Activated?.Invoke(result);
+
+        }
+
+        public virtual void Deactivate()
+        {
+            var result = AsyncOperation(() => AwaitDeactivating());
+            var log = result.Log;
+
+            if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
+
+
+            m_isActivated = false;
+            //log = $"{this.GetName()} deactivated."
+            result = new Result(this, m_isActivated, log, m_isDebug);
+            Activated?.Invoke(result);
+
+        }
+
+
+        protected virtual bool AwaitLoading()
+        {
+            UScene uScene;
+
+            var buildIndex = (int)Index;
+            var sceneNumber = SceneManager.sceneCount;
+            for (int i = 0; i < sceneNumber; i++)
+            {
+                uScene = SceneManager.GetSceneAt(i);
+                if (uScene.buildIndex == buildIndex)
+                {
+                    $"Scene by index {buildIndex} is already loaded.".Send(this, m_isDebug);
+                    return true;
+                }
+            }
+
+            var loading = SceneManager.LoadSceneAsync(buildIndex, LoadSceneMode.Additive);
+            if (loading.progress < 0.9f)
+            {
+                $"Awaiting loading scene by index {buildIndex}...".Send(this, m_isDebug);
+                return false;
+            }
+
+            $"Scene by index {buildIndex} successfully loaded.".Send(this, m_isDebug);
             return true;
-         }
+        }
 
-         var sceneNumber = SceneManager.sceneCount;
-         for (int i = 0; i < sceneNumber; i++)
-         {
-            uScene = SceneManager.GetSceneAt(i);
+        protected virtual bool AwaitUnloading()
+        {
+            var buildIndex = (int)Index;
+
+            Debug.LogWarning($"Can't unload scene by index {buildIndex}. Scene is not found.");
+            return false;
+        }
+
+        protected virtual bool AwaitActivating()
+        {
+            UScene uScene = SceneManager.GetActiveScene();
+
+            var buildIndex = (int)Index;
             if (uScene.buildIndex == buildIndex)
             {
-               SceneManager.SetActiveScene(uScene);
-               $"Scene by index {buildIndex} successfully activated.".Send(this, m_isDebug);
-               return true;
+                $"Scene by index {buildIndex} is already activated.".Send(this, m_isDebug);
+                return true;
             }
-         }
 
-         $"Can't activate scene by index {buildIndex}.".Send(this, m_isDebug, LogFormat.Warning);
-         return false;
-      }
+            var sceneNumber = SceneManager.sceneCount;
+            for (int i = 0; i < sceneNumber; i++)
+            {
+                uScene = SceneManager.GetSceneAt(i);
+                if (uScene.buildIndex == buildIndex)
+                {
+                    SceneManager.SetActiveScene(uScene);
+                    $"Scene by index {buildIndex} successfully activated.".Send(this, m_isDebug);
+                    return true;
+                }
+            }
 
-      protected virtual bool AwaitDeactivating()
-      {
-         var buildIndex = (int)Index;
+            $"Can't activate scene by index {buildIndex}.".Send(this, m_isDebug, LogFormat.Warning);
+            return false;
+        }
 
+        protected virtual bool AwaitDeactivating()
+        {
+            var buildIndex = (int)Index;
 
-         Debug.LogWarning($"Can't deactivate scene by index {buildIndex}. Scene is not found.");
-         return false;
-      }
+
+            Debug.LogWarning($"Can't deactivate scene by index {buildIndex}. Scene is not found.");
+            return false;
+        }
+
+
+
+
+        private IResult AsyncOperation(Func<bool> func)
+        {
+            /*
+            using (var awaiter = AwaiterDefault.Get(new AwaiterConfig()))
+            {
+                awaiter.Init();
+                awaiter.Activate();
+                return m_Awaiter.Run(this, func);
+            }
+            */
+            return null;
 
+        }
 
 
+        // FACTORY //
+        public static TScene Get<TScene>(IFactory factory, params object[] args)
+        where TScene : IScene
+        {
+            factory = (factory != null) ? factory : new SceneFactory();
+            return factory.Get<TScene>(args);
+        }
 
-      private IResult AsyncOperation(Func<bool> func)
-      {
-         using (var awaiter = AwaiterDefault.Get(new AwaiterConfig()))
-         {
-            awaiter.Init();
-            awaiter.Activate();
-            return m_Awaiter.Run(this, func);
-         }
 
-      }
 
+        public struct SceneActionInfo : IActionInfo
+        {
+            public IScene Scene { get; private set; }
 
-      // FACTORY //
-      public static TScene Get<TScene>(params object[] args)
-      where TScene : IScene
-      {
-         IFactory factoryCustom = null;
+            public SceneActionInfo(IScene scene)
+            {
+                Scene = scene;
+            }
 
-         if (args.Length > 0)
-         {
-            try { factoryCustom = (IFactory)args[(int)Params.Factory]; }
-            catch { Debug.Log("Custom factory not found! The instance will be created by default."); }
-         }
+        }
 
-         var factory = (factoryCustom != null) ? factoryCustom : new FactoryDefault();
-         var instance = factory.Get<TScene>(args);
+        /*
+                // CONFIGURE //
+                public override void Configure(params object[] param)
+                {
+                    Send("Start configuration...");
 
-         return instance;
-      }
+                    if (IsConfigured == true)
+                    {
+                        Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Warning);
+                        return;
+                    }
 
+                    if (param != null && param.Length > 0)
+                    {
+                        foreach (var obj in param)
+                        {
+                            if (obj is IConfig)
+                            {
+                                //m_Config = (SceneConfig)obj;
 
+                                //Label = m_Config.Label;
+                                //Scene = m_Config.Scene;
+                                //Index = SceneIndex<TScene>.SetIndex(m_Config.SceneIndex);
 
-      public struct SceneActionInfo : IActionInfo
-      {
-         public IScene Scene { get; private set; }
+                                //m_Screens = m_Config.Screens;
+                                //m_ScreenLoading = m_Config.ScreenLoading;
+                                //m_ScreenDefault = m_Config.ScreenDefault;
 
-         public SceneActionInfo(IScene scene)
-         {
-            Scene = scene;
-         }
+                                Send($"{obj.GetName()} setup.");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Send("Params are empty. Config setup aborted!", LogFormat.Warning);
+                    }
 
-      }
 
-      /*
-              // CONFIGURE //
-              public override void Configure(params object[] param)
-              {
-                  Send("Start configuration...");
+                    //m_CacheHandler = new CacheHandler<IScene>();
+                    //m_ScreenController = new ScreenControllerDefault();
 
-                  if (IsConfigured == true)
-                  {
-                      Send($"{this.GetName()} was already configured. The current setup has been aborted!", LogFormat.Warning);
-                      return;
-                  }
+                    //IsConfigured = true;
+                    //Configured?.Invoke();
 
-                  if (param != null && param.Length > 0)
-                  {
-                      foreach (var obj in param)
-                      {
-                          if (obj is IConfig)
-                          {
-                              //m_Config = (SceneConfig)obj;
+                    Send("Configuration completed!");
+                }
 
-                              //Label = m_Config.Label;
-                              //Scene = m_Config.Scene;
-                              //Index = SceneIndex<TScene>.SetIndex(m_Config.SceneIndex);
+                public override void Init()
+                {
 
-                              //m_Screens = m_Config.Screens;
-                              //m_ScreenLoading = m_Config.ScreenLoading;
-                              //m_ScreenDefault = m_Config.ScreenDefault;
+                    Send("Start initialization...");
 
-                              Send($"{obj.GetName()} setup.");
-                          }
-                      }
-                  }
-                  else
-                  {
-                      Send("Params are empty. Config setup aborted!", LogFormat.Warning);
-                  }
+                    if (IsConfigured == false)
+                    {
+                        Send($"{this.GetName()} is not configured. Initialization was aborted!", LogFormat.Warning);
+                        return;
+                    }
 
+                    if (IsInitialized == true)
+                    {
+                        Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Warning);
+                        return;
+                    }
 
-                  //m_CacheHandler = new CacheHandler<IScene>();
-                  //m_ScreenController = new ScreenControllerDefault();
+                    Subscribe();
 
-                  //IsConfigured = true;
-                  //Configured?.Invoke();
+                    m_CacheHandler.Configure(new CacheHandlerConfig(this));
+                    m_CacheHandler.Init();
+                    RecordToCache();
 
-                  Send("Configuration completed!");
-              }
 
-              public override void Init()
-              {
+                    //m_ScreenController.Configure(new ScreenControllerConfig(m_Screens, m_ScreenLoading, m_ScreenDefault));
+                    //m_ScreenController.Init();
 
-                  Send("Start initialization...");
 
-                  if (IsConfigured == false)
-                  {
-                      Send($"{this.GetName()} is not configured. Initialization was aborted!", LogFormat.Warning);
-                      return;
-                  }
 
-                  if (IsInitialized == true)
-                  {
-                      Send($"{this.GetName()} is already initialized. Current initialization was aborted!", LogFormat.Warning);
-                      return;
-                  }
 
-                  Subscribe();
+                    //IsInitialized = true;
+                    //Initialized?.Invoke();
+                    Send("Initialization completed!");
+                }
 
-                  m_CacheHandler.Configure(new CacheHandlerConfig(this));
-                  m_CacheHandler.Init();
-                  RecordToCache();
+                public override void Dispose()
+                {
 
+                    Send("Start disposing...");
 
-                  //m_ScreenController.Configure(new ScreenControllerConfig(m_Screens, m_ScreenLoading, m_ScreenDefault));
-                  //m_ScreenController.Init();
+                    foreach (var screen in m_Screens)
+                        screen.Dispose();
 
+                    m_ScreenController.Dispose();
+                    m_CacheHandler.Dispose();
 
+                    DeleteFromCache();
+                    Unsubscribe();
 
+                    //IsInitialized = false;
+                    //Disposed?.Invoke();
+                    Send("Dispose completed!");
+                }
 
-                  //IsInitialized = true;
-                  //Initialized?.Invoke();
-                  Send("Initialization completed!");
-              }
+                public virtual void Subscribe()
+                {
+                    m_CacheHandler.Message += OnMessage;
+                    m_ScreenController.Message += OnMessage;
 
-              public override void Dispose()
-              {
+                    foreach (var screen in m_Screens)
+                        screen.Message += OnMessage;
 
-                  Send("Start disposing...");
+                }
 
-                  foreach (var screen in m_Screens)
-                      screen.Dispose();
+                public virtual void Unsubscribe()
+                {
+                    m_CacheHandler.Message -= OnMessage;
+                    m_ScreenController.Message -= OnMessage;
 
-                  m_ScreenController.Dispose();
-                  m_CacheHandler.Dispose();
+                    foreach (var screen in m_Screens)
+                        screen.Message += OnMessage;
+                }
 
-                  DeleteFromCache();
-                  Unsubscribe();
 
-                  //IsInitialized = false;
-                  //Disposed?.Invoke();
-                  Send("Dispose completed!");
-              }
 
-              public virtual void Subscribe()
-              {
-                  m_CacheHandler.Message += OnMessage;
-                  m_ScreenController.Message += OnMessage;
+                // SCENE //
+                public async Task<ITaskResult> Load()
+                {
+                    if (IsLoaded == true)
+                        return new TaskResult(true, Send("The instance was already loaded. The current loading has been aborted!", LogFormat.Warning));
 
-                  foreach (var screen in m_Screens)
-                      screen.Message += OnMessage;
+                    //var uSceneLoadingTaskResult = await USceneHandler.USceneLoad(Index);
+                    //if (uSceneLoadingTaskResult.Status == false)
+                    //    return new TaskResult(false, uSceneLoadingTaskResult.Message);
 
-              }
 
-              public virtual void Unsubscribe()
-              {
-                  m_CacheHandler.Message -= OnMessage;
-                  m_ScreenController.Message -= OnMessage;
+                    //var uSceneActivateTaskResult = await USceneHandler.USceneActivate(Index);
+                    //if (uSceneActivateTaskResult.Status == false)
+                    //     return new TaskResult(false, uSceneActivateTaskResult.Message);
 
-                  foreach (var screen in m_Screens)
-                      screen.Message += OnMessage;
-              }
+                    // Loading scene objects  ...
+                    await TaskHandler.Run(() => AwaitSceneLoading(), "Waiting for screen loading...");
 
+                    // Loading screens...
+                    foreach (var screen in m_Screens)
+                    {
+                        var screenLoadTaskResult = await m_ScreenController.ScreenLoad(screen);
+                        if (screenLoadTaskResult.Status == false)
+                            return new TaskResult(false, screenLoadTaskResult.Message);
+                    }
 
+                    //IsLoaded = true;
+                    //Loaded?.Invoke();
+                    return new TaskResult(true, Send("The instance was loaded."));
+                }
 
-              // SCENE //
-              public async Task<ITaskResult> Load()
-              {
-                  if (IsLoaded == true)
-                      return new TaskResult(true, Send("The instance was already loaded. The current loading has been aborted!", LogFormat.Warning));
+                public async Task<ITaskResult> Activate(bool animate = true)
+                {
+                    if (IsActivated == true)
+                        return new TaskResult(true, Send("The scene was already activated. The current activation has been aborted!", LogFormat.Warning));
 
-                  //var uSceneLoadingTaskResult = await USceneHandler.USceneLoad(Index);
-                  //if (uSceneLoadingTaskResult.Status == false)
-                  //    return new TaskResult(false, uSceneLoadingTaskResult.Message);
+                    //var uSceneActivateTaskResult = await USceneHandler.USceneActivate(Index);
+                    //if (uSceneActivateTaskResult.Status == false)
+                    //    return new TaskResult(false, uSceneActivateTaskResult.Message);
 
+                    // Activate  UScene...
+                    //var sceneActivate = true;
+                    //await TaskHandler.Run(() => AwaitSceneActivation(sceneActivate), "Waiting for screen activation...");
 
-                  //var uSceneActivateTaskResult = await USceneHandler.USceneActivate(Index);
-                  //if (uSceneActivateTaskResult.Status == false)
-                  //     return new TaskResult(false, uSceneActivateTaskResult.Message);
+                    var screenLoadTaskResult = await m_ScreenController.ScreenActivate(m_ScreenDefault, animate);
+                    if (screenLoadTaskResult.Status == false)
+                        return new TaskResult(false, screenLoadTaskResult.Message);
 
-                  // Loading scene objects  ...
-                  await TaskHandler.Run(() => AwaitSceneLoading(), "Waiting for screen loading...");
+                    //IsActivated = true;
+                    //Activated?.Invoke();
+                    return new TaskResult(true, Send("The instance was activated."));
+                }
 
-                  // Loading screens...
-                  foreach (var screen in m_Screens)
-                  {
-                      var screenLoadTaskResult = await m_ScreenController.ScreenLoad(screen);
-                      if (screenLoadTaskResult.Status == false)
-                          return new TaskResult(false, screenLoadTaskResult.Message);
-                  }
+                public async Task<ITaskResult> Deactivate()
+                {
+                    if (IsActivated != true)
+                        return new TaskResult(true, Send("The scene was already deactivated. The current deactivation has been aborted!", LogFormat.Warning));
 
-                  //IsLoaded = true;
-                  //Loaded?.Invoke();
-                  return new TaskResult(true, Send("The instance was loaded."));
-              }
+                    foreach (var screen in m_Screens)
+                    {
+                        var screenDeactivateTaskResult = await m_ScreenController.ScreenDeactivate(screen);
+                        if (screenDeactivateTaskResult.Status == false)
+                            return new TaskResult(false, screenDeactivateTaskResult.Message);
+                    }
 
-              public async Task<ITaskResult> Activate(bool animate = true)
-              {
-                  if (IsActivated == true)
-                      return new TaskResult(true, Send("The scene was already activated. The current activation has been aborted!", LogFormat.Warning));
+                    // Activate  UScene...
+                    var sceneActivate = false;
+                    await TaskHandler.Run(() => AwaitSceneActivation(sceneActivate), "Waiting for screen deactivation...");
 
-                  //var uSceneActivateTaskResult = await USceneHandler.USceneActivate(Index);
-                  //if (uSceneActivateTaskResult.Status == false)
-                  //    return new TaskResult(false, uSceneActivateTaskResult.Message);
+                    //IsActivated = false;
+                    return new TaskResult(true, Send("The instance was deactivated."));
+                }
 
-                  // Activate  UScene...
-                  //var sceneActivate = true;
-                  //await TaskHandler.Run(() => AwaitSceneActivation(sceneActivate), "Waiting for screen activation...");
+                public async Task<ITaskResult> Unload()
+                {
+                    if (IsLoaded == false)
+                        return new TaskResult(true, Send("The instance was already unloaded. The current unloading has been aborted!", LogFormat.Warning));
 
-                  var screenLoadTaskResult = await m_ScreenController.ScreenActivate(m_ScreenDefault, animate);
-                  if (screenLoadTaskResult.Status == false)
-                      return new TaskResult(false, screenLoadTaskResult.Message);
 
-                  //IsActivated = true;
-                  //Activated?.Invoke();
-                  return new TaskResult(true, Send("The instance was activated."));
-              }
+                    // Loading screens...
+                    foreach (var screen in m_Screens)
+                    {
+                        var screenLoadTaskResult = await m_ScreenController.ScreenUnload(screen);
+                        if (screenLoadTaskResult.Status == false)
+                            return new TaskResult(false, screenLoadTaskResult.Message);
+                    }
 
-              public async Task<ITaskResult> Deactivate()
-              {
-                  if (IsActivated != true)
-                      return new TaskResult(true, Send("The scene was already deactivated. The current deactivation has been aborted!", LogFormat.Warning));
 
-                  foreach (var screen in m_Screens)
-                  {
-                      var screenDeactivateTaskResult = await m_ScreenController.ScreenDeactivate(screen);
-                      if (screenDeactivateTaskResult.Status == false)
-                          return new TaskResult(false, screenDeactivateTaskResult.Message);
-                  }
+                    // Loading scene objects  ...
+                    await TaskHandler.Run(() => AwaitSceneUnloading(), "Waiting for scene unloading...");
 
-                  // Activate  UScene...
-                  var sceneActivate = false;
-                  await TaskHandler.Run(() => AwaitSceneActivation(sceneActivate), "Waiting for screen deactivation...");
+                    //var sceneCoreIndex = SceneIndex<SceneCore>.Index;
+                    //var uSceneActivateTaskResult = await USceneHandler.USceneActivate(sceneCoreIndex);
+                    //if (uSceneActivateTaskResult.Status == false)
+                    //    return new TaskResult(false, uSceneActivateTaskResult.Message);
 
-                  //IsActivated = false;
-                  return new TaskResult(true, Send("The instance was deactivated."));
-              }
 
-              public async Task<ITaskResult> Unload()
-              {
-                  if (IsLoaded == false)
-                      return new TaskResult(true, Send("The instance was already unloaded. The current unloading has been aborted!", LogFormat.Warning));
+                    //var uSceneLoadingTaskResult = await USceneHandler.USceneLoad(Index);
+                    //if (uSceneLoadingTaskResult.Status == false)
+                    //    return new TaskResult(false, uSceneLoadingTaskResult.Message);
 
+                    //IsLoaded = true;
+                    //Loaded?.Invoke();
+                    return new TaskResult(true, Send("The instance was loaded."));
+                }
 
-                  // Loading screens...
-                  foreach (var screen in m_Screens)
-                  {
-                      var screenLoadTaskResult = await m_ScreenController.ScreenUnload(screen);
-                      if (screenLoadTaskResult.Status == false)
-                          return new TaskResult(false, screenLoadTaskResult.Message);
-                  }
 
+                // SCREEN //
+                public async Task<ITaskResult> ScreenLoad(IScreen screen) =>
+                    await m_ScreenController.ScreenLoad(screen);
 
-                  // Loading scene objects  ...
-                  await TaskHandler.Run(() => AwaitSceneUnloading(), "Waiting for scene unloading...");
+                public async Task<ITaskResult> ScreenActivate(IScreen screen, bool animate = true) =>
+                    await m_ScreenController.ScreenActivate(screen, animate);
 
-                  //var sceneCoreIndex = SceneIndex<SceneCore>.Index;
-                  //var uSceneActivateTaskResult = await USceneHandler.USceneActivate(sceneCoreIndex);
-                  //if (uSceneActivateTaskResult.Status == false)
-                  //    return new TaskResult(false, uSceneActivateTaskResult.Message);
+                public async Task<ITaskResult> ScreenDeactivate(IScreen screen) =>
+                    await m_ScreenController.ScreenDeactivate(screen);
 
+                public async Task<ITaskResult> ScreenUnload(IScreen screen) =>
+                    await m_ScreenController.ScreenUnload(screen);
 
-                  //var uSceneLoadingTaskResult = await USceneHandler.USceneLoad(Index);
-                  //if (uSceneLoadingTaskResult.Status == false)
-                  //    return new TaskResult(false, uSceneLoadingTaskResult.Message);
+                // AWAIT //
+                private bool AwaitSceneLoading()
+                {
+                    //if (SceneObject != null)
+                    //    return true;
+                    //
+                    // var obj = GameObjectHandler.CreateGameObject(Label);
+                    //SceneObject = GameObjectHandler.SetComponent<SceneObject>(obj);
 
-                  //IsLoaded = true;
-                  //Loaded?.Invoke();
-                  return new TaskResult(true, Send("The instance was loaded."));
-              }
+                    return true;
+                }
 
+                private bool AwaitSceneUnloading()
+                {
+                    //if (SceneObject == null)
+                    //    return true;
 
-              // SCREEN //
-              public async Task<ITaskResult> ScreenLoad(IScreen screen) =>
-                  await m_ScreenController.ScreenLoad(screen);
+                    //var obj = SceneObject.gameObject;
+                    //GameObjectHandler.DestroyGameObject(obj);
+                    return true;
+                }
 
-              public async Task<ITaskResult> ScreenActivate(IScreen screen, bool animate = true) =>
-                  await m_ScreenController.ScreenActivate(screen, animate);
+                private bool AwaitSceneActivation(bool activate)
+                {
+                    //if (SceneObject == null)
+                    //    return false;
 
-              public async Task<ITaskResult> ScreenDeactivate(IScreen screen) =>
-                  await m_ScreenController.ScreenDeactivate(screen);
 
-              public async Task<ITaskResult> ScreenUnload(IScreen screen) =>
-                  await m_ScreenController.ScreenUnload(screen);
+                    // var obj = SceneObject.gameObject;
+                    //obj.SetActive(activate);
+                    return true;
+                }
 
-              // AWAIT //
-              private bool AwaitSceneLoading()
-              {
-                  //if (SceneObject != null)
-                  //    return true;
-                  //
-                  // var obj = GameObjectHandler.CreateGameObject(Label);
-                  //SceneObject = GameObjectHandler.SetComponent<SceneObject>(obj);
 
-                  return true;
-              }
+                // CACHE //
+                private void RecordToCache() =>
+                    RecordRequired?.Invoke();
 
-              private bool AwaitSceneUnloading()
-              {
-                  //if (SceneObject == null)
-                  //    return true;
+                private void DeleteFromCache() =>
+                    DeleteRequired?.Invoke();
 
-                  //var obj = SceneObject.gameObject;
-                  //GameObjectHandler.DestroyGameObject(obj);
-                  return true;
-              }
 
-              private bool AwaitSceneActivation(bool activate)
-              {
-                  //if (SceneObject == null)
-                  //    return false;
+        */
+    }
 
 
-                  // var obj = SceneObject.gameObject;
-                  //obj.SetActive(activate);
-                  return true;
-              }
+    public partial class SceneFactory : Factory<IScene>
+    {
+        public SceneFactory()
+        {
+            Set<SceneLogin>(Constructor.Get((args) => GetSceneLogin(args)));
+            Set<SceneMenu>(Constructor.Get((args) => GetSceneMenu(args)));
+            Set<SceneLevel>(Constructor.Get((args) => GetSceneLevel(args)));
+        }
+    }
 
 
-              // CACHE //
-              private void RecordToCache() =>
-                  RecordRequired?.Invoke();
-
-              private void DeleteFromCache() =>
-                  DeleteRequired?.Invoke();
-
-
-      */
-   }
 }
 
 namespace Core
 {
 
-   public enum SceneIndex
-   {
-      None,
-      Login,
-      Menu,
-      Level
-   }
+    public enum SceneIndex
+    {
+        None,
+        Login,
+        Menu,
+        Level
+    }
 
 
-   public interface IScene : IComponent, IConfigurable, ILoadable, IActivable
-   {
-      SceneIndex Index { get; }
-   }
+    public interface IScene : IConfigurable, ILoadable, IActivable
+    {
+        SceneIndex Index { get; }
 
-   public class SceneConfig : IConfig
-   {
-      public SceneIndex Index { get; private set; }
 
-      public SceneConfig(SceneIndex index)
-      {
-         Index = index;
-      }
 
-   }
+
+    }
+
+    public class SceneConfig : IConfig
+    {
+        public SceneIndex Index { get; private set; }
+
+        public SceneConfig(SceneIndex index)
+        {
+            Index = index;
+        }
+
+    }
 
 }

@@ -12,7 +12,7 @@ using App.Screen;
 using System.Collections;
 
 
-namespace App.Scene
+namespace Core.Scene
 {
     [Serializable]
     public class SceneLevel : SceneModel, IScene
@@ -25,19 +25,19 @@ namespace App.Scene
 
         public SceneLevel() { }
         public SceneLevel(params object[] args)
-            => Configure(args);
+            => Init(args);
 
 
-        public override void Configure(params object[] args)
+        public override void Init(params object[] args)
         {
             if (args.Length > 0)
             {
-                base.Configure(args);
+                base.Init(args);
                 return;
             }
 
             // CONFIGURE BY DEFAULT //
-            if (m_isDebug) Debug.Log($"{this.GetName()} will be configured by default!");
+            $"Scene will be initialized by default!".Send(this, m_isDebug, LogFormat.Warning);
 
 
             //var signals = new List<ISignal>();
@@ -49,13 +49,15 @@ namespace App.Scene
 
             var index = SceneIndex.Level;
             var config = new SceneConfig(index);
-            base.Configure(config);
+            base.Init(config);
         }
 
 
         // FACTORY //
-        public static SceneLevel Get(params object[] args)
-            => Get<SceneLevel>(args);
+        public static SceneLevel Get(IFactory factory, params object[] args)
+            => Get<SceneLevel>(factory, args);
+
+
     }
 
 

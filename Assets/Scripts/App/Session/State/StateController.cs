@@ -7,7 +7,7 @@ namespace App
 {
 
     /*
-    public class StateControllerDefault : AController, IStateController
+    public class StateController : AController, IStateController
     {
         private StateControllerConfig m_Config;
 

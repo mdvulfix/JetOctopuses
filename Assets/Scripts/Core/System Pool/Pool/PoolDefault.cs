@@ -5,70 +5,74 @@ using UnityEngine;
 
 namespace Core.Pool
 {
-   [Serializable]
-   public class PoolDefault : PoolModel, IPool
-   {
-      public bool Push<TPoolable>(TPoolable poolable)
-      where TPoolable : IPoolable
-        => base.Push(poolable);
+    [Serializable]
+    public class PoolDefault : PoolModel, IPool
+    {
 
-      public bool Pop<TPoolable>(out TPoolable poolable)
-      where TPoolable : IPoolable
-      {
-         if (base.Pop(out var instance))
-         {
-            poolable = (TPoolable)instance;
-            return true;
-         }
-         else
-         {
-            poolable = default(TPoolable);
-            return false;
-         }
-      }
+        private Transform m_Parent;
 
-      public bool Peek<TPoolable>(out TPoolable poolable)
-      where TPoolable : IPoolable
-      {
-         if (base.Peek(out var instance))
-         {
-            poolable = (TPoolable)instance;
-            return true;
-         }
-         else
-         {
-            poolable = default(TPoolable);
-            return false;
-         }
-      }
+        public PoolDefault() { }
+        public PoolDefault(params object[] args)
+            => Init(args);
 
-      public override void Update() { }
 
-   }
+        public bool Push<TPoolable>(TPoolable poolable)
+        where TPoolable : IPoolable
+          => base.Push(poolable);
 
-   public partial class PoolFactory : Factory<IPool>
-   {
-      private PoolConfig m_Config;
 
-      private PoolDefault GetDefault(params object[] args)
-      {
-         var instance = new PoolDefault();
-
-         if (args.Length > 0)
-         {
-            try
+        public bool Pop<TPoolable>(out TPoolable poolable)
+        where TPoolable : IPoolable
+        {
+            if (base.Pop(out var instance))
             {
-               m_Config = (PoolConfig)args[(int)PoolModel.Params.Config];
-               instance.Configure(m_Config);
-               instance.Init();
+                poolable = (TPoolable)instance;
+                return true;
             }
-            catch { Debug.Log("Custom factory not found! The instance will be created by default."); }
+            else
+            {
+                poolable = default(TPoolable);
+                return false;
+            }
+        }
 
-         }
+        public bool Peek<TPoolable>(out TPoolable poolable)
+        where TPoolable : IPoolable
+        {
+            if (base.Peek(out var instance))
+            {
+                poolable = (TPoolable)instance;
+                return true;
+            }
+            else
+            {
+                poolable = default(TPoolable);
+                return false;
+            }
+        }
 
-         return instance;
-      }
 
-   }
+
+        public override void Update() { }
+
+    }
+
+    public partial class PoolFactory : Factory<IPool>
+    {
+        private PoolConfig m_Config;
+
+        private PoolDefault GetPoolDefault(params object[] args)
+        {
+            var instance = new PoolDefault();
+
+            if (args.Length > 0)
+                try { instance.Init((PoolConfig)args[(int)PoolModel.Params.Config]); }
+                catch { Debug.Log("Custom factory not found! The instance will be created by default."); }
+
+
+            return instance;
+        }
+
+    }
 
 }

@@ -1,10 +1,7 @@
 using System;
-using System.Threading.Tasks;
 using UnityEngine;
 using Core;
-using Core.Cache;
 using Core.Factory;
-using App.Scene;
 //using App.Signal;
 
 
@@ -12,235 +9,226 @@ using App.Scene;
 
 namespace Core.State
 {
-   public abstract class StateModel : ModelBasic, IState
-   {
+    public abstract class StateModel : ModelBasic, IState
+    {
 
-      [Header("Stats")]
-      [SerializeField] private bool m_isConfigured;
-      [SerializeField] private bool m_isInitialized;
+        [Header("Stats")]
+        [SerializeField] private bool m_isInitialized;
 
 
-      //private ICacheHandler m_CacheHandler;
+        //private ICacheHandler m_CacheHandler;
 
 
-      //private IState m_StateActive;
-      //private IScene m_SceneActive;
+        //private IState m_StateActive;
+        //private IScene m_SceneActive;
 
 
-      //private ISignal[] m_Signals;
+        //private ISignal[] m_Signals;
 
 
-      [Header("Debug")]
-      [SerializeField] protected bool m_isDebug = true;
+        [Header("Debug")]
+        [SerializeField] protected bool m_isDebug = true;
 
-      [Header("Config")]
-      [SerializeField] protected StateConfig m_Config;
+        [Header("Config")]
+        [SerializeField] protected StateConfig m_Config;
 
 
-      public event Action<IResult> Configured;
-      public event Action<IResult> Initialized;
-      //public event Action<IScene> SceneRequied;
-      //public event Action<IState> StateRequied;
+        public event Action<IResult> Initialized;
+        //public event Action<IScene> SceneRequied;
+        //public event Action<IState> StateRequied;
 
-      //public event Action RecordRequired;
-      //public event Action DeleteRequired;
+        //public event Action RecordRequired;
+        //public event Action DeleteRequired;
 
 
-      public enum Params
-      {
-         Config,
-         Factory
-      }
+        public enum Params
+        {
+            Config,
+            Factory
+        }
 
-      // CONFIGURE //
-      public override void Configure(params object[] args)
-      {
-         var config = (int)Params.Config;
+        // CONFIGURE //
+        public override void Init(params object[] args)
+        {
+            var config = (int)Params.Config;
 
-         var result = default(IResult);
-         var log = "...";
+            var result = default(IResult);
+            var log = "...";
 
-         if (args.Length > 0)
-         {
-            try { m_Config = (StateConfig)args[config]; }
-            catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
-         }
+            if (args.Length > 0)
+                try { m_Config = (StateConfig)args[config]; }
+                catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
 
-         m_Config = (StateConfig)args[config];
 
+            m_isInitialized = true;
+            log = $"{this.GetName()} initialized.";
+            result = new Result(this, m_isInitialized, log, m_isDebug);
+            Initialized?.Invoke(result);
 
+        }
 
+        public override void Dispose()
+        {
+            var result = default(IResult);
+            var log = "...";
 
-         m_isConfigured = true;
-         log = $"{this.GetName()} configured.";
-         result = new Result(this, m_isConfigured, log, m_isDebug);
-         Configured?.Invoke(result);
-      }
 
-      public override void Init()
-      {
-         var result = default(IResult);
-         var log = "...";
 
 
+            m_isInitialized = false;
+            log = $"{this.GetName()} disposed.";
+            result = new Result(this, m_isInitialized, log, m_isDebug);
+            Initialized?.Invoke(result);
 
+        }
 
 
+        public virtual void Subscribe() { }
+        public virtual void Unsubscribe() { }
 
-         m_isInitialized = true;
-         log = $"{this.GetName()} initialized.";
-         result = new Result(this, m_isInitialized, log, m_isDebug);
-         Initialized?.Invoke(result);
+        public abstract void Enter();
+        public abstract void Fail();
+        public abstract void Run();
+        public abstract void Exit();
 
-      }
 
-      public override void Dispose()
-      {
-         var result = default(IResult);
-         var log = "...";
 
+        public void OnSceneActivate(IScene scene)
+        {
 
+        }
 
+        public void OnStateActivate(IState scene)
+        {
 
-         m_isInitialized = false;
-         log = $"{this.GetName()} disposed.";
-         result = new Result(this, m_isInitialized, log, m_isDebug);
-         Initialized?.Invoke(result);
+        }
 
-      }
+        protected void SignalSend(ISignal signal)
+        {
+            signal.Call();
+        }
 
 
-      public virtual void Subscribe() { }
-      public virtual void Unsubscribe() { }
 
-      public abstract void Enter();
-      public abstract void Fail();
-      public abstract void Run();
-      public abstract void Exit();
+        // FACTORY //
+        public static TState Get<TState>(params object[] args)
+        where TState : IState
+        {
+            IFactory factoryCustom = null;
 
+            if (args.Length > 0)
+                try { factoryCustom = (IFactory)args[(int)Params.Factory]; }
+                catch { Debug.Log("Custom factory not found! The instance will be created by default."); }
 
 
-      public void OnSceneActivate(IScene scene)
-      {
+            var factory = (factoryCustom != null) ? factoryCustom : new StateFactory();
+            var instance = factory.Get<TState>(args);
 
-      }
+            return instance;
+        }
 
-      public void OnStateActivate(IState scene)
-      {
 
-      }
 
-      protected void SignalSend(ISignal signal)
-      {
-         signal.Call();
-      }
+    }
 
 
 
-      // FACTORY //
-      public static TState Get<TState>(params object[] args)
-      where TState : IState
-      {
-         IFactory factoryCustom = null;
 
-         if (args.Length > 0)
-            try { factoryCustom = (IFactory)args[(int)Params.Factory]; }
-            catch { Debug.Log("Custom factory not found! The instance will be created by default."); }
+    public enum State
+    {
+        None,
 
+        //Load
+        LoadIn,
+        LoadFail,
+        LoadRun,
+        LoadOut,
 
-         var factory = (factoryCustom != null) ? factoryCustom : new FactoryDefault();
-         var instance = factory.Get<TState>(args);
+        //Net
+        NetIn,
+        NetFail,
+        NetRun,
+        NetExit,
+        NetOut,
 
-         return instance;
-      }
+        //Login
+        LoginIn,
+        LoginFail,
+        LoginRun,
+        LoginExit,
+        LoginOut,
 
+        //Menu
+        MenuIn,
+        MenuFail,
+        MenuRun,
+        MenuExit,
+        MenuOut,
 
+        //Level
+        LevelIn,
+        LevelFail,
+        LevelRun,
+        LevelWin,
+        LevelLose,
+        LevelPause,
+        LevelExit,
+        LevelOut,
 
-   }
+        //Result
+        ResultIn,
+        ResultFail,
+        ResultRun,
+        ResultExit,
+        ResultOut,
 
+        //Unload
+        UnloadIn,
+        UnloadFail,
+        UnloadRun,
+        UnloadOut,
 
+    }
 
 
-   public enum State
-   {
-      None,
 
-      //Load
-      LoadIn,
-      LoadFail,
-      LoadRun,
-      LoadOut,
+    public partial class StateFactory : Factory<IState>
+    {
+        public StateFactory()
+        {
+            Set<StateLogin>(Constructor.Get((args) => GetStateLogin(args)));
+            Set<StateMenu>(Constructor.Get((args) => GetStateMenu(args)));
+        }
+    }
 
-      //Net
-      NetIn,
-      NetFail,
-      NetRun,
-      NetExit,
-      NetOut,
 
-      //Login
-      LoginIn,
-      LoginFail,
-      LoginRun,
-      LoginExit,
-      LoginOut,
 
-      //Menu
-      MenuIn,
-      MenuFail,
-      MenuRun,
-      MenuExit,
-      MenuOut,
 
-      //Level
-      LevelIn,
-      LevelFail,
-      LevelRun,
-      LevelWin,
-      LevelLose,
-      LevelPause,
-      LevelExit,
-      LevelOut,
-
-      //Result
-      ResultIn,
-      ResultFail,
-      ResultRun,
-      ResultExit,
-      ResultOut,
-
-      //Unload
-      UnloadIn,
-      UnloadFail,
-      UnloadRun,
-      UnloadOut,
-
-   }
 
 
 }
 
 namespace Core
 {
-   public interface IState : IConfigurable
-   {
-      //event Action<IScene> SceneRequied;
-      //event Action<IState> StateRequied;
+    public interface IState : IConfigurable
+    {
+        //event Action<IScene> SceneRequied;
+        //event Action<IState> StateRequied;
 
-      void Enter();
-      void Fail();
-      void Run();
-      void Exit();
-   }
-
-
-
-   public class StateConfig : IConfig
-   {
+        void Enter();
+        void Fail();
+        void Run();
+        void Exit();
+    }
 
 
 
-   }
+    public class StateConfig : IConfig
+    {
+
+
+
+    }
 
 
 }

@@ -14,22 +14,23 @@ namespace Core.Spawn
 
         public SpawnerDefault() { }
         public SpawnerDefault(params object[] args)
-            => Configure(args);
+            => Init(args);
 
 
-        public override void Configure(params object[] args)
+        public override void Init(params object[] args)
         {
             if (args.Length > 0)
             {
-                base.Configure(args);
+                base.Init(args);
                 return;
             }
 
             // CONFIGURE BY DEFAULT //
+            $"{this.GetName()} will be initialized by default!".Send(this, m_isDebug, LogFormat.Warning);
 
             var config = new SpawnerConfig();
-            base.Configure(config);
-            Debug.Log($"{this.GetName()} was configured by default!");
+            base.Init(config);
+
 
         }
 
