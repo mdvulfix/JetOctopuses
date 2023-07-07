@@ -7,16 +7,13 @@ namespace Core
     public abstract class SessionModel : ModelComponent
     {
 
-        [Header("Stats")]
-        [SerializeField] private bool m_isInitialized;
-
         [Header("Config")]
         [SerializeField] protected SessionConfig m_Config;
 
         [Header("Debug")]
         [SerializeField] protected bool m_isDebug = true;
 
-        public event Action<IResult> Initialized;
+
 
         public enum Params
         {

@@ -14,17 +14,13 @@ namespace Core.Async
         [SerializeField] private bool m_isReady;
 
 
-        [Header("Debug")]
-        [SerializeField] private bool m_isDebug = true;
+
 
 
         protected AwaiterConfig m_Config;
         protected string m_Label = "Awaiter";
 
 
-        public bool isActivated => m_isActivated;
-
-        public event Action<IResult> Initialized;
         public event Action<IResult> Activated;
         public event Action<IResult> Ready;
 
@@ -44,30 +40,60 @@ namespace Core.Async
         public abstract void Activate();
         public abstract void Deactivate();
 
+        public abstract IResult RunAsync(object context, Func<bool> action);
 
 
-
-        protected virtual void OnInitChanged(IResult result)
+        protected virtual IEnumerator Execute(Func<bool> action, float delay, CancellationToken token)
         {
-            if (m_isDebug) Debug.Log($"{result.Context}: {result.Log}");
+            if (!m_isReady)
+                yield return null;
 
-            m_isInitialized = result.Status;
-            Initialized?.Invoke(result);
+            OnReady(new Result(this, false, "Async operation started..."));
+
+            while (!token.isCancelled)
+            {
+                if (action.Invoke())
+                {
+                    token.Cancel();
+                    OnReady(new Result(this, true, "Async operation successfully finished!"));
+                    yield return null;
+                }
+
+                if (delay <= 0)
+                {
+                    token.Cancel();
+                    OnReady(new Result(this, true, "Async operation cancelled by time delay."));
+                    yield return null;
+
+                }
+
+                yield return new WaitForSeconds(0.5f);
+                delay -= Time.deltaTime;
+            }
+
+            OnReady(new Result(this, true, "Async operation cancelled."));
 
         }
 
-        protected virtual void OnActivateChanged(IResult result)
+
+
+
+
+
+        protected virtual void OnActivate(IResult result, bool debug = false)
         {
-            if (m_isDebug) Debug.Log($"{result.Context}: {result.Log}");
+            if (debug)
+                Debug.Log($"{result.Context}: {result.Log}");
 
 
             m_isActivated = result.Status;
             Activated?.Invoke(result);
         }
 
-        protected virtual void OnReadyChanged(IResult result)
+        protected virtual void OnReady(IResult result, bool debug = false)
         {
-            if (m_isDebug) Debug.Log($"{result.Context}: {result.Log}");
+            if (debug)
+                Debug.Log($"{result.Context}: {result.Log}");
 
 
             m_isReady = result.Status;
@@ -76,7 +102,7 @@ namespace Core.Async
 
 
 
-        public abstract IResult Run(object context, Func<bool> action);
+
 
 
 
@@ -101,11 +127,10 @@ namespace Core.Async
 
     public interface IAwaiter : IComponent, IConfigurable, IActivable, IPoolable
     {
-        bool isReady { get; }
 
         event Action<IResult> Ready;
 
-        IResult Run(object context, Func<bool> action);
+        IResult RunAsync(object context, Func<bool> action);
 
     }
 

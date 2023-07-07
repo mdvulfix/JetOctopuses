@@ -6,8 +6,13 @@ namespace Core
 {
     public abstract class ModelComponent : MonoBehaviour
     {
-        [SerializeField] public GameObject ObjSelf => gameObject;
 
+        [Header("Stats")]
+        [SerializeField] private bool m_isInitialized;
+
+        public GameObject ObjSelf => gameObject;
+
+        public event Action<IResult> Initialized;
 
         // CONFIGURE //
         public abstract void Init(params object[] args);
@@ -19,6 +24,20 @@ namespace Core
 
         public GameObject GetParent()
            => transform.parent.gameObject;
+
+
+        protected virtual void OnInitialize(IResult result, bool debug = false)
+        {
+            if (debug)
+                Debug.Log($"{result.Context}: {result.Log}");
+
+            m_isInitialized = result.Status;
+            Initialized?.Invoke(result);
+
+        }
+
+
+
     }
 
     public interface IComponent

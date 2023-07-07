@@ -10,6 +10,9 @@ namespace Core.Async
     public class AwaiterDefault : AwaiterModel, IAwaiter
     {
 
+        [Header("Debug")]
+        [SerializeField] private bool m_isDebug = true;
+
         private GameObject m_Obj;
         private CancellationToken m_Token;
 
@@ -38,13 +41,14 @@ namespace Core.Async
             if (args.Length > 0)
             {
                 try { m_Config = (AwaiterConfig)args[config]; }
-                catch { OnInitChanged(new Result(this, false, $"{m_Label} config was not found. Initialization failed!")); return; }
+                catch { Debug.Log($"{this}: {m_Label} config was not found. Initialization failed!"); return; }
+
             }
 
             m_Obj = ObjSelf;
 
             m_Token = new CancellationToken();
-            OnInitChanged(new Result(this, true, $"{m_Label} initialized!"));
+            OnInitialize(new Result(this, true, $"{m_Label} initialized!"), m_isDebug);
 
 
         }
@@ -53,7 +57,7 @@ namespace Core.Async
         {
 
             m_Token.Cancel();
-            OnInitChanged(new Result(this, false, $"{m_Label} disposed!"));
+            OnInitialize(new Result(this, false, $"{m_Label} disposed!"), m_isDebug);
         }
 
 
@@ -63,88 +67,32 @@ namespace Core.Async
         public override void Activate()
         {
             m_Obj.SetActive(true);
-            OnActivateChanged(new Result(this, true, $"{m_Label} activated!"));
-            OnReadyChanged(new Result(this, false, $"{m_Label} is ready!"));
+            OnActivate(new Result(this, true, $"{m_Label} activated!"), m_isDebug);
+            OnReady(new Result(this, false, $"{m_Label} is ready!"), m_isDebug);
 
         }
 
         public override void Deactivate()
         {
             m_Obj.SetActive(false);
-            OnReadyChanged(new Result(this, false, $"{m_Label} is not ready!"));
-            OnActivateChanged(new Result(this, true, $"{m_Label} deactivated!"));
+            OnReady(new Result(this, false, $"{m_Label} is not ready!"), m_isDebug);
+            OnActivate(new Result(this, true, $"{m_Label} deactivated!"), m_isDebug);
 
         }
 
 
-        public override IResult Run(object context, Func<bool> action)
+        public override IResult RunAsync(object context, Func<bool> action)
         {
-            if (!m_isReady)
-                return new Result(this, false, $"Awaiter {m_Name} is busy...", m_isDebug, LogFormat.Warning);
-
             var token = new CancellationToken();
             var delay = 5f;
 
-            try { StartCoroutine(ExecuteAsync(action, delay, token)); }
+            try { StartCoroutine(Execute(action, delay, token)); }
             catch (Exception ex) { Debug.LogWarning(ex.Message); }
 
             return new Result(context, true);
         }
 
-        private IEnumerator ExecuteAsync(Func<bool> action, float delay, CancellationToken token)
-        {
-            var result = default(IResult);
-            var log = "...";
 
-            m_isReady = false;
-
-            log = $"{this.GetName()}: Async operation started...";
-            result = new Result(this, m_isReady, log, m_isDebug);
-            Ready?.Invoke(result);
-
-
-            while (!token.isCancelled)
-            {
-                if (action.Invoke())
-                {
-                    token.Cancel();
-
-                    OnReadyCallback(new Result(this, true, $"{m_Label} deactivated!"));
-
-
-
-                    m_isReady = true;
-                    log = $"{this.GetName()}: Async operation successfully finished.";
-                    result = new Result(this, m_isReady, log, m_isDebug);
-                    Ready?.Invoke(result);
-                    yield return null;
-
-                }
-
-                if (delay <= 0)
-                {
-                    token.Cancel();
-
-                    m_isReady = true;
-                    log = $"{this.GetName()}: Async operation cancelled by time delay.";
-                    result = new Result(this, m_isReady, log, m_isDebug);
-                    Ready?.Invoke(result);
-                    yield return null;
-
-                }
-
-                yield return new WaitForSeconds(0.5f);
-                delay -= Time.deltaTime;
-            }
-
-
-
-            m_isReady = true;
-            log = $"{this.GetName()}: Async operation cancelled.";
-            result = new Result(this, m_isReady, log, m_isDebug);
-            Ready?.Invoke(result);
-
-        }
 
 
 
@@ -185,7 +133,7 @@ namespace Core.Async
         private AwaiterDefault GetDefault(params object[] args)
         {
 
-            var prefabPath = $"{AwaiterModel.PREFAB_Folder}/{AwaiterDefault.PREFAB_Label}";
+            var prefabPath = $"{AwaiterModel.PREFAB_FOLDER}/{AwaiterDefault.PREFAB_NAME}";
             var prefab = Resources.Load<GameObject>(prefabPath);
 
             var obj = (prefab != null) ?
