@@ -1,11 +1,12 @@
 using UnityEngine;
 using Core;
+using Core.State;
 using Core.Factory;
 
 //using App.Signal;
 
 
-namespace Core.State
+namespace App.State
 {
 
     public class StateMenu : StateModel, IState
@@ -20,13 +21,6 @@ namespace Core.State
 
         public override void Init(params object[] args)
         {
-            if (args.Length > 0)
-            {
-                base.Init(args);
-                return;
-            }
-
-            // CONFIGURE BY DEFAULT //
 
 
             //var signals = new List<ISignal>();
@@ -37,10 +31,8 @@ namespace Core.State
             //base.Init(config);
 
 
-
             var config = new StateConfig();
             base.Init(config);
-            Debug.Log($"{this.GetName()} was configured by default!");
         }
 
 

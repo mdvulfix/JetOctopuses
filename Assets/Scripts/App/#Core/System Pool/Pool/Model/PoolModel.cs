@@ -1,78 +1,45 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using Core.Factory;
 using UnityEngine;
 
 namespace Core.Pool
 {
-    public abstract class PoolModel : ModelBasic
+    public abstract class PoolModel : ModelConfigurable
     {
 
-        [Header("Stats")]
-        [SerializeField] private bool m_isInitialized;
+        private PoolConfig m_Config;
+
+        private bool m_isDebug = true;
+
+        private Stack<IPoolable> m_Poolables = new Stack<IPoolable>(100);
+
+        public string Label => "Pool";
+        public int Count => m_Poolables.Count;
 
 
-
-        private static Stack<IPoolable> m_Poolables;
-        private IFactory m_PoolableFactory;
-
-
-        [Header("Debug")]
-        [SerializeField] protected bool m_isDebug = true;
-
-        [Header("Config")]
-        [SerializeField] protected PoolConfig m_Config;
-
-
-        public event Action<IResult> Initialized;
-
-
-        public enum Params
-        {
-            Config,
-            Factory
-        }
 
         // CONFIGURE //
         public override void Init(params object[] args)
         {
             var config = (int)Params.Config;
 
-            var result = default(IResult);
-            var log = "...";
-
-
             if (args.Length > 0)
-            {
                 try { m_Config = (PoolConfig)args[config]; }
-                catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
-            }
-
-            m_Poolables = new Stack<IPoolable>(10);
-            m_PoolableFactory = m_Config.PoolableFactory;
+                catch { Debug.LogWarning($"{this}: {Label} config was not found. Configuration failed!"); return; }
 
 
-            m_isInitialized = true;
-            log = $"{this.GetName()} initialized.";
-            result = new Result(this, m_isInitialized, log, m_isDebug);
-            Initialized?.Invoke(result);
+            OnInitComplete(new Result(this, true, $"{Label} initialized."), m_isDebug);
 
         }
+
 
         public override void Dispose()
         {
-            var result = default(IResult);
-            var log = "...";
 
-            m_Poolables.Clear();
-
-
-            m_isInitialized = false;
-            log = $"{this.GetName()} disposed.";
-            result = new Result(this, m_isInitialized, log, m_isDebug);
-            Initialized?.Invoke(result);
-
+            OnDisposeComplete(new Result(this, true, $"{Label} disposed."), m_isDebug);
         }
+
 
 
 
@@ -109,72 +76,46 @@ namespace Core.Pool
         }
 
 
-        public abstract void Update();
+
+        public IEnumerator GetEnumerator()
+        => m_Poolables.GetEnumerator();
 
 
 
         // FACTORY //
         public static TPool Get<TPool>(params object[] args)
-        where TPool : IPool
+        where TPool : IPool, new()
         {
-            IFactory factoryCustom = null;
+            var pool = new TPool();
+            pool.Init(args);
 
-            if (args.Length > 0)
-            {
-                try { factoryCustom = (IFactory)args[(int)Params.Factory]; }
-                catch { Debug.LogWarning("Custom factory not found! The instance will be created by default."); }
-            }
-
-            var factory = (factoryCustom != null) ? factoryCustom : new PoolFactory();
-            var instance = factory.Get<TPool>(args);
-
-            return instance;
-        }
-
-    }
-
-
-
-
-    public partial class PoolFactory : Factory<IPool>
-    {
-        public PoolFactory()
-        {
-            Set<PoolDefault>(Constructor.Get((args) => GetPoolDefault(args)));
-
+            return pool;
         }
     }
 
-
-
-
-
-
-}
-
-namespace Core
-{
-    public interface IPool : IConfigurable, IUpdatable
+    public interface IPool : IConfigurable, IEnumerable
     {
+        int Count { get; }
+
         bool Push(IPoolable poolable);
         bool Pop(out IPoolable poolable);
         bool Peek(out IPoolable poolable);
 
     }
 
-    public class PoolConfig : IConfig
+    public delegate IPoolable GetPoolableDelegate();
+
+    public struct PoolConfig : IConfig
     {
-        public PoolConfig(IFactory poolableFactory)
+        public PoolConfig(int limit, GetPoolableDelegate getPoolable)
         {
-            PoolableFactory = poolableFactory;
+            Limit = limit;
+
+            GetPoolable = getPoolable;
         }
 
-        public IFactory PoolableFactory { get; private set; }
-
-
+        public int Limit { get; private set; }
+        public GetPoolableDelegate GetPoolable { get; private set; }
     }
-    public interface IPoolable : IConfigurable
-    {
 
-    }
 }

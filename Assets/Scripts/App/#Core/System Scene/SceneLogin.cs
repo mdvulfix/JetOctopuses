@@ -11,6 +11,8 @@ namespace Core.Scene
     [Serializable]
     public class SceneLogin : SceneModel, IScene
     {
+
+
         //[SerializeField] private ScreenLoading m_Loading;
         //[SerializeField] private ScreenLogin m_Login;
 
@@ -22,14 +24,6 @@ namespace Core.Scene
 
         public override void Init(params object[] args)
         {
-            if (args.Length > 0)
-            {
-                base.Init(args);
-                return;
-            }
-
-            // CONFIGURE BY DEFAULT //
-            $"Scene will be initialized by default!".Send(this, m_isDebug, LogFormat.Warning);
 
 
             //var signals = new List<ISignal>();
@@ -39,7 +33,9 @@ namespace Core.Scene
             //var config = new StateConfig(this, signals.ToArray());
             //base.Init(config);
             var index = SceneIndex.Login;
-            var config = new SceneConfig(index);
+
+            var views = new IView[] { };
+            var config = new SceneConfig(index, views);
             base.Init(config);
 
         }

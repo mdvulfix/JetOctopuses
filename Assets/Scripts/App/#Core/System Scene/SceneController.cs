@@ -1,46 +1,41 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UScene = UnityEngine.SceneManagement.Scene;
+
 using Core;
 using Core.Signal;
-using System.Collections.Generic;
-using System.Collections;
+using Core.Factory;
 
-namespace Core.Scene
+
+namespace App.Scene
 {
     [Serializable]
-    public class SceneController : ModelController, ISceneController
+    public class SceneController : ModelConfigurable, ISceneController
     {
 
+        private bool m_isDebug = true;
+        private string m_DebugLabel = "SceneController";
+
+        private SceneControllerConfig m_Config;
         //private IScene m_Scene;
         //private ISignal m_SignalSceneActivate;
 
-        [SerializeField] private SceneLogin m_SceneLogin;
-        [SerializeField] private SceneMenu m_SceneMenu;
-        [SerializeField] private SceneLevel m_SceneLevel;
+
 
         private IFactory m_SceneFactory;
         private List<IScene> m_Scenes;
+
         private IScene m_SceneActive;
 
+        //private SceneProvider m_SceneProvider;
 
 
+        private Dictionary<Type, SceneIndex> m_SceneIndexMap = new Dictionary<Type, SceneIndex>(10);
 
 
-        [Header("Stats")]
-        [SerializeField] private bool m_isInitialized;
-
-
-        [Header("Debug")]
-        [SerializeField] protected bool m_isDebug = true;
-
-        [Header("Config")]
-        [SerializeField] protected SceneControllerConfig m_Config;
-
-
-
-        public event Action<IResult> Initialized;
         public event Action<IResult> SceneLoaded;
         public event Action<IResult> SceneActivated;
 
@@ -51,37 +46,43 @@ namespace Core.Scene
             => Init(args);
 
 
-        public enum Params
+        // SUBSCRIBE //
+        public virtual void Subscribe()
         {
-            Config,
-            Factory
+            //SignalProvider.SignalCalled += OnSignalCalled;
         }
+
+        public virtual void Unsubscribe()
+        {
+            //SignalProvider.SignalCalled -= OnSignalCalled;
+        }
+
+
 
 
         // CONFIGURE //
 
         public override void Init(params object[] args)
         {
-            if (m_isInitialized) { "Initialization was already completed".Send(this, m_isDebug, LogFormat.Warning); return; }
 
             var config = (int)Params.Config;
 
-            var result = default(IResult);
-            var log = "...";
-
             if (args.Length > 0)
-            {
                 try { m_Config = (SceneControllerConfig)args[config]; }
-                catch { "Config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
-            }
+                catch { Debug.LogWarning($"{this}: {m_DebugLabel} config was not found. Configuration failed!"); return; }
+
 
             m_SceneFactory = m_Config.SceneFactory;
 
             m_Scenes = new List<IScene>();
 
-            m_SceneLogin = Register<SceneLogin>(SceneIndex.Login);
-            m_SceneMenu = Register<SceneMenu>(SceneIndex.Menu);
-            m_SceneLevel = Register<SceneLevel>(SceneIndex.Level);
+            //SetIndex<SceneCore>(SceneIndex.Core);
+            //SetIndex<SceneMenu>(SceneIndex.Menu);
+            //SetIndex<SceneLevel>(SceneIndex.Level);
+            //SetIndex<SceneTotals>(SceneIndex.Totals);
+
+
+            //m_SceneProvider = new SceneProvider();
 
 
             foreach (var scene in m_Scenes)
@@ -92,18 +93,11 @@ namespace Core.Scene
             }
 
 
-            m_isInitialized = true;
-            log = $"{this.GetName()} initialized.";
-            result = new Result(this, m_isInitialized, log, m_isDebug);
-            Initialized?.Invoke(result);
-
+            base.Init();
         }
 
         public override void Dispose()
         {
-            var result = default(IResult);
-            var log = "...";
-
             foreach (var scene in m_Scenes)
             {
                 SceneDeactivate(scene);
@@ -116,36 +110,8 @@ namespace Core.Scene
                 scene.Activated -= OnSceneActivated;
             }
 
-            m_isInitialized = false;
-            log = $"{this.GetName()} disposed.";
-            result = new Result(this, m_isInitialized, log, m_isDebug);
-            Initialized?.Invoke(result);
-
+            base.Dispose();
         }
-
-
-        public void Enter() { }
-
-        public void Login()
-        {
-            SceneLoad(m_SceneLogin);
-            //SceneActivate(m_SceneLogin);
-        }
-
-
-        public void Menu()
-            => SceneActivate(m_SceneMenu);
-
-        public void Level()
-            => SceneActivate(m_SceneLevel);
-
-        public void Exit() { }
-
-
-
-
-
-
 
 
         // LOAD //
@@ -193,29 +159,141 @@ namespace Core.Scene
 
 
 
-        // SUBSCRIBE //
-        public virtual void Subscribe()
+        public async Task Load<TScene>()
+            where TScene : Component, IScene
         {
-            //SignalProvider.SignalCalled += OnSignalCalled;
+            if (m_SceneActive != null && m_SceneActive.GetType() == typeof(TScene))
+            {
+                Debug.Log($"{typeof(TScene)} is already loaded");
+                return;
+            }
+
+            UScene uScene;
+
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                uScene = SceneManager.GetSceneAt(i);
+                if (uScene.TryGetComponentOnRootGameObject<TScene>(out var scene))
+                {
+                    if (scene.GetType() == typeof(TScene))
+                    {
+                        Debug.LogWarning($"{typeof(TScene)} is already loaded");
+                        return;
+                    }
+                }
+            }
+
+            if (GetIndex<TScene>(out var index) == false)
+            {
+                Debug.LogWarning($"Index of {typeof(TScene)} not found!");
+                return;
+            }
+
+            SceneManager.LoadSceneAsync((int)index, LoadSceneMode.Additive);
+            await Task.Delay(5);
         }
 
-        public virtual void Unsubscribe()
+        public async Task Unload<TSceneNext>()
         {
-            //SignalProvider.SignalCalled -= OnSignalCalled;
+
+            if (m_SceneActive != null && m_SceneActive.GetType() == typeof(TSceneNext))
+            {
+                Debug.Log($"{typeof(TSceneNext)} is already loaded!");
+                return;
+            }
+
+            await Unload();
+
+        }
+
+        public async Task Unload()
+        {
+            if (m_SceneActive == null)
+                return;
+
+
+            var tSceneActive = m_SceneActive.GetType();
+
+            if (GetIndex(out var index, tSceneActive))
+            {
+                //UScene uSceneActive = SceneManager.GetActiveScene();
+                //UScene uScene = SceneManager.GetSceneByBuildIndex((int)SceneIndex.Core);
+                //if (uSceneActive != uScene)
+                //    SceneManager.SetActiveScene(uScene);
+
+                SceneManager.UnloadSceneAsync((int)index);
+                await Task.Delay(5);
+
+            }
+            else
+            {
+                Debug.LogWarning($"Index of {tSceneActive} not found!");
+                return;
+            }
+        }
+
+        public async Task Activate<TView>()
+            where TView : IView
+        {
+            //await Activate<TView, ViewLoading>();
+        }
+
+        public async Task Activate<TScene, TView>()
+            where TScene : IScene
+            where TView : IView
+        {
+            //var delay = 5;
+
+            //await TaskHandler.Run(() =>
+            //    GetSceneByType<TScene>(out var info), delay, $"Activating scene {typeof(TScene)}.");
+
+            var result = new Result();
+            if (result.State)
+            {
+                if (GetIndex<TScene>(out var index))
+                {
+                    UScene uSceneActive = SceneManager.GetActiveScene();
+                    UScene uScene = SceneManager.GetSceneByBuildIndex((int)index);
+                    if (uSceneActive != uScene)
+                        SceneManager.SetActiveScene(uScene);
+                }
+
+                m_SceneActive = result.Context.Convert<TScene>();
+                await m_SceneActive.Enter<TView>();
+
+                SceneActivated?.Invoke(result);
+            }
+        }
+
+        private IScene SetIndex(SceneIndex index, IScene scene)
+        {
+            m_SceneIndexMap.Add(scene.GetType(), index);
+            return scene;
         }
 
 
-        // LOAD //
-        public virtual TScene Register<TScene>(SceneIndex index)
+        private bool GetSceneByType<TScene>(out TScene scene)
         where TScene : IScene
         {
-            var factory = (m_SceneFactory != null) ? m_SceneFactory : new SceneFactory();
-            var scene = factory.Get<TScene>(new SceneConfig(index));
-            m_Scenes.Add(scene);
-            return scene;
 
+            if (m_SceneProvider.Get<TScene>(out var cacheable))
+            {
+                scene = (TScene)cacheable;
+                return true;
+            }
+
+            scene = default(TScene);
+            return false;
         }
 
+        private bool GetIndex<TScene>(out SceneIndex index)
+        where TScene : IScene
+        {
+            if (m_SceneIndexMap.TryGetValue(typeof(TScene), out index))
+                return true;
+
+            return false;
+        }
 
 
         private void OnSceneLoaded(IResult result)
@@ -223,7 +301,7 @@ namespace Core.Scene
             if (result == null)
                 return;
 
-            var status = result.Status;
+            var status = result.State;
             var scene = result.Context is IScene ? (IScene)result.Context : null;
 
             $"{scene.GetName()} load status changed to {result}!".Send(this, m_isDebug);
@@ -247,7 +325,7 @@ namespace Core.Scene
             if (result == null)
                 return;
 
-            var status = result.Status;
+            var status = result.State;
             var scene = result.Context is IScene ? (IScene)result.Context : null;
 
             $"{scene.GetName()} activation status changed to {result}!".Send(this, m_isDebug);
@@ -265,6 +343,31 @@ namespace Core.Scene
                     break;
 
             }
+        }
+
+        public void Enter()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Login()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Menu()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Level()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Exit()
+        {
+            throw new NotImplementedException();
         }
 
 
@@ -297,20 +400,22 @@ namespace Core.Scene
 
 namespace Core
 {
+
     public interface ISceneController : IController
     {
-
         event Action<IResult> SceneLoaded;
         event Action<IResult> SceneActivated;
 
-        TScene Register<TScene>(SceneIndex index)
-        where TScene : IScene;
-
         void Enter();
+
         void Login();
+
         void Menu();
+
         void Level();
+
         void Exit();
+
 
     }
 

@@ -7,67 +7,24 @@ using Core.Factory;
 namespace Core.Spawn
 {
     [Serializable]
-    public abstract class SpawnerModel : ModelBasic
+    public abstract class SpawnerModel : ModelConfigurable
     {
-        [Header("Stats")]
-        [SerializeField] private bool m_isInitialized;
 
+        private bool m_isDebug = true;
+        private SpawnerConfig m_Config;
 
-        [Header("Debug")]
-        [SerializeField] protected bool m_isDebug = true;
-
-        [Header("Config")]
-        [SerializeField] protected SpawnerConfig m_Config;
-
-
-        public event Action<IResult> Initd;
-        public event Action<IResult> Initialized;
-
-
-        public enum Params
-        {
-            Config,
-            Factory
-        }
+        public string Label => "Awaiter";
 
         // CONFIGURE //
         public override void Init(params object[] args)
         {
             var config = (int)Params.Config;
 
-            var result = default(IResult);
-            var log = "...";
-
             if (args.Length > 0)
-            {
                 try { m_Config = (SpawnerConfig)args[config]; }
-                catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
-            }
-
-
-
-
-            m_isInitialized = true;
-            log = $"{this.GetName()} initialized.";
-            result = new Result(this, m_isInitialized, log, m_isDebug);
-            Initialized?.Invoke(result);
+                catch { Debug.LogWarning($"{this}: {Label} config was not found. Configuration failed!"); return; }
 
         }
-
-        public override void Dispose()
-        {
-            var result = default(IResult);
-            var log = "...";
-
-
-
-            m_isInitialized = false;
-            log = $"{this.GetName()} disposed.";
-            result = new Result(this, m_isInitialized, log, m_isDebug);
-            Initialized?.Invoke(result);
-
-        }
-
 
 
         public virtual void Spawn() { }
@@ -99,7 +56,7 @@ namespace Core.Spawn
 
     }
 
-    public class SpawnerConfig : AConfig, IConfig
+    public struct SpawnerConfig : IConfig
     {
 
     }

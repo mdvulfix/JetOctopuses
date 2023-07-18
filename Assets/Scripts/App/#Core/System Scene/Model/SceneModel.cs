@@ -8,169 +8,78 @@ using UScene = UnityEngine.SceneManagement.Scene;
 using Core;
 using Core.Factory;
 using Core.Async;
+using System.Threading.Tasks;
 
 namespace Core.Scene
 {
 
     [Serializable]
-    public abstract class SceneModel : ModelBasic
+    public abstract class SceneModel : ModelLoadable
     {
-
-        [Header("Stats")]
-        [SerializeField] private bool m_isInitialized;
-        [SerializeField] private bool m_isLoaded;
-        [SerializeField] private bool m_isActivated;
+        private bool m_isDebug = true;
+        private SceneConfig m_Config;
 
 
         [SerializeField] private SceneIndex m_Index;
 
-        private List<IScreen> m_Screens;
+        private List<IView> m_Views;
 
 
-
-        protected string m_Name = "Scene";
-        protected SceneConfig m_Config;
-
-        [Header("Debug"), SerializeField]
-        protected bool m_isDebug = true;
-
-
-
+        public string Label => "Awaiter";
         public SceneIndex Index => m_Index;
-        public bool isLoaded => m_isLoaded;
-        public bool isActivated => m_isActivated;
 
-        public event Action<IResult> Initialized;
-        public event Action<IResult> Loaded;
-        public event Action<IResult> Activated;
+
         public event Action<ILoadable> LoadRequired;
 
-        public enum Params
-        {
-            Config,
-            Factory
-        }
 
         // CONFIGURE //
         public override void Init(params object[] args)
         {
             var config = (int)Params.Config;
 
-            var result = default(IResult);
-            var log = "...";
-
             if (args.Length > 0)
-            {
                 try { m_Config = (SceneConfig)args[config]; }
-                catch { $"{m_Name} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
-            }
+                catch { Debug.LogWarning($"{this}: {Label} config was not found. Configuration failed!"); return; }
 
             m_Index = m_Config.Index;
-
-
-
-            //var awaiterConfig = new AwaiterConfig();
-            //m_Awaiter = AwaiterDefault.Get();
-            //m_Awaiter.Init();
-            //m_Awaiter.Activate();
-
-
-
-
-            m_isInitialized = true;
-            log = $"{m_Name} initialized.";
-            result = new Result(this, m_isInitialized, log, m_isDebug);
-            Initialized?.Invoke(result);
 
         }
 
         public override void Dispose()
         {
-            var result = default(IResult);
-            var log = "...";
-
-            //m_AsyncController.Dispose();
-
-            //m_Awaiter.Deactivate();
-            //m_Awaiter.Dispose();
-
-
-            m_isInitialized = false;
-            log = $"{m_Name} disposed.";
-            result = new Result(this, m_isInitialized, log, m_isDebug);
-            Initialized?.Invoke(result);
 
         }
 
 
 
-        // LOAD //
-        public virtual void Load()
-        {
-            var result = default(IResult);
-            var log = "...";
-
-            using (var asyncController = new AsyncController(new AsyncControllerConfig()))
-            {
-                result = asyncController.RunAsync(() => AwaitLoading());
-                log = result.Log;
-
-            }
-
-            if (!result.Status)
-            { log.Send(this, m_isDebug, LogFormat.Warning); return; }
-
-
-            m_isLoaded = true;
-            //log = $"{this.GetName()} loaded.".Send(this, m_isDebug);
-            result = new Result(this, m_isLoaded, log, m_isDebug);
-            Loaded?.Invoke(result);
-
-        }
-
-        public virtual void Unload()
-        {
-            var result = AsyncOperation(() => AwaitUnloading());
-            var log = result.Log;
-
-            if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
-
-            m_isLoaded = false;
-            //log = $"{this.GetName()} unloaded.";
-            result = new Result(this, m_isLoaded, log, m_isDebug);
-            Loaded?.Invoke(result);
-
-        }
 
 
         // ACTIVATE //
-        public virtual void Activate()
+        public override void Activate()
         {
             var result = AsyncOperation(() => AwaitActivating());
             var log = result.Log;
 
-            if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
+            if (!result.State) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
 
-            m_isActivated = true;
-            //log = $"{this.GetName()} activated."
-            result = new Result(this, m_isActivated, log, m_isDebug);
-            Activated?.Invoke(result);
-
+            base.Activate();
         }
 
-        public virtual void Deactivate()
+        public override void Deactivate()
         {
             var result = AsyncOperation(() => AwaitDeactivating());
             var log = result.Log;
 
-            if (!result.Status) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
+            if (!result.State) { log.Send(this, m_isDebug, LogFormat.Warning); return; }
+
+            base.Deactivate();
+        }
 
 
-            m_isActivated = false;
-            //log = $"{this.GetName()} deactivated."
-            result = new Result(this, m_isActivated, log, m_isDebug);
-            Activated?.Invoke(result);
 
+        public Task Enter<TView>() where TView : IView
+        {
+            return null;
         }
 
 
@@ -601,20 +510,51 @@ namespace Core
     {
         SceneIndex Index { get; }
 
-
+        Task Enter<TView>()
+            where TView : IView;
 
 
     }
 
-    public class SceneConfig : IConfig
+    public struct SceneConfig : IConfig
     {
         public SceneIndex Index { get; private set; }
+        public IView[] Views { get; private set; }
 
-        public SceneConfig(SceneIndex index)
+        public SceneConfig(SceneIndex index, IView[] views)
         {
             Index = index;
+            Views = views;
         }
+    }
+
+
+    public enum SceneState
+    {
+        None,
+        ScreenIn,
+        ScreenEnterSuccess
+    }
+
+    public enum SceneAction
+    {
+        None,
+        LevelRun,
+        LevelPause
+    }
+
+    public enum LevelIndex
+    {
+        None,
+        Level1,
+        Level2
 
     }
+
+
+
+
+
+
 
 }

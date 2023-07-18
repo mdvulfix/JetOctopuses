@@ -1,16 +1,11 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UScene = UnityEngine.SceneManagement.Scene;
 
 using Core;
 using Core.Factory;
-using Core.Scene;
-
-using App.Screen;
-using System.Collections;
-
+using Core.UI;
+using System.Threading.Tasks;
 
 namespace Core.Scene
 {
@@ -20,7 +15,9 @@ namespace Core.Scene
         //[SerializeField] private ScreenLoading m_Loading;
         //[SerializeField] private ScreenLogin m_Login;
 
-        private List<IScreen> m_Screens;
+
+        [SerializeField] private ViewLoading m_Loading;
+        [SerializeField] private ViewLevelPause m_LevelPause;
 
 
         public SceneLevel() { }
@@ -30,15 +27,6 @@ namespace Core.Scene
 
         public override void Init(params object[] args)
         {
-            if (args.Length > 0)
-            {
-                base.Init(args);
-                return;
-            }
-
-            // CONFIGURE BY DEFAULT //
-            $"Scene will be initialized by default!".Send(this, m_isDebug, LogFormat.Warning);
-
 
             //var signals = new List<ISignal>();
             //signals.Add(m_SceneMenuActivate = new SignalSceneActivate(СacheProvider<SceneMenu>.Get()));
@@ -48,7 +36,8 @@ namespace Core.Scene
             //base.Configure(config);
 
             var index = SceneIndex.Level;
-            var config = new SceneConfig(index);
+            var views = new IView[] { m_Loading, m_LevelPause };
+            var config = new SceneConfig(index, views);
             base.Init(config);
         }
 

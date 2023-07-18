@@ -1,25 +1,37 @@
 
 using System;
 
-
-/*
 namespace Core.Cache
 {
-    public static class СacheProvider<TCacheable>
+
+    public class СacheProvider<TCacheable>
     where TCacheable : ICacheable
     {
-        private static event Action<TCacheable> CacheableRecorded;
-        private static event Action<TCacheable> CacheableDeleted;
 
-        private static ICache<TCacheable> m_Cache =
-            new Cache<TCacheable>();
+        public bool Contains()
+        {
+            using (var handler = new CacheHandler<TCacheable>(new CacheHandlerConfig()))
+            {
+                using (var cache = new Cache<TCacheable>(new CacheConfig(handler)))
+                {
+                    return cache.Contains();
+                }
+            }
+        }
 
-        public static bool Contains() =>
-            m_Cache.Contains();
 
-        public static TCacheable Get() =>
-            m_Cache.Get();
+        public bool Get(out TCacheable cacheable)
+        {
+            cacheable = default(TCacheable);
 
+            using (var handler = new CacheHandler<TCacheable>(new CacheHandlerConfig()))
+            {
+                using (var cache = new Cache<TCacheable>(new CacheConfig(handler)))
+                {
+                    return cache.Get(out cacheable);
+                }
+
+            }
+        }
     }
 }
-*/

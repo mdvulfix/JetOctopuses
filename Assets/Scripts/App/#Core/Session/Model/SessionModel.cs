@@ -1,68 +1,66 @@
 using System;
 using System.Collections;
+using System.Threading.Tasks;
 using UnityEngine;
+
+using Core.Scene;
 
 namespace Core
 {
     public abstract class SessionModel : ModelComponent
     {
+        private bool m_isDebug = true;
 
-        [Header("Config")]
-        [SerializeField] protected SessionConfig m_Config;
-
-        [Header("Debug")]
-        [SerializeField] protected bool m_isDebug = true;
+        private SessionConfig m_Config;
 
 
+        [SerializeField] private SceneLogin m_SceneLogin;
+        [SerializeField] private SceneMenu m_SceneMenu;
 
-        public enum Params
-        {
-            Config,
-            Factory
-        }
+
+        private ISceneController m_SceneController;
+        //private IInputController m_InputController;
+        //private IUIController m_UIController;
+
+        private SystemState m_StateActive;
+        private SystemState m_StateNext;
+
+        public string Label => "Session";
+
+
+        public event Action<SystemState> StateChanged;
+
+        // CACHE //
+        public override void Record()
+            => OnRecordComplete(new Result(this, true, $"{Label} recorded to cache."), m_isDebug);
+
+        public override void Clear()
+            => OnClearComplete(new Result(this, true, $"{Label} cleared from cache."), m_isDebug);
 
 
         // CONFIGURE //
-
         public override void Init(params object[] args)
         {
             var config = (int)Params.Config;
 
-            var result = default(IResult);
-            var log = "...";
-
             if (args.Length > 0)
-            {
                 try { m_Config = (SessionConfig)args[config]; }
-                catch { $"{this.GetName()} config was not found. Configuration failed!".Send(this, m_isDebug, LogFormat.Warning); return; }
-            }
+                catch { Debug.LogWarning($"{this}: {Label} config was not found. Configuration failed!"); return; }
 
 
 
 
 
-            m_isInitialized = true;
-            log = $"{this.GetName()} initialized.";
-            result = new Result(this, m_isInitialized, log, m_isDebug);
-            Initialized?.Invoke(result);
-
+            OnInitComplete(new Result(this, true, $"{Label} initialized."), m_isDebug);
         }
 
         public override void Dispose()
         {
-            var result = default(IResult);
-            var log = "...";
 
 
 
-
-            m_isInitialized = false;
-            log = $"{this.GetName()} disposed.";
-            result = new Result(this, m_isInitialized, log, m_isDebug);
-            Initialized?.Invoke(result);
-
+            OnDisposeComplete(new Result(this, true, $"{Label} disposed."), m_isDebug);
         }
-
 
 
 
@@ -109,6 +107,50 @@ namespace Core
         //}
 
 
+        public void Open()
+            => m_SceneController.Enter();
+
+        public void Login()
+            => m_SceneController.Login();
+
+        public void Menu()
+            => m_SceneController.Menu();
+
+        public void Play()
+            => m_SceneController.Level();
+
+        public void Exit()
+            => m_SceneController.Menu();
+
+        public void Win()
+            => m_SceneController.Menu();
+
+        public void Lose()
+            => m_SceneController.Menu();
+
+        public void Close()
+            => m_SceneController.Exit();
+
+
+        public abstract void HandleState(SystemState state);
+        public abstract void HandleInput();
+
+
+        private async Task Enter<TScene, TScreen>()
+            where TScene : Component, IScene
+            where TScreen : Component, IScreen
+        {
+            //await m_SceneController.Unload<TScene>();
+
+            //await m_SceneController.Load<TScene>();
+            //await m_SceneController.Activate<TScene, TScreen>();
+
+            return;
+        }
+
+
+
+
         // UNITY //
         private void OnEnable()
             => Init();
@@ -119,9 +161,8 @@ namespace Core
 
     }
 
-    public interface ISession : IComponent, IConfigurable
+    public interface ISession : IComponent, IConfigurable, ISubscriber
     {
-
 
         void Open();
         void Login();
@@ -134,8 +175,79 @@ namespace Core
 
     }
 
-    public class SessionConfig : IConfig
+
+    public enum SystemState
     {
+        None,
+        InitializeIn,
+        InitializeSuccess,
+        LoadIn,
+        LoadSuccess,
+        LoginIn,
+        LoginSuccess,
+        MenuLoadIn,
+        MenuLoadSuccess,
+        MenuMain,
+        MenuOptions,
+        MenuExit,
+        LevelLoadIn,
+        LevelLoadSuccess,
+        LevelRun,
+        LevelWin,
+        LevelLose,
+        LevelPause,
+        LevelExit,
+        TotalsLoadIn,
+        TotalsLoadSuccess,
+        TotalsRun,
+        TotalsExit,
+        DisposeIn,
+        DisposeSuccess
+    }
+
+    public enum SystemAction
+    {
+        None,
+        Initialize,
+        Load,
+        Login,
+        MenuLoad,
+        MenuRun,
+        LevelLoad,
+        LevelRun,
+        LevelExit,
+        Dispose
+    }
+
+    public enum PlayerAction
+    {
+        None,
+        MenuMain,
+        MenuOptions,
+        MenuPlay,
+        MenuExit,
+        LevelPlay,
+        LevelPause,
+        LevelExit,
+        TotalsExit
+    }
+
+    public enum PlayerResult
+    {
+        None,
+        Win,
+        Lose
+    }
+
+    public struct SessionConfig : IConfig
+    {
+        public SessionConfig(bool isDebug)
+        {
+            IsDebug = isDebug;
+        }
+
+        public bool IsDebug { get; }
+
 
     }
 
@@ -143,4 +255,12 @@ namespace Core
 
 
 }
+
+
+
+
+
+
+
+
 

@@ -1,11 +1,12 @@
 using UnityEngine;
 using Core;
+using Core.State;
 using Core.Factory;
 
 //using App.Signal;
 
 
-namespace Core.State
+namespace App.State
 {
 
     public class StateLogin : StateModel, IState
@@ -20,14 +21,6 @@ namespace Core.State
 
         public override void Init(params object[] args)
         {
-            if (args.Length > 0)
-            {
-                base.Init(args);
-                return;
-            }
-            // CONFIGURE BY DEFAULT //
-            $"{this.GetName()} will be initialized by default!".Send(this, m_isDebug, LogFormat.Warning);
-
 
             //var signals = new List<ISignal>();
             //signals.Add(m_SceneMenuActivate = new SignalSceneActivate(СacheProvider<SceneMenu>.Get()));
@@ -37,7 +30,8 @@ namespace Core.State
             //base.Configure(config);
 
 
-            base.Init(new StateConfig());
+            var config = new StateConfig();
+            base.Init(config);
 
         }
 

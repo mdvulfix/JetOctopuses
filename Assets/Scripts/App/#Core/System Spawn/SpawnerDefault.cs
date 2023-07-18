@@ -17,24 +17,6 @@ namespace Core.Spawn
             => Init(args);
 
 
-        public override void Init(params object[] args)
-        {
-            if (args.Length > 0)
-            {
-                base.Init(args);
-                return;
-            }
-
-            // CONFIGURE BY DEFAULT //
-            $"{this.GetName()} will be initialized by default!".Send(this, m_isDebug, LogFormat.Warning);
-
-            var config = new SpawnerConfig();
-            base.Init(config);
-
-
-        }
-
-
         // FACTORY //
         public static SpawnerDefault Get(params object[] args)
             => Get<SpawnerDefault>(args);
